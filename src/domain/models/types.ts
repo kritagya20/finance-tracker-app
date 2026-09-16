@@ -1,0 +1,87 @@
+/**
+ * Integer-based money representation in the lowest currency unit (e.g., paise or cents).
+ * For example: 10050 represents ₹100.50.
+ * Eliminates floating point drift across the entire application.
+ */
+export type IntegerMoney = number;
+
+export type TransactionType = 'EXPENSE' | 'INCOME' | 'TRANSFER';
+export type TransactionSource = 'MANUAL' | 'AUTO_SMS' | 'CSV_IMPORT';
+export type AccountType = 'CASH' | 'SAVINGS' | 'CHECKING' | 'CREDIT_CARD' | 'INVESTMENT';
+
+export interface SplitItem {
+  id: string;
+  categoryId: string;
+  amount: IntegerMoney;
+  note?: string;
+}
+
+export interface Transaction {
+  id: string;
+  accountId: string;
+  categoryId: string;
+  type: TransactionType;
+  amount: IntegerMoney;
+  currency: string;             // ISO 4217 code, e.g. "INR"
+  merchantName: string;
+  date: string;                 // ISO 8601 string (e.g. "2026-09-16T20:30:00.000Z")
+  source: TransactionSource;
+  notes?: string;
+  isSplit?: boolean;
+  splits?: SplitItem[];
+  rawSmsText?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Account {
+  id: string;
+  name: string;
+  type: AccountType;
+  currency: string;
+  currentBalance: IntegerMoney;
+  maskNumber?: string;          // e.g. "4102"
+  institutionName?: string;     // e.g. "HDFC Bank"
+  color?: string;
+  isActive: boolean;
+}
+
+export interface Category {
+  id: string;
+  name: string;
+  iconName: string;             // Lucide icon identifier
+  colorHex: string;             // Theme color
+  bgClass: string;              // Tailwind class (e.g. "bg-orange-500/15")
+  textClass: string;            // Tailwind class (e.g. "text-orange-400")
+  isIncome?: boolean;
+}
+
+export interface Budget {
+  id: string;
+  categoryId: string;
+  limitAmount: IntegerMoney;
+  period: 'MONTHLY' | 'WEEKLY';
+  alertThresholdPercent: number; // e.g. 80
+}
+
+export interface FinanceSummary {
+  totalBalance: IntegerMoney;
+  monthlyIncome: IntegerMoney;
+  monthlySpent: IntegerMoney;
+  monthlyBudgetLimit: IntegerMoney;
+  monthlyBudgetSpent: IntegerMoney;
+  budgetUsedPercent: number;
+  budgetRemaining: IntegerMoney;
+}
+
+export type DatePreset = 'ALL' | 'THIS_MONTH' | 'LAST_MONTH' | 'LAST_30_DAYS' | 'CUSTOM';
+export type FilterType = 'ALL' | 'EXPENSE' | 'INCOME' | 'TRANSFER';
+
+export interface ActivityFilterState {
+  type: FilterType;
+  datePreset: DatePreset;
+  startDate?: string;
+  endDate?: string;
+  categoryIds: string[];
+  source: 'ALL' | 'AUTO_SMS' | 'MANUAL';
+}
