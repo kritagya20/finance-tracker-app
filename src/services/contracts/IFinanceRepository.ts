@@ -5,6 +5,7 @@ import {
   FinanceSummary,
   Transaction,
   TransactionType,
+  UserProfile,
 } from '../../domain/models/types';
 
 export interface TransactionFilter {
@@ -26,4 +27,7 @@ export interface IFinanceRepository {
   getAccounts(): Promise<Account[]>;
   getCategories(): Promise<Category[]>;
   getBudgets(): Promise<Budget[]>;
+  getProfile(): Promise<UserProfile>;
+  updateProfile(updates: Partial<UserProfile>): Promise<UserProfile>;
 }
+

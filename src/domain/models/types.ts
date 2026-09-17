@@ -85,3 +85,51 @@ export interface ActivityFilterState {
   categoryIds: string[];
   source: 'ALL' | 'AUTO_SMS' | 'MANUAL';
 }
+
+export type FinancialGoal =
+  | 'EMERGENCY_FUND'
+  | 'SAVINGS_INVESTING'
+  | 'EXPENSE_CONTROL'
+  | 'DEBT_FREE';
+
+export type EmploymentType = 'SALARIED' | 'FREELANCE_BUSINESS' | 'STUDENT_OTHER';
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  currency: string;
+  currencySymbol: string;
+  monthlyIncome: IntegerMoney;
+  primaryGoal: FinancialGoal;
+  employmentType: EmploymentType;
+  savingsTargetPercent: number;
+  budgetStartDay: number;
+  onboardingCompleted: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FinancialInsightItem {
+  id: string;
+  type: 'POSITIVE' | 'WARNING' | 'NEUTRAL';
+  title: string;
+  description: string;
+  metric?: string;
+}
+
+export interface FinancialInsights {
+  savingsRate: number;
+  savingsTargetPercent: number;
+  emergencyFundMonths: number;
+  burnRatePerDay: IntegerMoney;
+  runwayDays: number;
+  budgetAdherenceScore: number;
+  needsVsWantsRatio: {
+    needsPercent: number;
+    wantsPercent: number;
+    savingsPercent: number;
+  };
+  keyInsights: FinancialInsightItem[];
+}
+

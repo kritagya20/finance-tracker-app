@@ -5,6 +5,7 @@ import {
   Category,
   FinanceSummary,
   Transaction,
+  UserProfile,
 } from '../domain/models/types';
 
 export function useFinance() {
@@ -12,6 +13,7 @@ export function useFinance() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hideBalances, setHideBalances] = useState<boolean>(() => {
     return localStorage.getItem('hide_balances') === 'true';
@@ -29,16 +31,18 @@ export function useFinance() {
     try {
       setIsLoading(true);
       const repo = FinanceService.getRepo();
-      const [sumData, txData, accData, catData] = await Promise.all([
+      const [sumData, txData, accData, catData, profileData] = await Promise.all([
         repo.getSummary(),
         repo.getTransactions(),
         repo.getAccounts(),
         repo.getCategories(),
+        repo.getProfile(),
       ]);
       setSummary(sumData);
       setTransactions(txData);
       setAccounts(accData);
       setCategories(catData);
+      setProfile(profileData);
     } catch (err) {
       console.error('Failed to load finance data:', err);
     } finally {
@@ -72,16 +76,30 @@ export function useFinance() {
     [refreshData]
   );
 
+  const updateProfile = useCallback(
+    async (updates: Partial<UserProfile>) => {
+      const repo = FinanceService.getRepo();
+      const updated = await repo.updateProfile(updates);
+      setProfile(updated);
+      await refreshData();
+      return updated;
+    },
+    [refreshData]
+  );
+
   return {
     summary,
     transactions,
     accounts,
     categories,
+    profile,
     isLoading,
     hideBalances,
     toggleHideBalances,
     addTransaction,
     deleteTransaction,
+    updateProfile,
     refreshData,
   };
 }
+
