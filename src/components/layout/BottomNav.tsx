@@ -23,7 +23,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   };
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[390px] border-t border-theme-border bg-theme-card/90 backdrop-blur-md transition-colors">
+    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[390px] border-t border-theme-border bg-theme-card shadow-lg transition-colors">
       <div className="flex items-center justify-around px-4 pb-[env(safe-area-inset-bottom)] pt-2">
         <button
           type="button"

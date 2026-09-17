@@ -88,3 +88,51 @@ body {
 .pb-safe {
   padding-bottom: max(1rem, env(safe-area-inset-bottom));
 }
+
+@layer utilities {
+  .bg-theme-app {
+    background-color: var(--bg-app);
+  }
+  .bg-theme-card {
+    background-color: var(--bg-card);
+  }
+  .bg-theme-card-subtle {
+    background-color: var(--bg-card-subtle);
+  }
+  .bg-theme-card-hover {
+    background-color: var(--bg-card-hover);
+  }
+  .bg-theme-input {
+    background-color: var(--bg-input);
+  }
+  .bg-theme-elevated {
+    background-color: var(--bg-elevated);
+  }
+
+  .text-theme-primary {
+    color: var(--text-primary);
+  }
+  .text-theme-secondary {
+    color: var(--text-secondary);
+  }
+  .text-theme-muted {
+    color: var(--text-muted);
+  }
+  .text-theme-inverse {
+    color: var(--text-inverse);
+  }
+
+  .border-theme-border {
+    border-color: var(--border-subtle);
+  }
+  .border-theme-divider {
+    border-color: var(--border-divider);
+  }
+
+  .ring-theme-app {
+    --tw-ring-color: var(--bg-app);
+  }
+  .ring-theme-card {
+    --tw-ring-color: var(--bg-card);
+  }
+}

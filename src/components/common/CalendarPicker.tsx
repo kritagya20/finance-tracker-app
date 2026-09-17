@@ -225,7 +225,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
           return (
             <div
               key={`prev-${i}`}
-              className="flex size-8 mx-auto items-center justify-center text-[11px] text-theme-muted/40"
+              className="flex size-8 mx-auto items-center justify-center text-[11px] text-theme-muted opacity-40"
             >
               {prevDayNum}
             </div>

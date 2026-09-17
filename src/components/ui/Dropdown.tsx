@@ -169,7 +169,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
               ...(coords.right !== undefined ? { right: `${coords.right}px` } : {}),
             }}
             className={cn(
-              'fixed z-50 min-w-[190px] max-w-[calc(100vw-32px)] rounded-2xl border border-theme-border bg-theme-elevated/95 p-1.5 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150',
+              'fixed z-50 min-w-[190px] max-w-[calc(100vw-32px)] rounded-2xl border border-theme-border bg-theme-elevated p-1.5 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150',
               menuClassName
             )}
           >

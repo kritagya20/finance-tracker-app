@@ -220,7 +220,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
           onPointerCancel={handlePointerUp}
           className="relative shrink-0 px-4 pt-3 pb-2 cursor-grab active:cursor-grabbing touch-none select-none"
         >
-          <div className="mx-auto h-1.5 w-10 rounded-full bg-theme-muted/40" />
+          <div className="mx-auto h-1.5 w-10 rounded-full bg-theme-muted opacity-40" />
           <div className="mt-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="flex size-7 items-center justify-center rounded-lg bg-violet-500/15 text-violet-600 dark:text-violet-400 font-bold text-xs">

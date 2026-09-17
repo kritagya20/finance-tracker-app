@@ -220,24 +220,25 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
 
   const cardContent = (
     <div
-      style={
-        shouldSwipe
+      style={{
+        backgroundColor: 'var(--bg-card)',
+        ...(shouldSwipe
           ? {
               transform: `translateX(${offsetX}px)`,
               transition: isDragging ? 'none' : 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1)',
             }
-          : undefined
-      }
+          : undefined),
+      }}
       onPointerDown={shouldSwipe ? handlePointerDown : undefined}
       onPointerMove={shouldSwipe ? handlePointerMove : undefined}
       onPointerUp={shouldSwipe ? handlePointerUp : undefined}
       onPointerCancel={shouldSwipe ? handlePointerUp : undefined}
       onClick={handleCardClick}
       className={cn(
-        'relative z-10 flex items-center gap-3.5 p-3.5 transition-colors',
+        'relative z-10 flex w-full items-center gap-3.5 p-3.5 transition-colors',
         shouldSwipe
           ? 'bg-theme-card'
-          : 'rounded-2xl border border-theme-border bg-theme-card shadow-sm backdrop-blur-sm',
+          : 'rounded-2xl border border-theme-border bg-theme-card shadow-sm',
         shouldSwipe && isDragging ? 'cursor-grabbing' : shouldSwipe ? 'cursor-grab touch-pan-y' : '',
         onClick && !shouldSwipe ? 'cursor-pointer hover:bg-theme-card-subtle active:bg-theme-card-hover' : '',
         offsetX !== 0 ? 'shadow-2xl shadow-black/20 dark:shadow-black/70' : '',
@@ -322,7 +323,12 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
   return (
     <li className="relative overflow-hidden rounded-2xl border border-theme-border bg-theme-card select-none shadow-sm">
       {/* 1. Edit Action Background (Left - Revealed on swipe right) */}
-      <div className="absolute inset-y-0 left-0 flex w-[76px] items-center justify-center bg-blue-500/15">
+      <div
+        className={cn(
+          'absolute inset-y-0 left-0 flex w-[76px] items-center justify-center bg-blue-500/15 transition-opacity duration-150',
+          offsetX > 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}
+      >
         <button
           type="button"
           onClick={handleEditClick}
@@ -335,7 +341,12 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
       </div>
 
       {/* 2. Delete Action Background (Right - Revealed on swipe left) */}
-      <div className="absolute inset-y-0 right-0 flex w-[76px] items-center justify-center bg-rose-500/15">
+      <div
+        className={cn(
+          'absolute inset-y-0 right-0 flex w-[76px] items-center justify-center bg-rose-500/15 transition-opacity duration-150',
+          offsetX < 0 ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}
+      >
         <button
           type="button"
           onClick={handleDeleteClick}
