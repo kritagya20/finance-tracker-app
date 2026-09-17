@@ -4,8 +4,6 @@ import {
   Download,
   ChevronDown,
   ArrowLeftRight,
-  Pencil,
-  Trash2,
   Check,
   Coffee,
   Car,
@@ -18,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Transaction, Category } from '../../domain/models/types';
 import { formatCurrency } from '../../domain/engine/moneyUtils';
+import { SwipeableTransactionItem } from './SwipeableTransactionItem';
 import { cn } from '../../lib/utils';
 
 // Icon Map matching exact visual icons from live reference
@@ -59,10 +58,6 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
   // Active Dropdown Popover
   const [activeDropdown, setActiveDropdown] = useState<'type' | 'date' | 'source' | 'category' | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Swipe offset state per transaction item { [txId]: number }
-  const [swipeOffsets, setSwipeOffsets] = useState<Record<string, number>>({});
-  const touchStartX = useRef<number | null>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -166,31 +161,6 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
     return groups;
   }, [filtered]);
 
-  // Touch handlers for swipe gesture
-  const handleTouchStart = (_txId: string, clientX: number) => {
-    touchStartX.current = clientX;
-  };
-
-  const handleTouchMove = (txId: string, clientX: number) => {
-    if (touchStartX.current === null) return;
-    const diff = clientX - touchStartX.current;
-    // Limit swipe offset between -80px (delete) and +80px (edit)
-    const clamped = Math.max(-80, Math.min(80, diff));
-    setSwipeOffsets((prev) => ({ ...prev, [txId]: clamped }));
-  };
-
-  const handleTouchEnd = (txId: string) => {
-    touchStartX.current = null;
-    const current = swipeOffsets[txId] || 0;
-    if (current > 40) {
-      setSwipeOffsets((prev) => ({ ...prev, [txId]: 76 }));
-    } else if (current < -40) {
-      setSwipeOffsets((prev) => ({ ...prev, [txId]: -76 }));
-    } else {
-      setSwipeOffsets((prev) => ({ ...prev, [txId]: 0 }));
-    }
-  };
-
   // Human readable labels
   const typeLabel =
     typeFilter === 'EXPENSE'
@@ -251,7 +221,7 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
           />
         </div>
 
-        {/* Clean Single-Row Filter Chips (Matching Screenshot Exactly) */}
+        {/* Clean Single-Row Filter Chips */}
         <div className="relative" ref={dropdownRef}>
           <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {/* 1. All Types Pill */}
@@ -495,123 +465,28 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
                 <ul className="flex flex-col gap-2">
                   {group.items.map((tx) => {
                     const category = categories.find((c) => c.id === tx.categoryId) || {
+                      id: 'cat_general',
                       name: 'General',
                       iconName: 'CircleDollarSign',
+                      colorHex: '#94a3b8',
                       bgClass: 'bg-zinc-800 text-zinc-400',
                       textClass: 'text-zinc-400',
                     };
 
                     const IconComp = ICON_MAP[category.iconName] || CircleDollarSign;
-                    const isIncome = tx.type === 'INCOME';
-                    const offset = swipeOffsets[tx.id] || 0;
-
-                    const timeStr = new Date(tx.date).toLocaleTimeString('en-IN', {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                      hour12: true,
-                    });
 
                     return (
-                      <li key={tx.id} className="relative overflow-hidden rounded-2xl">
-                        {/* Action Reveal Background: Edit on Left */}
-                        <div className="absolute inset-y-0 left-0 flex w-[76px] items-center justify-center bg-blue-500/20">
-                          <button
-                            type="button"
-                            aria-label={`Edit ${tx.merchantName}`}
-                            className="flex flex-col items-center gap-1 text-blue-300"
-                          >
-                            <Pencil className="size-5" />
-                            <span className="text-[10px] font-medium">Edit</span>
-                          </button>
-                        </div>
-
-                        {/* Action Reveal Background: Delete on Right */}
-                        <div className="absolute inset-y-0 right-0 flex w-[76px] items-center justify-center bg-rose-500/20">
-                          <button
-                            type="button"
-                            onClick={() => onDeleteTransaction(tx.id)}
-                            aria-label={`Delete ${tx.merchantName}`}
-                            className="flex flex-col items-center gap-1 text-rose-300"
-                          >
-                            <Trash2 className="size-5" />
-                            <span className="text-[10px] font-medium">Delete</span>
-                          </button>
-                        </div>
-
-                        {/* Draggable Card Surface */}
-                        <div
-                          style={{ transform: `translateX(${offset}px)` }}
-                          onTouchStart={(e) => handleTouchStart(tx.id, e.touches[0].clientX)}
-                          onTouchMove={(e) => handleTouchMove(tx.id, e.touches[0].clientX)}
-                          onTouchEnd={() => handleTouchEnd(tx.id)}
-                          onMouseDown={(e) => handleTouchStart(tx.id, e.clientX)}
-                          onMouseMove={(e) => {
-                            if (touchStartX.current !== null) {
-                              handleTouchMove(tx.id, e.clientX);
-                            }
-                          }}
-                          onMouseUp={() => handleTouchEnd(tx.id)}
-                          onMouseLeave={() => {
-                            if (touchStartX.current !== null) {
-                              handleTouchEnd(tx.id);
-                            }
-                          }}
-                          className="relative flex touch-pan-y cursor-grab items-center gap-3 border border-white/10 bg-zinc-900 p-3 transition-transform duration-200 active:cursor-grabbing"
-                        >
-                          {/* Category Circle Icon */}
-                          <span
-                            className={cn(
-                              'flex size-11 shrink-0 items-center justify-center rounded-full',
-                              category.bgClass,
-                              category.textClass
-                            )}
-                          >
-                            <IconComp className="size-5" />
-                          </span>
-
-                          {/* Merchant & Metadata */}
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-semibold text-zinc-100">
-                              {tx.merchantName}
-                            </p>
-                            <div className="mt-0.5 flex flex-wrap items-center gap-2">
-                              <span className="truncate text-[11px] text-zinc-500">
-                                {category.name}
-                              </span>
-                              <span
-                                className={cn(
-                                  'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
-                                  tx.source === 'AUTO_SMS'
-                                    ? 'bg-violet-500/15 text-violet-300'
-                                    : 'bg-zinc-800 text-zinc-400'
-                                )}
-                              >
-                                {tx.source === 'AUTO_SMS' ? 'Auto-SMS' : 'Manual'}
-                              </span>
-                              {tx.notes && tx.notes.includes('items') && (
-                                <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-300">
-                                  2 items
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Amount & Time */}
-                          <div className="shrink-0 text-right">
-                            <p
-                              className={cn(
-                                'text-sm font-semibold tabular-nums',
-                                isIncome ? 'text-emerald-400' : 'text-zinc-200'
-                              )}
-                            >
-                              {hideBalances
-                                ? '••••••'
-                                : `${isIncome ? '+' : '-'}${formatCurrency(tx.amount)}`}
-                            </p>
-                            <p className="mt-0.5 text-[11px] text-zinc-500">{timeStr}</p>
-                          </div>
-                        </div>
-                      </li>
+                      <SwipeableTransactionItem
+                        key={tx.id}
+                        tx={tx}
+                        category={category}
+                        iconComp={IconComp}
+                        hideBalances={hideBalances}
+                        onDelete={onDeleteTransaction}
+                        onEdit={(t) => {
+                          console.log('Edit transaction:', t);
+                        }}
+                      />
                     );
                   })}
                 </ul>

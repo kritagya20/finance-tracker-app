@@ -19,7 +19,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           {userName.charAt(0).toUpperCase()}
         </div>
         <div className="leading-tight">
-          <p className="text-xs text-slate-400">Good evening,</p>
+          <p className="text-xs text-slate-400">Namaste,</p>
           <p className="text-base font-semibold text-slate-100">{userName}</p>
         </div>
       </div>
