@@ -3,6 +3,8 @@ import {
   Search,
   Download,
   ArrowLeftRight,
+  ArrowDownLeft,
+  ArrowUpRight,
   Coffee,
   Car,
   Box,
@@ -16,6 +18,7 @@ import { Transaction, Category } from '../../domain/models/types';
 import { formatCurrency } from '../../domain/engine/moneyUtils';
 import { SwipeableTransactionItem } from './SwipeableTransactionItem';
 import { Dropdown } from '../../components/ui/Dropdown';
+import { cn } from '../../lib/utils';
 
 // Icon Map matching exact visual icons from live reference
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -101,6 +104,13 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
   const totalSpent = useMemo(() => {
     return filtered
       .filter((t) => t.type === 'EXPENSE')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [filtered]);
+
+  // Total income in filtered set
+  const totalIncome = useMemo(() => {
+    return filtered
+      .filter((t) => t.type === 'INCOME')
       .reduce((sum, t) => sum + t.amount, 0);
   }, [filtered]);
 
@@ -207,6 +217,10 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
     [categories]
   );
 
+  const isIncomeView = typeFilter === 'INCOME';
+  const displayTotal = isIncomeView ? totalIncome : totalSpent;
+  const displayLabel = isIncomeView ? 'Total Income' : 'Total Spent';
+
   return (
     <div className="flex flex-col gap-3 pb-8">
       {/* Header */}
@@ -288,29 +302,78 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
         </div>
       </div>
 
-      {/* Subtle Transaction Count & Total Spent */}
-      <p className="pt-2 text-xs text-zinc-500">
-        Showing <span className="font-medium text-zinc-300">{filtered.length} transactions</span> • Total spent{' '}
-        <span className="font-medium text-zinc-300">
-          {hideBalances ? '••••••' : formatCurrency(totalSpent)}
-        </span>
-      </p>
+      {/* Enhanced Activity Summary & Gesture Card */}
+      <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-3.5 shadow-sm backdrop-blur-md">
+        <div className="flex items-center justify-between">
+          {/* Left: Transaction Count Metric */}
+          <div className="flex items-center gap-2.5">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-500/25 bg-violet-500/15 text-violet-400">
+              <Receipt className="size-4" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                Transactions
+              </span>
+              <span className="text-sm font-bold text-zinc-100 tabular-nums">
+                {filtered.length}{' '}
+                <span className="text-xs font-normal text-zinc-400">
+                  {filtered.length === 1 ? 'record' : 'records'}
+                </span>
+              </span>
+            </div>
+          </div>
 
-      {/* Swipe Hint Banner */}
-      <div className="mt-1 flex items-center justify-center gap-4 rounded-xl border border-white/5 bg-zinc-900/60 px-3 py-2 text-[11px] text-zinc-500">
-        <span className="flex items-center gap-1.5">
-          <span className="flex size-5 items-center justify-center rounded-md bg-blue-500/20 text-blue-300">
-            <ArrowLeftRight className="size-3" />
+          {/* Vertical Separator */}
+          <div className="h-8 w-px bg-white/10" />
+
+          {/* Right: Total Amount Metric */}
+          <div className="flex items-center gap-2.5 text-right">
+            <div className="flex flex-col">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+                {displayLabel}
+              </span>
+              <span
+                className={cn(
+                  'text-sm font-bold tabular-nums',
+                  isIncomeView ? 'text-emerald-400' : 'text-zinc-100'
+                )}
+              >
+                {hideBalances ? '••••••' : formatCurrency(displayTotal)}
+              </span>
+            </div>
+            <div
+              className={cn(
+                'flex size-9 shrink-0 items-center justify-center rounded-xl border',
+                isIncomeView
+                  ? 'border-emerald-500/25 bg-emerald-500/15 text-emerald-400'
+                  : 'border-rose-500/25 bg-rose-500/15 text-rose-400'
+              )}
+            >
+              {isIncomeView ? (
+                <ArrowDownLeft className="size-4" />
+              ) : (
+                <ArrowUpRight className="size-4" />
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Integrated Gesture Hint Footer */}
+        <div className="mt-3 flex items-center justify-center gap-4 border-t border-white/5 pt-2.5 text-[11px] text-zinc-500">
+          <span className="flex items-center gap-1.5">
+            <span className="flex size-4 items-center justify-center rounded bg-blue-500/20 text-blue-300">
+              <ArrowLeftRight className="size-2.5" />
+            </span>
+            Swipe right to edit
           </span>
-          Swipe right to edit
-        </span>
-        <span className="h-3 w-px bg-white/10" />
-        <span className="flex items-center gap-1.5">
-          Swipe left to delete
-          <span className="flex size-5 items-center justify-center rounded-md bg-rose-500/20 text-rose-300">
-            <ArrowLeftRight className="size-3" />
+          <span className="h-3 w-px bg-white/10" />
+          <span className="flex items-center gap-1.5">
+            Swipe left to delete
+            <span className="flex size-4 items-center justify-center rounded bg-rose-500/20 text-rose-300">
+              <ArrowLeftRight className="size-2.5" />
+            </span>
           </span>
-        </span>
+        </div>
       </div>
 
       {/* Grouped Transaction Lists */}
