@@ -44,60 +44,90 @@ export class MockFinanceRepository implements IFinanceRepository {
 
   private transactions: Transaction[] = [
     {
-      id: 'tx_1',
+      id: 'tx_starbucks',
       accountId: 'acc_hdfc',
       categoryId: 'cat_dining',
       type: 'EXPENSE',
-      amount: 45000, // ₹450.00
+      amount: 28000, // ₹280.00
       currency: 'INR',
-      merchantName: 'Swiggy',
+      merchantName: 'Starbucks',
       date: new Date().toISOString(),
       source: 'AUTO_SMS',
-      rawSmsText: 'Sent Rs.450.00 from HDFC Bank A/C **4102 to SWIGGY on 16-Sep-26',
-      notes: 'Dinner with friends',
-      createdAt: Date.now() - 1000 * 60 * 60 * 2,
-      updatedAt: Date.now() - 1000 * 60 * 60 * 2,
+      rawSmsText: 'Sent Rs.280.00 from HDFC Bank A/C **4102 to STARBUCKS',
+      notes: 'Coffee & snack',
+      createdAt: Date.now() - 1000 * 60 * 60 * 3,
+      updatedAt: Date.now() - 1000 * 60 * 60 * 3,
     },
     {
-      id: 'tx_2',
+      id: 'tx_uber_today',
+      accountId: 'acc_hdfc',
+      categoryId: 'cat_fuel',
+      type: 'EXPENSE',
+      amount: 45000, // ₹450.00
+      currency: 'INR',
+      merchantName: 'Uber Ride',
+      date: new Date(Date.now() - 1000 * 60 * 60 * 7).toISOString(),
+      source: 'AUTO_SMS',
+      rawSmsText: 'Debited Rs.450.00 at UBER TRIP',
+      notes: 'Morning commute',
+      createdAt: Date.now() - 1000 * 60 * 60 * 7,
+      updatedAt: Date.now() - 1000 * 60 * 60 * 7,
+    },
+    {
+      id: 'tx_amazon_yesterday',
+      accountId: 'acc_hdfc',
+      categoryId: 'cat_shopping',
+      type: 'EXPENSE',
+      amount: 120000, // ₹1,200.00
+      currency: 'INR',
+      merchantName: 'Amazon India',
+      date: new Date(Date.now() - 86400000).toISOString(),
+      source: 'MANUAL',
+      notes: 'Home essentials (2 items)',
+      createdAt: Date.now() - 86400000,
+      updatedAt: Date.now() - 86400000,
+    },
+    {
+      id: 'tx_freelance_12sep',
+      accountId: 'acc_hdfc',
+      categoryId: 'cat_freelance',
+      type: 'INCOME',
+      amount: 1500000, // ₹15,000.00
+      currency: 'INR',
+      merchantName: 'Freelance Payment',
+      date: new Date(Date.now() - 86400000 * 4).toISOString(),
+      source: 'MANUAL',
+      notes: 'UI/UX consulting project',
+      createdAt: Date.now() - 86400000 * 4,
+      updatedAt: Date.now() - 86400000 * 4,
+    },
+    {
+      id: 'tx_salary',
       accountId: 'acc_hdfc',
       categoryId: 'cat_salary',
       type: 'INCOME',
       amount: 8500000, // ₹85,000.00
       currency: 'INR',
       merchantName: 'Salary Deposit',
-      date: new Date(Date.now() - 86400000).toISOString(),
+      date: new Date(Date.now() - 86400000 * 15).toISOString(),
       source: 'MANUAL',
       notes: 'Monthly corporate salary',
-      createdAt: Date.now() - 86400000,
-      updatedAt: Date.now() - 86400000,
+      createdAt: Date.now() - 86400000 * 15,
+      updatedAt: Date.now() - 86400000 * 15,
     },
     {
-      id: 'tx_3',
-      accountId: 'acc_hdfc',
-      categoryId: 'cat_fuel',
-      type: 'EXPENSE',
-      amount: 28000, // ₹280.00
-      currency: 'INR',
-      merchantName: 'Uber',
-      date: new Date(Date.now() - 86400000 * 2).toISOString(),
-      source: 'AUTO_SMS',
-      rawSmsText: 'Debited Rs.280.00 at UBER TRIP MUMBAI',
-      createdAt: Date.now() - 86400000 * 2,
-      updatedAt: Date.now() - 86400000 * 2,
-    },
-    {
-      id: 'tx_4',
+      id: 'tx_electricity',
       accountId: 'acc_hdfc',
       categoryId: 'cat_bills',
       type: 'EXPENSE',
       amount: 185000, // ₹1,850.00
       currency: 'INR',
       merchantName: 'Electricity Bill',
-      date: new Date(Date.now() - 86400000 * 4).toISOString(),
+      date: new Date(Date.now() - 86400000 * 18).toISOString(),
       source: 'MANUAL',
-      createdAt: Date.now() - 86400000 * 4,
-      updatedAt: Date.now() - 86400000 * 4,
+      notes: 'Power utilities payment',
+      createdAt: Date.now() - 86400000 * 18,
+      updatedAt: Date.now() - 86400000 * 18,
     },
   ];
 
@@ -113,7 +143,7 @@ export class MockFinanceRepository implements IFinanceRepository {
 
   async getSummary(): Promise<FinanceSummary> {
     const totalBalance = 14285000; // ₹1,42,850.00
-    const monthlyIncome = 8500000; // ₹85,000.00
+    const monthlyIncome = 10000000; // ₹1,00,000.00
     const monthlySpent = 3215000;  // ₹32,150.00
     const monthlyBudgetLimit = 5000000; // ₹50,000.00
     const monthlyBudgetSpent = monthlySpent;
