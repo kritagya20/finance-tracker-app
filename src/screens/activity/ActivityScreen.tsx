@@ -5,33 +5,13 @@ import {
   ArrowLeftRight,
   ArrowDownLeft,
   ArrowUpRight,
-  Coffee,
-  Car,
-  Box,
-  DollarSign,
   Receipt,
-  Briefcase,
-  CircleDollarSign,
-  type LucideIcon,
 } from 'lucide-react';
 import { Transaction, Category } from '../../domain/models/types';
 import { formatCurrency } from '../../domain/engine/moneyUtils';
-import { SwipeableTransactionItem } from './SwipeableTransactionItem';
+import { TransactionItem } from '../../components/common/TransactionItem';
 import { Dropdown } from '../../components/ui/Dropdown';
 import { cn } from '../../lib/utils';
-
-// Icon Map matching exact visual icons from live reference
-const ICON_MAP: Record<string, LucideIcon> = {
-  UtensilsCrossed: Coffee,
-  ShoppingCart: Box,
-  Fuel: Car,
-  Receipt: Receipt,
-  Film: Box,
-  ShoppingBag: Box,
-  Briefcase: Briefcase,
-  DollarSign: DollarSign,
-  CircleDollarSign: CircleDollarSign,
-};
 
 interface ActivityScreenProps {
   transactions: Transaction[];
@@ -419,25 +399,16 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
                   {groupHeader}
                 </h2>
 
-                <ul className="flex flex-col gap-2">
+                <ul className="flex flex-col gap-2.5">
                   {group.items.map((tx) => {
-                    const category = categories.find((c) => c.id === tx.categoryId) || {
-                      id: 'cat_general',
-                      name: 'General',
-                      iconName: 'CircleDollarSign',
-                      colorHex: '#94a3b8',
-                      bgClass: 'bg-zinc-800 text-zinc-400',
-                      textClass: 'text-zinc-400',
-                    };
-
-                    const IconComp = ICON_MAP[category.iconName] || CircleDollarSign;
+                    const category = categories.find((c) => c.id === tx.categoryId);
 
                     return (
-                      <SwipeableTransactionItem
+                      <TransactionItem
                         key={tx.id}
-                        tx={tx}
+                        transaction={tx}
                         category={category}
-                        iconComp={IconComp}
+                        variant="activity"
                         hideBalances={hideBalances}
                         onDelete={onDeleteTransaction}
                         onEdit={(t) => {
