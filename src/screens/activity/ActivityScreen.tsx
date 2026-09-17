@@ -1,10 +1,8 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Search,
   Download,
-  ChevronDown,
   ArrowLeftRight,
-  Check,
   Coffee,
   Car,
   Box,
@@ -17,7 +15,7 @@ import {
 import { Transaction, Category } from '../../domain/models/types';
 import { formatCurrency } from '../../domain/engine/moneyUtils';
 import { SwipeableTransactionItem } from './SwipeableTransactionItem';
-import { cn } from '../../lib/utils';
+import { Dropdown } from '../../components/ui/Dropdown';
 
 // Icon Map matching exact visual icons from live reference
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -57,18 +55,6 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
 
   // Active Dropdown Popover
   const [activeDropdown, setActiveDropdown] = useState<'type' | 'date' | 'source' | 'category' | null>(null);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setActiveDropdown(null);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   // Filtered transactions
   const filtered = useMemo(() => {
@@ -161,6 +147,27 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
     return groups;
   }, [filtered]);
 
+  // Static option sets for filter dropdowns
+  const TYPE_OPTIONS = [
+    { label: 'All Types', value: 'ALL' },
+    { label: 'Debit (Expenses)', value: 'EXPENSE' },
+    { label: 'Credit (Income)', value: 'INCOME' },
+    { label: 'Transfer', value: 'TRANSFER' },
+  ];
+
+  const DATE_OPTIONS = [
+    { label: 'This Month', value: 'THIS_MONTH' },
+    { label: 'Last Month', value: 'LAST_MONTH' },
+    { label: 'Last 30 Days', value: 'LAST_30_DAYS' },
+    { label: 'All Time', value: 'ALL' },
+  ];
+
+  const SOURCE_OPTIONS = [
+    { label: 'All Sources', value: 'ALL' },
+    { label: 'Source: Auto-SMS', value: 'AUTO_SMS' },
+    { label: 'Source: Manual', value: 'MANUAL' },
+  ];
+
   // Human readable labels
   const typeLabel =
     typeFilter === 'EXPENSE'
@@ -192,6 +199,14 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
       ? 'Category'
       : categories.find((c) => c.id === categoryFilter)?.name || 'Category';
 
+  const categoryOptions = useMemo(
+    () => [
+      { label: 'All Categories', value: 'ALL' },
+      ...categories.map((cat) => ({ label: cat.name, value: cat.id })),
+    ],
+    [categories]
+  );
+
   return (
     <div className="flex flex-col gap-3 pb-8">
       {/* Header */}
@@ -222,199 +237,54 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
         </div>
 
         {/* Clean Single-Row Filter Chips */}
-        <div className="relative" ref={dropdownRef}>
-          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {/* 1. All Types Pill */}
-            <button
-              type="button"
-              onClick={() => setActiveDropdown(activeDropdown === 'type' ? null : 'type')}
-              className={cn(
-                'flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-                typeFilter !== 'ALL'
-                  ? 'border-violet-500/40 bg-violet-500/15 text-violet-300'
-                  : 'border-white/10 bg-zinc-900 text-zinc-300 active:bg-zinc-800'
-              )}
-            >
-              <span>{typeLabel}</span>
-              <ChevronDown className="size-3.5 opacity-70" />
-            </button>
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <Dropdown
+            label={typeLabel}
+            options={TYPE_OPTIONS}
+            selectedValue={typeFilter}
+            onSelect={(val) => setTypeFilter(val as TypeFilter)}
+            isActive={typeFilter !== 'ALL'}
+            isOpen={activeDropdown === 'type'}
+            onOpenChange={(open) => setActiveDropdown(open ? 'type' : null)}
+            align="left"
+            ariaLabel="Filter by transaction type"
+          />
 
-            {/* 2. This Month Pill */}
-            <button
-              type="button"
-              onClick={() => setActiveDropdown(activeDropdown === 'date' ? null : 'date')}
-              className={cn(
-                'flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-                dateFilter !== 'ALL'
-                  ? 'border-violet-500/40 bg-violet-500/15 text-violet-300'
-                  : 'border-white/10 bg-zinc-900 text-zinc-300 active:bg-zinc-800'
-              )}
-            >
-              <span>{dateLabel}</span>
-              <ChevronDown className="size-3.5 opacity-70" />
-            </button>
+          <Dropdown
+            label={dateLabel}
+            options={DATE_OPTIONS}
+            selectedValue={dateFilter}
+            onSelect={(val) => setDateFilter(val as DateFilter)}
+            isActive={dateFilter !== 'ALL'}
+            isOpen={activeDropdown === 'date'}
+            onOpenChange={(open) => setActiveDropdown(open ? 'date' : null)}
+            align="left"
+            ariaLabel="Filter by date range"
+          />
 
-            {/* 3. Source Pill */}
-            <button
-              type="button"
-              onClick={() => setActiveDropdown(activeDropdown === 'source' ? null : 'source')}
-              className={cn(
-                'flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-                sourceFilter !== 'ALL'
-                  ? 'border-violet-500/40 bg-violet-500/15 text-violet-300'
-                  : 'border-white/10 bg-zinc-900 text-zinc-300 active:bg-zinc-800'
-              )}
-            >
-              <span>{sourceLabel}</span>
-              {sourceFilter === 'ALL' && <ChevronDown className="size-3.5 opacity-70" />}
-            </button>
+          <Dropdown
+            label={sourceLabel}
+            options={SOURCE_OPTIONS}
+            selectedValue={sourceFilter}
+            onSelect={(val) => setSourceFilter(val as SourceFilter)}
+            isActive={sourceFilter !== 'ALL'}
+            isOpen={activeDropdown === 'source'}
+            onOpenChange={(open) => setActiveDropdown(open ? 'source' : null)}
+            align="right"
+            ariaLabel="Filter by source"
+          />
 
-            {/* 4. Category Pill */}
-            <button
-              type="button"
-              onClick={() => setActiveDropdown(activeDropdown === 'category' ? null : 'category')}
-              className={cn(
-                'flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
-                categoryFilter !== 'ALL'
-                  ? 'border-violet-500/40 bg-violet-500/15 text-violet-300'
-                  : 'border-white/10 bg-zinc-900 text-zinc-300 active:bg-zinc-800'
-              )}
-            >
-              <span>{categoryLabel}</span>
-              <ChevronDown className="size-3.5 opacity-70" />
-            </button>
-          </div>
-
-          {/* Sleek Popover Menu for Active Filter */}
-          {activeDropdown && (
-            <div className="absolute left-0 top-11 z-30 w-56 rounded-2xl border border-white/10 bg-zinc-900/95 p-1.5 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
-              {activeDropdown === 'type' && (
-                <div className="flex flex-col gap-0.5 text-xs font-medium text-zinc-300">
-                  {[
-                    { label: 'All Types', val: 'ALL' },
-                    { label: 'Debit (Expenses)', val: 'EXPENSE' },
-                    { label: 'Credit (Income)', val: 'INCOME' },
-                    { label: 'Transfer', val: 'TRANSFER' },
-                  ].map((opt) => (
-                    <button
-                      key={opt.val}
-                      type="button"
-                      onClick={() => {
-                        setTypeFilter(opt.val as TypeFilter);
-                        setActiveDropdown(null);
-                      }}
-                      className={cn(
-                        'flex items-center justify-between rounded-xl px-3 py-2 text-left transition-colors',
-                        typeFilter === opt.val
-                          ? 'bg-violet-600/20 text-violet-300'
-                          : 'hover:bg-zinc-800 text-zinc-300'
-                      )}
-                    >
-                      <span>{opt.label}</span>
-                      {typeFilter === opt.val && <Check className="size-3.5 text-violet-400" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {activeDropdown === 'date' && (
-                <div className="flex flex-col gap-0.5 text-xs font-medium text-zinc-300">
-                  {[
-                    { label: 'This Month', val: 'THIS_MONTH' },
-                    { label: 'Last Month', val: 'LAST_MONTH' },
-                    { label: 'Last 30 Days', val: 'LAST_30_DAYS' },
-                    { label: 'All Time', val: 'ALL' },
-                  ].map((opt) => (
-                    <button
-                      key={opt.val}
-                      type="button"
-                      onClick={() => {
-                        setDateFilter(opt.val as DateFilter);
-                        setActiveDropdown(null);
-                      }}
-                      className={cn(
-                        'flex items-center justify-between rounded-xl px-3 py-2 text-left transition-colors',
-                        dateFilter === opt.val
-                          ? 'bg-violet-600/20 text-violet-300'
-                          : 'hover:bg-zinc-800 text-zinc-300'
-                      )}
-                    >
-                      <span>{opt.label}</span>
-                      {dateFilter === opt.val && <Check className="size-3.5 text-violet-400" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {activeDropdown === 'source' && (
-                <div className="flex flex-col gap-0.5 text-xs font-medium text-zinc-300">
-                  {[
-                    { label: 'Source: Auto-SMS', val: 'AUTO_SMS' },
-                    { label: 'Source: Manual', val: 'MANUAL' },
-                    { label: 'All Sources', val: 'ALL' },
-                  ].map((opt) => (
-                    <button
-                      key={opt.val}
-                      type="button"
-                      onClick={() => {
-                        setSourceFilter(opt.val as SourceFilter);
-                        setActiveDropdown(null);
-                      }}
-                      className={cn(
-                        'flex items-center justify-between rounded-xl px-3 py-2 text-left transition-colors',
-                        sourceFilter === opt.val
-                          ? 'bg-violet-600/20 text-violet-300'
-                          : 'hover:bg-zinc-800 text-zinc-300'
-                      )}
-                    >
-                      <span>{opt.label}</span>
-                      {sourceFilter === opt.val && <Check className="size-3.5 text-violet-400" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {activeDropdown === 'category' && (
-                <div className="flex max-h-56 flex-col gap-0.5 overflow-y-auto text-xs font-medium text-zinc-300 no-scrollbar">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCategoryFilter('ALL');
-                      setActiveDropdown(null);
-                    }}
-                    className={cn(
-                      'flex items-center justify-between rounded-xl px-3 py-2 text-left transition-colors',
-                      categoryFilter === 'ALL'
-                        ? 'bg-violet-600/20 text-violet-300'
-                        : 'hover:bg-zinc-800 text-zinc-300'
-                    )}
-                  >
-                    <span>All Categories</span>
-                    {categoryFilter === 'ALL' && <Check className="size-3.5 text-violet-400" />}
-                  </button>
-                  {categories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => {
-                        setCategoryFilter(cat.id);
-                        setActiveDropdown(null);
-                      }}
-                      className={cn(
-                        'flex items-center justify-between rounded-xl px-3 py-2 text-left transition-colors',
-                        categoryFilter === cat.id
-                          ? 'bg-violet-600/20 text-violet-300'
-                          : 'hover:bg-zinc-800 text-zinc-300'
-                      )}
-                    >
-                      <span>{cat.name}</span>
-                      {categoryFilter === cat.id && <Check className="size-3.5 text-violet-400" />}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          <Dropdown
+            label={categoryLabel}
+            options={categoryOptions}
+            selectedValue={categoryFilter}
+            onSelect={(val) => setCategoryFilter(val)}
+            isActive={categoryFilter !== 'ALL'}
+            isOpen={activeDropdown === 'category'}
+            onOpenChange={(open) => setActiveDropdown(open ? 'category' : null)}
+            align="right"
+            ariaLabel="Filter by category"
+          />
         </div>
       </div>
 
