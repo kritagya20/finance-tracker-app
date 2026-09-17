@@ -100,7 +100,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-dvh bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-50 selection:bg-violet-500 selection:text-white transition-colors">
+    <div className="min-h-dvh bg-theme-app text-theme-primary selection:bg-violet-500 selection:text-white transition-colors">
       {/* Mobile Frame Container */}
       <main className="mx-auto flex min-h-dvh max-w-[390px] flex-col px-4 pb-28 pt-4">
         {!isAuthenticated ? (

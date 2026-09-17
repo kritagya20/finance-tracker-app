@@ -8,6 +8,19 @@ export default {
   theme: {
     extend: {
       colors: {
+        theme: {
+          app: 'var(--bg-app)',
+          card: 'var(--bg-card)',
+          'card-subtle': 'var(--bg-card-subtle)',
+          'card-hover': 'var(--bg-card-hover)',
+          input: 'var(--bg-input)',
+          elevated: 'var(--bg-elevated)',
+          primary: 'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
+          muted: 'var(--text-muted)',
+          border: 'var(--border-subtle)',
+          divider: 'var(--border-divider)',
+        },
         slate: {
           950: '#020617',
           900: '#0f172a',
