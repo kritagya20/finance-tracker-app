@@ -215,6 +215,7 @@ export function App() {
               <AnalyticsScreen
                 summary={summary}
                 transactions={transactions}
+                categories={categories}
                 hideBalances={hideBalances}
               />
             )}
