@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Delete, Trash2, ArrowUpDown } from 'lucide-react';
+import { X, Delete, Trash2, ArrowUpDown, Calendar } from 'lucide-react';
 import { Category, Transaction, TransactionType, Account } from '../../domain/models/types';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
 import { parseKeypadToPaise } from '../../domain/engine/moneyUtils';
+import { CalendarPicker } from '../../components/common/CalendarPicker';
 import { Switch } from '../../components/ui/Switch';
 import { cn } from '../../lib/utils';
 
@@ -40,6 +41,10 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
   const [merchantName, setMerchantName] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState('cat_dining');
   const [selectedAccountId, setSelectedAccountId] = useState('acc_hdfc');
+  const [selectedDate, setSelectedDate] = useState<string>(() =>
+    tx ? tx.date.slice(0, 10) : new Date().toISOString().slice(0, 10)
+  );
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [notes, setNotes] = useState('');
   const [isSplit, setIsSplit] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -58,6 +63,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       setMerchantName(tx.merchantName);
       setSelectedCategoryId(tx.categoryId);
       setSelectedAccountId(tx.accountId || 'acc_hdfc');
+      setSelectedDate(tx.date.slice(0, 10));
       setNotes(tx.notes || '');
       setIsSplit(Boolean(tx.isSplit));
     }
@@ -76,6 +82,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       const timer = setTimeout(() => {
         setIsRendered(false);
         setDragOffsetY(0);
+        setIsCalendarOpen(false);
       }, 300);
       return () => clearTimeout(timer);
     }
@@ -132,7 +139,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       return;
     }
 
-    // Numbers 0-9
+    // Numeric 0-9
     setAmountStr((prev) => {
       if (prev === '0') return key;
       const parts = prev.split('.');
@@ -145,21 +152,22 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
     const paiseAmount = parseKeypadToPaise(amountStr);
     if (paiseAmount <= 0) return;
 
-    setIsSubmitting(true);
     try {
-      const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
-      const finalMerchant = merchantName.trim() || selectedCategory?.name || 'Updated Transaction';
+      setIsSubmitting(true);
+      const updatedDate = new Date(selectedDate);
+      const origDate = new Date(tx.date);
+      updatedDate.setHours(origDate.getHours(), origDate.getMinutes(), origDate.getSeconds());
 
       await onSave({
         type,
         amount: paiseAmount,
-        merchantName: finalMerchant,
+        merchantName: merchantName.trim() || tx.merchantName,
         categoryId: selectedCategoryId,
         accountId: selectedAccountId,
-        notes: notes.trim(),
+        notes: notes.trim() || undefined,
+        date: updatedDate.toISOString(),
         isSplit,
       });
-
       onClose();
     } catch (err) {
       console.error('Failed to update transaction:', err);
@@ -172,12 +180,14 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
   const currentAccount =
     accountOptions.find((a) => a.id === selectedAccountId) || accountOptions[0];
 
-  const ctaGradient =
-    type === 'INCOME'
-      ? 'from-emerald-600 to-emerald-500 shadow-emerald-950/40'
-      : type === 'TRANSFER'
-      ? 'from-blue-600 to-blue-500 shadow-blue-950/40'
-      : 'from-rose-600 to-rose-500 shadow-rose-950/40';
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const dateDisplayLabel =
+    selectedDate === todayStr
+      ? 'Today'
+      : selectedDate === yesterdayStr
+      ? 'Yesterday'
+      : new Date(selectedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
   return (
     <div className="fixed inset-0 z-50 mx-auto max-w-[390px] flex items-end justify-center">
@@ -190,7 +200,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
         )}
       />
 
-      {/* Drawer */}
+      {/* Drawer Container */}
       <div
         role="dialog"
         aria-modal="true"
@@ -200,7 +210,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
             : 'translateY(100%)',
           transition: isDragging ? 'none' : 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
-        className="relative z-10 flex w-full max-h-[92dvh] flex-col rounded-t-3xl border-t border-white/10 bg-zinc-900 shadow-2xl"
+        className="relative z-10 flex w-full max-h-[92dvh] flex-col rounded-t-3xl border-t border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 shadow-2xl transition-colors"
       >
         {/* Drag Handle & Header */}
         <div
@@ -210,18 +220,18 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
           onPointerCancel={handlePointerUp}
           className="relative shrink-0 px-4 pt-3 pb-2 cursor-grab active:cursor-grabbing touch-none select-none"
         >
-          <div className="mx-auto h-1.5 w-10 rounded-full bg-zinc-700/80" />
+          <div className="mx-auto h-1.5 w-10 rounded-full bg-slate-300 dark:bg-zinc-700/80" />
           <div className="mt-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-white">Edit Transaction</h2>
-              <span className="rounded-md border border-white/10 bg-zinc-800 px-2 py-0.5 text-[10px] font-medium text-zinc-400">
-                {tx.source === 'AUTO_SMS' ? 'Auto-SMS' : 'Manual'}
+              <span className="flex size-7 items-center justify-center rounded-lg bg-violet-500/15 text-violet-600 dark:text-violet-400 font-bold text-xs">
+                Edit
               </span>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">Edit Transaction</h2>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="flex size-8 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+              className="flex size-8 items-center justify-center rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition-colors"
             >
               <X className="size-4" />
             </button>
@@ -231,7 +241,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
         {/* Scrollable Form Body */}
         <div className="flex-1 overflow-y-auto px-4 pt-1 no-scrollbar space-y-4">
           {/* Segmented Type Switcher */}
-          <div className="flex gap-1.5 rounded-2xl bg-zinc-850 p-1.5 border border-white/5">
+          <div className="flex gap-1.5 rounded-2xl bg-slate-100 dark:bg-zinc-850 p-1.5 border border-slate-200/60 dark:border-white/5">
             <button
               type="button"
               onClick={() => setType('EXPENSE')}
@@ -239,7 +249,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
                 'flex-1 rounded-xl py-2 text-xs font-semibold transition-all',
                 type === 'EXPENSE'
                   ? 'bg-rose-500 text-white shadow-md shadow-rose-950/40'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
               )}
             >
               Expense
@@ -251,7 +261,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
                 'flex-1 rounded-xl py-2 text-xs font-semibold transition-all',
                 type === 'INCOME'
                   ? 'bg-emerald-500 text-white shadow-md shadow-emerald-950/40'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
               )}
             >
               Income
@@ -263,7 +273,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
                 'flex-1 rounded-xl py-2 text-xs font-semibold transition-all',
                 type === 'TRANSFER'
                   ? 'bg-blue-500 text-white shadow-md shadow-blue-950/40'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
               )}
             >
               Transfer
@@ -272,21 +282,21 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
 
           {/* Amount Display */}
           <div className="flex flex-col items-center py-2">
-            <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+            <span className="text-[11px] font-medium uppercase tracking-widest text-slate-400 dark:text-zinc-500">
               Amount
             </span>
             <div className="mt-0.5 flex items-baseline gap-1">
-              <span className="text-2xl font-semibold text-zinc-500">₹</span>
-              <span className="text-4xl font-bold tracking-tight text-white tabular-nums">
+              <span className="text-2xl font-semibold text-slate-400 dark:text-zinc-500">₹</span>
+              <span className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">
                 {amountStr}
               </span>
-              <span className="ml-0.5 h-8 w-0.5 animate-pulse rounded-full bg-violet-400" />
+              <span className="ml-0.5 h-8 w-0.5 animate-pulse rounded-full bg-violet-500" />
             </div>
           </div>
 
-          {/* Category Carousel */}
+          {/* Horizontal Category Carousel */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-zinc-400">Category</label>
+            <label className="text-xs font-medium text-slate-600 dark:text-zinc-400">Category</label>
             <div className="-mx-4 overflow-x-auto px-4 pb-1 no-scrollbar">
               <div className="flex gap-2.5">
                 {categories.map((cat) => {
@@ -304,8 +314,8 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
                           cat.bgClass,
                           cat.textClass,
                           isSelected
-                            ? 'border-violet-400 ring-2 ring-violet-400/40 scale-105'
-                            : 'border-white/5 opacity-75 hover:opacity-100'
+                            ? 'border-violet-500 ring-2 ring-violet-500/40 scale-105'
+                            : 'border-slate-200 dark:border-white/5 opacity-75 hover:opacity-100'
                         )}
                       >
                         <CategoryIcon name={cat.iconName} size={20} />
@@ -313,7 +323,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
                       <span
                         className={cn(
                           'text-center text-[10px] leading-tight truncate w-full',
-                          isSelected ? 'font-semibold text-white' : 'text-zinc-400'
+                          isSelected ? 'font-semibold text-slate-900 dark:text-white' : 'text-slate-500 dark:text-zinc-400'
                         )}
                       >
                         {cat.name}
@@ -325,125 +335,143 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
             </div>
           </div>
 
-          {/* Merchant & Account Metadata */}
+          {/* Metadata Section */}
           <div className="space-y-2.5">
             {/* Merchant / Payee Input */}
             <div className="space-y-1">
-              <label className="text-xs font-medium text-zinc-400">Merchant / Payee</label>
+              <label className="text-xs font-medium text-slate-600 dark:text-zinc-400">Merchant / Payee</label>
               <input
                 type="text"
                 placeholder="e.g. Starbucks, Swiggy, Amazon"
                 value={merchantName}
                 onChange={(e) => setMerchantName(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-zinc-800/80 px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none"
+                className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800/80 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none"
               />
             </div>
 
-            {/* Account Selector */}
+            {/* Account Selector & Calendar Date Picker */}
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => {
-                  // Cycle account on click
                   const currIdx = accountOptions.findIndex((a) => a.id === selectedAccountId);
                   const nextIdx = (currIdx + 1) % accountOptions.length;
                   setSelectedAccountId(accountOptions[nextIdx].id);
                 }}
-                className="flex flex-1 items-center justify-between gap-1 rounded-xl border border-white/10 bg-zinc-800/80 px-3.5 py-2.5 text-left text-xs font-medium text-zinc-200 active:bg-zinc-750 transition-colors"
+                className="flex flex-1 items-center justify-between gap-1 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800/80 px-3.5 py-2.5 text-left text-xs font-medium text-slate-800 dark:text-zinc-200 active:bg-slate-100 dark:active:bg-zinc-750 transition-colors"
               >
                 <div className="flex items-center gap-1.5 truncate">
                   <span className="truncate">{currentAccount.name}</span>
-                  <span className="text-[10px] text-zinc-500">···{('maskNumber' in currentAccount ? currentAccount.maskNumber : ('mask' in currentAccount ? currentAccount.mask : ''))}</span>
+                  <span className="text-[10px] text-slate-400 dark:text-zinc-500">···{('maskNumber' in currentAccount ? currentAccount.maskNumber : ('mask' in currentAccount ? currentAccount.mask : ''))}</span>
                 </div>
-                <ArrowUpDown className="size-3.5 shrink-0 text-zinc-500" />
+                <ArrowUpDown className="size-3.5 shrink-0 text-slate-400 dark:text-zinc-500" />
               </button>
 
-              <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-zinc-800/80 px-3 py-2.5 text-xs font-medium text-zinc-400">
-                <span>{new Date(tx.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+              {/* Interactive Calendar Date Button */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                  className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800/80 px-3 py-2.5 text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 transition-colors"
+                >
+                  <Calendar className="size-3.5 text-violet-500" />
+                  <span>{dateDisplayLabel}</span>
+                </button>
+
+                {isCalendarOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsCalendarOpen(false)}
+                    />
+                    <div className="absolute right-0 bottom-full mb-2 z-50">
+                      <CalendarPicker
+                        mode="single"
+                        selectedDate={selectedDate}
+                        onSelectDate={(d) => {
+                          setSelectedDate(d);
+                          setIsCalendarOpen(false);
+                        }}
+                        onClose={() => setIsCalendarOpen(false)}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
             {/* Note / Memo */}
             <div className="space-y-1">
-              <label className="text-xs font-medium text-zinc-400">Notes / Memo</label>
+              <label className="text-xs font-medium text-slate-600 dark:text-zinc-400">Notes / Memo</label>
               <input
                 type="text"
                 placeholder="Add optional notes..."
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-zinc-800/80 px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none"
+                className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800/80 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none"
               />
             </div>
 
             {/* Split Switch */}
-            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-zinc-800/80 px-3.5 py-2.5">
+            <div className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800/80 px-3.5 py-2.5">
               <div className="flex flex-col">
-                <span className="text-xs font-semibold text-zinc-100">
+                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100">
                   Split Transaction
                 </span>
-                <span className="text-[10px] text-zinc-400">
-                  Divide across categories
+                <span className="text-[10px] text-slate-500 dark:text-zinc-400">
+                  Divide amount across multiple categories
                 </span>
               </div>
               <Switch
                 checked={isSplit}
                 onCheckedChange={setIsSplit}
-                ariaLabel="Split Transaction"
+                ariaLabel="Split transaction toggle"
               />
             </div>
           </div>
 
-          {/* 4x3 Numeric Keypad */}
+          {/* Numeric Touch Keypad */}
           <div className="pt-1">
-            <div className="grid grid-cols-3 gap-1.5">
-              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0'].map((val) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => handleKeypadPress(val)}
-                  className="flex h-11 items-center justify-center rounded-xl bg-zinc-800/70 text-lg font-semibold text-white transition-all active:scale-95 active:bg-zinc-700"
-                >
-                  {val}
-                </button>
-              ))}
-
-              <button
-                type="button"
-                onClick={() => handleKeypadPress('BACKSPACE')}
-                aria-label="Backspace"
-                className="flex h-11 items-center justify-center rounded-xl bg-zinc-800/70 text-zinc-300 transition-all active:scale-95 active:bg-zinc-700"
-              >
-                <Delete className="size-5" />
-              </button>
+            <div className="grid grid-cols-3 gap-2">
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'BACKSPACE'].map(
+                (key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => handleKeypadPress(key)}
+                    className="flex h-12 items-center justify-center rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-zinc-800/80 dark:hover:bg-zinc-750 dark:text-white text-base font-semibold active:scale-95 transition-all shadow-sm"
+                  >
+                    {key === 'BACKSPACE' ? (
+                      <Delete className="size-5 text-slate-500 dark:text-zinc-400" />
+                    ) : (
+                      key
+                    )}
+                  </button>
+                )
+              )}
             </div>
           </div>
-        </div>
 
-        {/* Action Bar (Delete + Save) */}
-        <div className="shrink-0 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 border-t border-white/5 flex items-center gap-2.5">
-          <button
-            type="button"
-            onClick={() => {
-              onDelete(tx.id);
-            }}
-            aria-label="Delete transaction"
-            className="flex size-12 shrink-0 items-center justify-center rounded-2xl border border-rose-500/30 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 active:scale-95 transition-all"
-            title="Delete this transaction"
-          >
-            <Trash2 className="size-5" />
-          </button>
+          {/* Action Buttons: Delete & Update CTA */}
+          <div className="pt-2 pb-6 space-y-2.5">
+            <button
+              type="button"
+              disabled={isSubmitting || parseKeypadToPaise(amountStr) <= 0}
+              onClick={handleSave}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-950/40 transition-all active:scale-[0.98] disabled:opacity-50"
+            >
+              <span>{isSubmitting ? 'Updating...' : 'Update Transaction'}</span>
+            </button>
 
-          <button
-            type="button"
-            disabled={isSubmitting || parseKeypadToPaise(amountStr) <= 0}
-            onClick={handleSave}
-            className={cn(
-              'flex-1 rounded-2xl bg-gradient-to-r py-3.5 text-sm font-semibold text-white shadow-lg transition-transform active:scale-[0.98] disabled:opacity-50',
-              ctaGradient
-            )}
-          >
-            {isSubmitting ? 'Updating...' : 'Update Transaction'}
-          </button>
+            <button
+              type="button"
+              onClick={() => onDelete(tx.id)}
+              className="flex w-full items-center justify-center gap-1.5 rounded-2xl border border-rose-500/30 bg-rose-500/10 py-2.5 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 active:scale-[0.98] transition-colors"
+            >
+              <Trash2 className="size-3.5" />
+              <span>Delete Transaction</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

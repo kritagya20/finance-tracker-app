@@ -1,8 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Delete, ArrowUpDown, Plus } from 'lucide-react';
-import { Category, TransactionType, Account } from '../../domain/models/types';
-import { CategoryIcon } from '../../components/common/CategoryIcon';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  Plus,
+  ArrowUpDown,
+  Delete,
+  Check,
+  Split,
+  X,
+  Calendar,
+} from 'lucide-react';
+import {
+  Category,
+  Account,
+  TransactionType,
+  Transaction,
+} from '../../domain/models/types';
 import { parseKeypadToPaise } from '../../domain/engine/moneyUtils';
+import { CategoryIcon } from '../../components/common/CategoryIcon';
+import { CalendarPicker } from '../../components/common/CalendarPicker';
 import { Switch } from '../../components/ui/Switch';
 import { cn } from '../../lib/utils';
 
@@ -11,18 +25,7 @@ interface AddTransactionDrawerProps {
   onClose: () => void;
   categories: Category[];
   accounts?: Account[];
-  onSave: (tx: {
-    accountId: string;
-    categoryId: string;
-    type: TransactionType;
-    amount: number;
-    currency: string;
-    merchantName: string;
-    date: string;
-    source: 'MANUAL';
-    notes?: string;
-    isSplit?: boolean;
-  }) => Promise<void>;
+  onSave: (tx: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void>;
 }
 
 const DEFAULT_ACCOUNTS = [
@@ -46,6 +49,8 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
   const [amountStr, setAmountStr] = useState('0');
   const [selectedCategoryId, setSelectedCategoryId] = useState('cat_dining');
   const [selectedAccountId, setSelectedAccountId] = useState('acc_hdfc');
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [merchantNote, setMerchantNote] = useState('');
   const [isSplit, setIsSplit] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,6 +73,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
       const timer = setTimeout(() => {
         setIsRendered(false);
         setDragOffsetY(0);
+        setIsCalendarOpen(false);
       }, 300);
       return () => clearTimeout(timer);
     }
@@ -138,28 +144,24 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
     const paiseAmount = parseKeypadToPaise(amountStr);
     if (paiseAmount <= 0) return;
 
-    setIsSubmitting(true);
     try {
-      const selectedCategory = categories.find((c) => c.id === selectedCategoryId);
-      const merchant = merchantNote.trim() || selectedCategory?.name || 'Manual Transaction';
+      setIsSubmitting(true);
+      const chosenDate = new Date(selectedDate);
+      const now = new Date();
+      chosenDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds());
 
       await onSave({
-        accountId: selectedAccountId,
-        categoryId: selectedCategoryId,
         type,
         amount: paiseAmount,
         currency: 'INR',
-        merchantName: merchant,
-        date: new Date().toISOString(),
+        categoryId: selectedCategoryId,
+        accountId: selectedAccountId,
+        merchantName: merchantNote.trim() || (type === 'INCOME' ? 'Income Deposit' : 'General Expense'),
+        notes: merchantNote.trim() || undefined,
+        date: chosenDate.toISOString(),
         source: 'MANUAL',
-        notes: merchantNote.trim(),
         isSplit,
       });
-
-      // Reset and close
-      setAmountStr('0');
-      setMerchantNote('');
-      setIsSplit(false);
       onClose();
     } catch (err) {
       console.error('Failed to save transaction:', err);
@@ -172,7 +174,16 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
   const currentAccount =
     accountList.find((a) => a.id === selectedAccountId) || accountList[0];
 
-  const ctaColor =
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const dateDisplayLabel =
+    selectedDate === todayStr
+      ? 'Today'
+      : selectedDate === yesterdayStr
+      ? 'Yesterday'
+      : new Date(selectedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+
+  const activeColor =
     type === 'INCOME'
       ? 'from-emerald-600 to-emerald-500 shadow-emerald-950/40'
       : type === 'TRANSFER'
@@ -200,7 +211,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
             : 'translateY(100%)',
           transition: isDragging ? 'none' : 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
-        className="relative z-10 flex w-full max-h-[92dvh] flex-col rounded-t-3xl border-t border-white/10 bg-zinc-900 shadow-2xl"
+        className="relative z-10 flex w-full max-h-[92dvh] flex-col rounded-t-3xl border-t border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 shadow-2xl transition-colors"
       >
         {/* Drag Handle & Header */}
         <div
@@ -210,18 +221,18 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
           onPointerCancel={handlePointerUp}
           className="relative shrink-0 px-4 pt-3 pb-2 cursor-grab active:cursor-grabbing touch-none select-none"
         >
-          <div className="mx-auto h-1.5 w-10 rounded-full bg-zinc-700/80" />
+          <div className="mx-auto h-1.5 w-10 rounded-full bg-slate-300 dark:bg-zinc-700/80" />
           <div className="mt-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="flex size-7 items-center justify-center rounded-lg bg-violet-500/20 text-violet-400">
+              <div className="flex size-7 items-center justify-center rounded-lg bg-violet-500/15 text-violet-600 dark:text-violet-400">
                 <Plus className="size-4" />
               </div>
-              <h2 className="text-base font-bold text-white">Add Transaction</h2>
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">Add Transaction</h2>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="flex size-8 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+              className="flex size-8 items-center justify-center rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition-colors"
             >
               <X className="size-4" />
             </button>
@@ -230,7 +241,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
 
         <div className="flex-1 overflow-y-auto px-4 pt-1 no-scrollbar space-y-4">
           {/* Segmented Type Control */}
-          <div className="flex gap-1.5 rounded-2xl bg-zinc-850 p-1.5 border border-white/5">
+          <div className="flex gap-1.5 rounded-2xl bg-slate-100 dark:bg-zinc-850 p-1.5 border border-slate-200/60 dark:border-white/5">
             <button
               type="button"
               onClick={() => setType('EXPENSE')}
@@ -238,7 +249,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                 'flex-1 rounded-xl py-2 text-xs font-semibold transition-all',
                 type === 'EXPENSE'
                   ? 'bg-rose-500 text-white shadow-md shadow-rose-950/40'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
               )}
             >
               Expense
@@ -250,7 +261,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                 'flex-1 rounded-xl py-2 text-xs font-semibold transition-all',
                 type === 'INCOME'
                   ? 'bg-emerald-500 text-white shadow-md shadow-emerald-950/40'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
               )}
             >
               Income
@@ -262,7 +273,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                 'flex-1 rounded-xl py-2 text-xs font-semibold transition-all',
                 type === 'TRANSFER'
                   ? 'bg-blue-500 text-white shadow-md shadow-blue-950/40'
-                  : 'text-zinc-400 hover:text-zinc-200'
+                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
               )}
             >
               Transfer
@@ -271,21 +282,21 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
 
           {/* Amount Display */}
           <div className="flex flex-col items-center py-2">
-            <span className="text-[11px] font-medium uppercase tracking-widest text-zinc-500">
+            <span className="text-[11px] font-medium uppercase tracking-widest text-slate-400 dark:text-zinc-500">
               Amount
             </span>
             <div className="mt-0.5 flex items-baseline gap-1">
-              <span className="text-2xl font-semibold text-zinc-500">₹</span>
-              <span className="text-4xl font-bold tracking-tight text-white tabular-nums">
+              <span className="text-2xl font-semibold text-slate-400 dark:text-zinc-500">₹</span>
+              <span className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">
                 {amountStr}
               </span>
-              <span className="ml-0.5 h-8 w-0.5 animate-pulse rounded-full bg-violet-400" />
+              <span className="ml-0.5 h-8 w-0.5 animate-pulse rounded-full bg-violet-500" />
             </div>
           </div>
 
           {/* Horizontal Category Carousel */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-zinc-400">Category</label>
+            <label className="text-xs font-medium text-slate-600 dark:text-zinc-400">Category</label>
             <div className="-mx-4 overflow-x-auto px-4 pb-1 no-scrollbar">
               <div className="flex gap-2.5">
                 {categories.map((cat) => {
@@ -303,8 +314,8 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                           cat.bgClass,
                           cat.textClass,
                           isSelected
-                            ? 'border-violet-400 ring-2 ring-violet-400/40 scale-105'
-                            : 'border-white/5 opacity-75 hover:opacity-100'
+                            ? 'border-violet-500 ring-2 ring-violet-500/40 scale-105'
+                            : 'border-slate-200 dark:border-white/5 opacity-75 hover:opacity-100'
                         )}
                       >
                         <CategoryIcon name={cat.iconName} size={20} />
@@ -312,7 +323,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                       <span
                         className={cn(
                           'text-center text-[10px] leading-tight truncate w-full',
-                          isSelected ? 'font-semibold text-white' : 'text-zinc-400'
+                          isSelected ? 'font-semibold text-slate-900 dark:text-white' : 'text-slate-500 dark:text-zinc-400'
                         )}
                       >
                         {cat.name}
@@ -335,14 +346,42 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                   const nextIdx = (currIdx + 1) % accountList.length;
                   setSelectedAccountId(accountList[nextIdx].id);
                 }}
-                className="flex flex-1 items-center justify-between gap-1 rounded-xl border border-white/10 bg-zinc-800/80 px-3.5 py-2.5 text-left text-xs font-medium text-zinc-200 active:bg-zinc-750 transition-colors"
+                className="flex flex-1 items-center justify-between gap-1 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800/80 px-3.5 py-2.5 text-left text-xs font-medium text-slate-800 dark:text-zinc-200 active:bg-slate-100 dark:active:bg-zinc-750 transition-colors"
               >
-                <span className="truncate">{currentAccount.name} ····{currentAccount.maskNumber}</span>
-                <ArrowUpDown className="size-3.5 shrink-0 text-zinc-500" />
+                <span className="truncate">{currentAccount.name} ····{('maskNumber' in currentAccount ? currentAccount.maskNumber : '')}</span>
+                <ArrowUpDown className="size-3.5 shrink-0 text-slate-400 dark:text-zinc-500" />
               </button>
 
-              <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-zinc-800/80 px-3 py-2.5 text-xs font-medium text-zinc-400">
-                <span>Today</span>
+              {/* Interactive Calendar Picker Date Button */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsCalendarOpen(!isCalendarOpen)}
+                  className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800/80 px-3 py-2.5 text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 transition-colors"
+                >
+                  <Calendar className="size-3.5 text-violet-500" />
+                  <span>{dateDisplayLabel}</span>
+                </button>
+
+                {isCalendarOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsCalendarOpen(false)}
+                    />
+                    <div className="absolute right-0 bottom-full mb-2 z-50">
+                      <CalendarPicker
+                        mode="single"
+                        selectedDate={selectedDate}
+                        onSelectDate={(d) => {
+                          setSelectedDate(d);
+                          setIsCalendarOpen(false);
+                        }}
+                        onClose={() => setIsCalendarOpen(false)}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
@@ -352,66 +391,80 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
               placeholder="Merchant / Note (e.g. Blue Tokai Coffee)..."
               value={merchantNote}
               onChange={(e) => setMerchantNote(e.target.value)}
-              className="w-full rounded-xl border border-white/10 bg-zinc-800/80 px-3.5 py-2.5 text-sm text-white placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none"
+              className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800/80 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none"
             />
 
             {/* Split Switch */}
-            <div className="flex items-center justify-between rounded-xl border border-white/10 bg-zinc-800/80 px-3.5 py-2.5">
+            <div className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800/80 px-3.5 py-2.5">
               <div className="flex flex-col">
-                <span className="text-xs font-semibold text-zinc-100">
+                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100">
                   Split Transaction
                 </span>
-                <span className="text-[10px] text-zinc-400">
+                <span className="text-[10px] text-slate-500 dark:text-zinc-400">
                   Split across multiple categories
                 </span>
               </div>
               <Switch
                 checked={isSplit}
                 onCheckedChange={setIsSplit}
-                ariaLabel="Split Transaction"
+                ariaLabel="Split transaction switch"
               />
             </div>
+
+            {isSplit && (
+              <div className="rounded-xl border border-violet-500/20 bg-violet-500/10 p-3 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-xs font-semibold text-violet-600 dark:text-violet-300">
+                  <Split className="size-3.5" />
+                  <span>Split Breakdown</span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-zinc-300">
+                  This transaction will be flagged for itemized split categorization in Activity.
+                </p>
+              </div>
+            )}
           </div>
 
-          {/* 4x3 Touch Numeric Keypad */}
+          {/* Numeric Touch Keypad */}
           <div className="pt-1">
-            <div className="grid grid-cols-3 gap-1.5">
-              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0'].map((val) => (
-                <button
-                  key={val}
-                  type="button"
-                  onClick={() => handleKeypadPress(val)}
-                  className="flex h-11 items-center justify-center rounded-xl bg-zinc-800/70 text-lg font-semibold text-white transition-all active:scale-95 active:bg-zinc-700"
-                >
-                  {val}
-                </button>
-              ))}
-
-              <button
-                type="button"
-                onClick={() => handleKeypadPress('BACKSPACE')}
-                aria-label="Backspace"
-                className="flex h-11 items-center justify-center rounded-xl bg-zinc-800/70 text-zinc-300 transition-all active:scale-95 active:bg-zinc-700"
-              >
-                <Delete className="size-5" />
-              </button>
+            <div className="grid grid-cols-3 gap-2">
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'BACKSPACE'].map(
+                (key) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => handleKeypadPress(key)}
+                    className="flex h-12 items-center justify-center rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-zinc-800/80 dark:hover:bg-zinc-750 dark:text-white text-base font-semibold active:scale-95 transition-all shadow-sm"
+                  >
+                    {key === 'BACKSPACE' ? (
+                      <Delete className="size-5 text-slate-500 dark:text-zinc-400" />
+                    ) : (
+                      key
+                    )}
+                  </button>
+                )
+              )}
             </div>
           </div>
-        </div>
 
-        {/* CTA Button */}
-        <div className="shrink-0 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 border-t border-white/5">
-          <button
-            type="button"
-            disabled={isSubmitting || parseKeypadToPaise(amountStr) <= 0}
-            onClick={handleSave}
-            className={cn(
-              'w-full rounded-2xl bg-gradient-to-r py-3.5 text-sm font-semibold text-white shadow-lg transition-transform active:scale-[0.98] disabled:opacity-50',
-              ctaColor
-            )}
-          >
-            {isSubmitting ? 'Saving...' : `Save ${type.charAt(0) + type.slice(1).toLowerCase()}`}
-          </button>
+          {/* Bottom Action Bar */}
+          <div className="pt-2 pb-6">
+            <button
+              type="button"
+              disabled={isSubmitting || parseKeypadToPaise(amountStr) <= 0}
+              onClick={handleSave}
+              className={cn(
+                'flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r py-3.5 text-sm font-bold text-white shadow-lg transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed',
+                activeColor
+              )}
+            >
+              <Check className="size-4" />
+              <span>
+                {isSubmitting
+                  ? 'Saving...'
+                  : `Save ${type === 'EXPENSE' ? 'Expense' : type === 'INCOME' ? 'Income' : 'Transfer'}`}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

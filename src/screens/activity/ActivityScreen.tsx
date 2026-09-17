@@ -6,11 +6,13 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Receipt,
+  ChevronDown,
 } from 'lucide-react';
 import { Transaction, Category, Account } from '../../domain/models/types';
 import { formatCurrency } from '../../domain/engine/moneyUtils';
 import { TransactionItem } from '../../components/common/TransactionItem';
 import { Dropdown } from '../../components/ui/Dropdown';
+import { CalendarPicker, DateRange } from '../../components/common/CalendarPicker';
 import { EditTransactionDrawer } from './EditTransactionDrawer';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { cn } from '../../lib/utils';
@@ -25,7 +27,7 @@ interface ActivityScreenProps {
 }
 
 type TypeFilter = 'ALL' | 'EXPENSE' | 'INCOME' | 'TRANSFER';
-type DateFilter = 'THIS_MONTH' | 'LAST_MONTH' | 'LAST_30_DAYS' | 'ALL';
+type DateFilter = 'THIS_MONTH' | 'LAST_MONTH' | 'LAST_30_DAYS' | 'ALL' | 'CUSTOM';
 type SourceFilter = 'ALL' | 'AUTO_SMS' | 'MANUAL';
 
 export const ActivityScreen: React.FC<ActivityScreenProps> = ({
@@ -42,6 +44,7 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('ALL');
   const [dateFilter, setDateFilter] = useState<DateFilter>('THIS_MONTH');
+  const [customRange, setCustomRange] = useState<DateRange | null>(null);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('AUTO_SMS');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
 
@@ -70,7 +73,7 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
       // Category
       if (categoryFilter !== 'ALL' && tx.categoryId !== categoryFilter) return false;
 
-      // Date
+      // Date Filtering
       const txDate = new Date(tx.date);
       if (dateFilter === 'THIS_MONTH') {
         const start = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -83,11 +86,17 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
       } else if (dateFilter === 'LAST_30_DAYS') {
         const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         if (txDate < thirtyDaysAgo || txDate > now) return false;
+      } else if (dateFilter === 'CUSTOM' && customRange) {
+        const [sy, sm, sd] = customRange.startDate.split('-').map(Number);
+        const start = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
+        const [ey, em, ed] = customRange.endDate.split('-').map(Number);
+        const end = new Date(ey, em - 1, ed, 23, 59, 59, 999);
+        if (txDate < start || txDate > end) return false;
       }
 
       return true;
     });
-  }, [transactions, searchQuery, typeFilter, dateFilter, sourceFilter, categoryFilter]);
+  }, [transactions, searchQuery, typeFilter, dateFilter, customRange, sourceFilter, categoryFilter]);
 
   // Total spent in filtered set
   const totalSpent = useMemo(() => {
@@ -154,13 +163,6 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
     { label: 'Transfer', value: 'TRANSFER' },
   ];
 
-  const DATE_OPTIONS = [
-    { label: 'This Month', value: 'THIS_MONTH' },
-    { label: 'Last Month', value: 'LAST_MONTH' },
-    { label: 'Last 30 Days', value: 'LAST_30_DAYS' },
-    { label: 'All Time', value: 'ALL' },
-  ];
-
   const SOURCE_OPTIONS = [
     { label: 'All Sources', value: 'ALL' },
     { label: 'Source: Auto-SMS', value: 'AUTO_SMS' },
@@ -178,7 +180,9 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
       : 'All Types';
 
   const dateLabel =
-    dateFilter === 'THIS_MONTH'
+    dateFilter === 'CUSTOM' && customRange
+      ? `${new Date(customRange.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} - ${new Date(customRange.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+      : dateFilter === 'THIS_MONTH'
       ? 'This Month'
       : dateFilter === 'LAST_MONTH'
       ? 'Last Month'
@@ -237,12 +241,12 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
     <div className="flex flex-col gap-3 pb-8">
       {/* Screen-Specific Header */}
       <header className="flex h-14 items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-white">Activity</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Activity</h1>
         <button
           type="button"
           onClick={handleExportCSV}
           aria-label="Export as CSV"
-          className="flex size-10 items-center justify-center rounded-full border border-white/10 bg-zinc-900 text-zinc-300 transition-colors hover:text-white active:bg-zinc-800"
+          className="flex size-10 items-center justify-center rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-300 transition-colors hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-white shadow-sm"
         >
           <Download className="size-5" />
         </button>
@@ -252,14 +256,14 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
       <div className="flex flex-col gap-3">
         {/* Search Input */}
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
           <input
             type="text"
             inputMode="search"
             placeholder="Search merchant, category, or note..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-zinc-900 py-2.5 pl-9 pr-3 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/40"
+            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 py-2.5 pl-9 pr-3 text-sm text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/40 shadow-sm transition-colors"
           />
         </div>
 
@@ -277,17 +281,54 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
             ariaLabel="Filter by transaction type"
           />
 
-          <Dropdown
-            label={dateLabel}
-            options={DATE_OPTIONS}
-            selectedValue={dateFilter}
-            onSelect={(val) => setDateFilter(val as DateFilter)}
-            isActive={dateFilter !== 'ALL'}
-            isOpen={activeDropdown === 'date'}
-            onOpenChange={(open) => setActiveDropdown(open ? 'date' : null)}
-            align="left"
-            ariaLabel="Filter by date range"
-          />
+          {/* Common Calendar Picker Dropdown for Date Filtering */}
+          <div className="relative inline-block text-left shrink-0">
+            <button
+              type="button"
+              onClick={() => setActiveDropdown(activeDropdown === 'date' ? null : 'date')}
+              aria-label="Filter by date range"
+              className={cn(
+                'flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors border shadow-sm',
+                dateFilter !== 'ALL'
+                  ? 'border-violet-500/40 bg-violet-500/15 text-violet-600 dark:text-violet-300'
+                  : 'border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+              )}
+            >
+              <span>{dateLabel}</span>
+              <ChevronDown
+                className={cn(
+                  'size-3.5 transition-transform duration-200 text-slate-400 dark:text-zinc-400',
+                  activeDropdown === 'date' && 'rotate-180'
+                )}
+              />
+            </button>
+
+            {activeDropdown === 'date' && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setActiveDropdown(null)}
+                />
+                <div className="absolute left-0 top-full z-50 mt-1.5">
+                  <CalendarPicker
+                    mode="range"
+                    selectedRange={customRange || undefined}
+                    onSelectRange={(range) => {
+                      setCustomRange(range);
+                      setDateFilter('CUSTOM');
+                    }}
+                    onPresetSelect={(preset) => {
+                      setDateFilter(preset as DateFilter);
+                      setCustomRange(null);
+                      setActiveDropdown(null);
+                    }}
+                    activePreset={dateFilter}
+                    onClose={() => setActiveDropdown(null)}
+                  />
+                </div>
+              </>
+            )}
+          </div>
 
           <Dropdown
             label={sourceLabel}
@@ -316,20 +357,20 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
       </div>
 
       {/* Enhanced Activity Summary & Gesture Card */}
-      <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-3.5 shadow-sm backdrop-blur-md">
+      <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900/70 p-3.5 shadow-sm backdrop-blur-md">
         <div className="flex items-center justify-between">
           {/* Left: Transaction Count Metric */}
           <div className="flex items-center gap-2.5">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-500/25 bg-violet-500/15 text-violet-400">
+            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-500/25 bg-violet-500/15 text-violet-500 dark:text-violet-400">
               <Receipt className="size-4" />
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
                 Transactions
               </span>
-              <span className="text-sm font-bold text-zinc-100 tabular-nums">
+              <span className="text-sm font-bold text-slate-900 dark:text-zinc-100 tabular-nums">
                 {filtered.length}{' '}
-                <span className="text-xs font-normal text-zinc-400">
+                <span className="text-xs font-normal text-slate-500 dark:text-zinc-400">
                   {filtered.length === 1 ? 'record' : 'records'}
                 </span>
               </span>
@@ -337,18 +378,18 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
           </div>
 
           {/* Vertical Separator */}
-          <div className="h-8 w-px bg-white/10" />
+          <div className="h-8 w-px bg-slate-200 dark:bg-white/10" />
 
           {/* Right: Total Amount Metric */}
           <div className="flex items-center gap-2.5 text-right">
             <div className="flex flex-col">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
                 {displayLabel}
               </span>
               <span
                 className={cn(
                   'text-sm font-bold tabular-nums',
-                  isIncomeView ? 'text-emerald-400' : 'text-zinc-100'
+                  isIncomeView ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-zinc-100'
                 )}
               >
                 {hideBalances ? '••••••' : formatCurrency(displayTotal)}
@@ -358,8 +399,8 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
               className={cn(
                 'flex size-9 shrink-0 items-center justify-center rounded-xl border',
                 isIncomeView
-                  ? 'border-emerald-500/25 bg-emerald-500/15 text-emerald-400'
-                  : 'border-rose-500/25 bg-rose-500/15 text-rose-400'
+                  ? 'border-emerald-500/25 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                  : 'border-rose-500/25 bg-rose-500/15 text-rose-500 dark:text-rose-400'
               )}
             >
               {isIncomeView ? (
@@ -372,17 +413,17 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
         </div>
 
         {/* Integrated Gesture Hint Footer */}
-        <div className="mt-3 flex items-center justify-center gap-4 border-t border-white/5 pt-2.5 text-[11px] text-zinc-500">
+        <div className="mt-3 flex items-center justify-center gap-4 border-t border-slate-100 dark:border-white/5 pt-2.5 text-[11px] text-slate-500 dark:text-zinc-500">
           <span className="flex items-center gap-1.5">
-            <span className="flex size-4 items-center justify-center rounded bg-blue-500/20 text-blue-300">
+            <span className="flex size-4 items-center justify-center rounded bg-blue-500/15 text-blue-600 dark:text-blue-300">
               <ArrowLeftRight className="size-2.5" />
             </span>
             Swipe right to edit
           </span>
-          <span className="h-3 w-px bg-white/10" />
+          <span className="h-3 w-px bg-slate-200 dark:bg-white/10" />
           <span className="flex items-center gap-1.5">
             Swipe left to delete
-            <span className="flex size-4 items-center justify-center rounded bg-rose-500/20 text-rose-300">
+            <span className="flex size-4 items-center justify-center rounded bg-rose-500/15 text-rose-600 dark:text-rose-300">
               <ArrowLeftRight className="size-2.5" />
             </span>
           </span>
@@ -392,7 +433,7 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
       {/* Grouped Transaction Lists */}
       <div className="flex flex-col gap-5 pt-1">
         {groupedSections.length === 0 ? (
-          <div className="py-16 text-center text-sm text-zinc-500">
+          <div className="py-16 text-center text-sm text-slate-400 dark:text-zinc-500">
             No transactions match your search.
           </div>
         ) : (
@@ -404,7 +445,7 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
 
             return (
               <section key={group.title}>
-                <h2 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+                <h2 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">
                   {groupHeader}
                 </h2>
 
