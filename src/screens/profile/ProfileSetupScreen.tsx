@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Sparkles,
   TrendingUp,
@@ -78,6 +78,12 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
   onComplete,
   onSkip,
 }) => {
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
   const [name, setName] = useState(initialName);
   const [monthlyIncomeInput, setMonthlyIncomeInput] = useState('85000');
   const [primaryGoal, setPrimaryGoal] = useState<FinancialGoal>('SAVINGS_INVESTING');
@@ -106,21 +112,29 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
   };
 
   return (
-    <div className="flex flex-col min-h-dvh pb-8 pt-2">
-      {/* Header Banner */}
-      <div className="flex flex-col items-start gap-2 pt-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-500/15 px-2.5 py-1 text-[11px] font-semibold text-violet-300">
-          <Sparkles className="size-3 text-violet-400" />
-          Quick Financial Setup
-        </span>
-        <h1 className="text-2xl font-bold tracking-tight text-white">
-          Tailor Your Engine
-        </h1>
-        <p className="text-xs text-zinc-400 leading-relaxed">
-          Provide your baseline numbers so our analytics engine can calculate your real
-          savings rate, runway, and monthly budgeting health.
-        </p>
-      </div>
+    <div className="flex flex-col gap-4 pb-8">
+      {/* Screen-Specific Header */}
+      <header className="flex h-14 items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-400 border border-violet-500/20">
+            <Sparkles className="size-5" />
+          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-white">Profile Setup</h1>
+        </div>
+        <button
+          type="button"
+          onClick={onSkip}
+          className="flex h-10 items-center rounded-2xl border border-white/10 bg-zinc-900 px-3.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors"
+        >
+          Skip
+        </button>
+      </header>
+
+      {/* Header Description */}
+      <p className="text-xs text-zinc-400 leading-relaxed -mt-2">
+        Provide your baseline numbers so our analytics engine can calculate your real
+        savings rate, runway, and monthly budgeting health.
+      </p>
 
       <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-5">
         {/* 1. Name & Income Card */}

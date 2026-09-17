@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { KeyRound, Mail, ArrowLeft, ShieldAlert, ArrowRight } from 'lucide-react';
 
 interface ForgotPasswordScreenProps {
@@ -10,6 +10,12 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
   onResetSuccess,
   onNavigateLogin,
 }) => {
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
   const [email, setEmail] = useState('');
   const [isSubmitted, setIsSubmitted] = useState(false);
 

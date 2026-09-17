@@ -15,12 +15,19 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   onTabChange,
   onOpenAddModal,
 }) => {
+  const handleTabClick = (tab: NavTab) => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    onTabChange(tab);
+  };
+
   return (
     <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[390px] border-t border-white/10 bg-slate-950/90 backdrop-blur-md">
       <div className="flex items-center justify-around px-4 pb-[env(safe-area-inset-bottom)] pt-2">
         <button
           type="button"
-          onClick={() => onTabChange('home')}
+          onClick={() => handleTabClick('home')}
           className={cn(
             'flex flex-col items-center gap-1 px-3 py-1 transition-colors',
             activeTab === 'home' ? 'text-violet-400' : 'text-slate-500 hover:text-slate-300'
@@ -32,7 +39,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
         <button
           type="button"
-          onClick={() => onTabChange('activity')}
+          onClick={() => handleTabClick('activity')}
           className={cn(
             'flex flex-col items-center gap-1 px-3 py-1 transition-colors',
             activeTab === 'activity' ? 'text-violet-400' : 'text-slate-500 hover:text-slate-300'
@@ -56,7 +63,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
         <button
           type="button"
-          onClick={() => onTabChange('analytics')}
+          onClick={() => handleTabClick('analytics')}
           className={cn(
             'flex flex-col items-center gap-1 px-3 py-1 transition-colors',
             activeTab === 'analytics' ? 'text-violet-400' : 'text-slate-500 hover:text-slate-300'
@@ -68,7 +75,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
 
         <button
           type="button"
-          onClick={() => onTabChange('settings')}
+          onClick={() => handleTabClick('settings')}
           className={cn(
             'flex flex-col items-center gap-1 px-3 py-1 transition-colors',
             activeTab === 'settings' ? 'text-violet-400' : 'text-slate-500 hover:text-slate-300'

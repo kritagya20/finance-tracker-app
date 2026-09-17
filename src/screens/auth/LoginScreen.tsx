@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lock, Mail, Eye, EyeOff, ShieldCheck, Fingerprint, ArrowRight } from 'lucide-react';
 
 interface LoginScreenProps {
@@ -12,6 +12,12 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   onNavigateSignup,
   onNavigateForgotPassword,
 }) => {
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, []);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);

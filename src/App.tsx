@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useFinance } from './hooks/useFinance';
 import { TopHeader } from './components/layout/TopHeader';
 import { BottomNav, NavTab } from './components/layout/BottomNav';
@@ -12,6 +12,11 @@ import { SignupScreen } from './screens/auth/SignupScreen';
 import { ForgotPasswordScreen } from './screens/auth/ForgotPasswordScreen';
 import { ProfileSetupScreen } from './screens/profile/ProfileSetupScreen';
 import { resetMockDatabase } from './data/data';
+
+// Disable browser scroll restoration so page always starts at top
+if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
+  window.history.scrollRestoration = 'manual';
+}
 
 type AuthView = 'login' | 'signup' | 'forgot_password' | 'profile_setup';
 
@@ -44,7 +49,15 @@ export function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
 
+  // Ensure top of page is visible immediately on initial render and on every tab/view change
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [activeTab, authView, isAuthenticated, isEditingProfile]);
+
   const handleLoginSuccess = (name = 'User') => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     setIsAuthenticated(true);
     setUserName(name);
     localStorage.setItem('is_authenticated', 'true');
@@ -53,11 +66,13 @@ export function App() {
   };
 
   const handleSignupSuccess = (name = 'Alex Morgan') => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     setPendingSignupName(name);
     setAuthView('profile_setup');
   };
 
   const handleLogout = () => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     setIsAuthenticated(false);
     localStorage.removeItem('is_authenticated');
     setAuthView('login');
@@ -71,7 +86,7 @@ export function App() {
   return (
     <div className="min-h-dvh bg-slate-950 text-slate-50 selection:bg-violet-500 selection:text-white">
       {/* Mobile Frame Container */}
-      <main className="mx-auto flex min-h-dvh max-w-[390px] flex-col justify-between px-4 pb-28 pt-4">
+      <main className="mx-auto flex min-h-dvh max-w-[390px] flex-col px-4 pb-28 pt-4">
         {!isAuthenticated ? (
           /* Authentication & Onboarding Screen Flows */
           <>
