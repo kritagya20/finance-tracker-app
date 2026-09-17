@@ -23,7 +23,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   };
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[390px] border-t border-slate-200 dark:border-white/10 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md transition-colors">
+    <nav className="fixed inset-x-0 bottom-0 z-30 mx-auto max-w-[390px] border-t border-theme-border bg-theme-card/90 backdrop-blur-md transition-colors">
       <div className="flex items-center justify-around px-4 pb-[env(safe-area-inset-bottom)] pt-2">
         <button
           type="button"
@@ -32,7 +32,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             'flex flex-col items-center gap-1 px-3 py-1 transition-colors',
             activeTab === 'home'
               ? 'text-violet-600 dark:text-violet-400'
-              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              : 'text-theme-muted hover:text-theme-primary'
           )}
         >
           <House className="size-5" />
@@ -46,7 +46,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             'flex flex-col items-center gap-1 px-3 py-1 transition-colors',
             activeTab === 'activity'
               ? 'text-violet-600 dark:text-violet-400'
-              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              : 'text-theme-muted hover:text-theme-primary'
           )}
         >
           <Activity className="size-5" />
@@ -59,7 +59,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             type="button"
             onClick={onOpenAddModal}
             aria-label="Add transaction"
-            className="flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-violet-500 text-white shadow-xl shadow-violet-900/50 ring-4 ring-white dark:ring-slate-950 transition-transform active:scale-95"
+            className="flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-violet-500 text-white shadow-xl shadow-violet-900/50 ring-4 ring-theme-app transition-transform active:scale-95"
           >
             <Plus className="size-7" />
           </button>
@@ -72,7 +72,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             'flex flex-col items-center gap-1 px-3 py-1 transition-colors',
             activeTab === 'analytics'
               ? 'text-violet-600 dark:text-violet-400'
-              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              : 'text-theme-muted hover:text-theme-primary'
           )}
         >
           <ChartColumn className="size-5" />
@@ -86,7 +86,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             'flex flex-col items-center gap-1 px-3 py-1 transition-colors',
             activeTab === 'settings'
               ? 'text-violet-600 dark:text-violet-400'
-              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+              : 'text-theme-muted hover:text-theme-primary'
           )}
         >
           <Settings className="size-5" />

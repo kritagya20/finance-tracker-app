@@ -241,12 +241,12 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
     <div className="flex flex-col gap-3 pb-8">
       {/* Screen-Specific Header */}
       <header className="flex h-14 items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Activity</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-theme-primary">Activity</h1>
         <button
           type="button"
           onClick={handleExportCSV}
           aria-label="Export as CSV"
-          className="flex size-10 items-center justify-center rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 text-slate-600 dark:text-zinc-300 transition-colors hover:bg-slate-100 dark:hover:bg-zinc-800 hover:text-slate-900 dark:hover:text-white shadow-sm"
+          className="flex size-10 items-center justify-center rounded-full border border-theme-border bg-theme-card text-theme-secondary transition-colors hover:bg-theme-card-hover hover:text-theme-primary shadow-sm"
         >
           <Download className="size-5" />
         </button>
@@ -256,14 +256,14 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
       <div className="flex flex-col gap-3">
         {/* Search Input */}
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 dark:text-zinc-500" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-theme-muted" />
           <input
             type="text"
             inputMode="search"
             placeholder="Search merchant, category, or note..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 py-2.5 pl-9 pr-3 text-sm text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/40 shadow-sm transition-colors"
+            className="w-full rounded-xl border border-theme-border bg-theme-card py-2.5 pl-9 pr-3 text-sm text-theme-primary placeholder:text-theme-muted focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/40 shadow-sm transition-colors"
           />
         </div>
 
@@ -291,13 +291,13 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
                 'flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors border shadow-sm',
                 dateFilter !== 'ALL'
                   ? 'border-violet-500/40 bg-violet-500/15 text-violet-600 dark:text-violet-300'
-                  : 'border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800'
+                  : 'border-theme-border bg-theme-card text-theme-secondary hover:bg-theme-card-hover'
               )}
             >
               <span>{dateLabel}</span>
               <ChevronDown
                 className={cn(
-                  'size-3.5 transition-transform duration-200 text-slate-400 dark:text-zinc-400',
+                  'size-3.5 transition-transform duration-200 text-theme-muted',
                   activeDropdown === 'date' && 'rotate-180'
                 )}
               />
@@ -357,7 +357,7 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
       </div>
 
       {/* Enhanced Activity Summary & Gesture Card */}
-      <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900/70 p-3.5 shadow-sm backdrop-blur-md">
+      <div className="rounded-2xl border border-theme-border bg-theme-card p-3.5 shadow-sm backdrop-blur-md">
         <div className="flex items-center justify-between">
           {/* Left: Transaction Count Metric */}
           <div className="flex items-center gap-2.5">
@@ -365,12 +365,12 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
               <Receipt className="size-4" />
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-theme-muted">
                 Transactions
               </span>
-              <span className="text-sm font-bold text-slate-900 dark:text-zinc-100 tabular-nums">
+              <span className="text-sm font-bold text-theme-primary tabular-nums">
                 {filtered.length}{' '}
-                <span className="text-xs font-normal text-slate-500 dark:text-zinc-400">
+                <span className="text-xs font-normal text-theme-muted">
                   {filtered.length === 1 ? 'record' : 'records'}
                 </span>
               </span>
@@ -378,18 +378,18 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
           </div>
 
           {/* Vertical Separator */}
-          <div className="h-8 w-px bg-slate-200 dark:bg-white/10" />
+          <div className="h-8 w-px bg-theme-border" />
 
           {/* Right: Total Amount Metric */}
           <div className="flex items-center gap-2.5 text-right">
             <div className="flex flex-col">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-theme-muted">
                 {displayLabel}
               </span>
               <span
                 className={cn(
                   'text-sm font-bold tabular-nums',
-                  isIncomeView ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-zinc-100'
+                  isIncomeView ? 'text-emerald-600 dark:text-emerald-400' : 'text-theme-primary'
                 )}
               >
                 {hideBalances ? '••••••' : formatCurrency(displayTotal)}
@@ -413,14 +413,14 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
         </div>
 
         {/* Integrated Gesture Hint Footer */}
-        <div className="mt-3 flex items-center justify-center gap-4 border-t border-slate-100 dark:border-white/5 pt-2.5 text-[11px] text-slate-500 dark:text-zinc-500">
+        <div className="mt-3 flex items-center justify-center gap-4 border-t border-theme-divider pt-2.5 text-[11px] text-theme-muted">
           <span className="flex items-center gap-1.5">
             <span className="flex size-4 items-center justify-center rounded bg-blue-500/15 text-blue-600 dark:text-blue-300">
               <ArrowLeftRight className="size-2.5" />
             </span>
             Swipe right to edit
           </span>
-          <span className="h-3 w-px bg-slate-200 dark:bg-white/10" />
+          <span className="h-3 w-px bg-theme-border" />
           <span className="flex items-center gap-1.5">
             Swipe left to delete
             <span className="flex size-4 items-center justify-center rounded bg-rose-500/15 text-rose-600 dark:text-rose-300">
@@ -433,7 +433,7 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
       {/* Grouped Transaction Lists */}
       <div className="flex flex-col gap-5 pt-1">
         {groupedSections.length === 0 ? (
-          <div className="py-16 text-center text-sm text-slate-400 dark:text-zinc-500">
+          <div className="py-16 text-center text-sm text-theme-muted">
             No transactions match your search.
           </div>
         ) : (
@@ -445,7 +445,7 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
 
             return (
               <section key={group.title}>
-                <h2 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-zinc-500">
+                <h2 className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wider text-theme-muted">
                   {groupHeader}
                 </h2>
 

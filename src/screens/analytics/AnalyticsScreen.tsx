@@ -32,18 +32,18 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
     <div className="flex flex-col gap-5">
       {/* Screen-Specific Header */}
       <header className="flex h-14 items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Analytics</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-theme-primary">Analytics</h1>
         <button
           type="button"
-          className="flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 px-3.5 text-xs font-medium text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors shadow-sm"
+          className="flex h-10 items-center gap-1.5 rounded-2xl border border-theme-border bg-theme-card px-3.5 text-xs font-medium text-theme-secondary hover:bg-theme-card-hover transition-colors shadow-sm"
         >
           <span>Sep 2026</span>
-          <span className="text-[10px] text-slate-400 dark:text-zinc-500">▾</span>
+          <span className="text-[10px] text-theme-muted">▾</span>
         </button>
       </header>
 
       {/* Timeframe Segment */}
-      <div className="flex rounded-2xl bg-slate-100 dark:bg-slate-900 p-1 border border-slate-200/60 dark:border-white/5">
+      <div className="flex rounded-2xl bg-theme-card-subtle p-1 border border-theme-border">
         {(['WEEK', 'MONTH', 'YEAR'] as const).map((t) => (
           <button
             key={t}
@@ -53,7 +53,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
               'flex-1 rounded-xl py-2 text-xs font-medium transition-all capitalize',
               timeframe === t
                 ? 'bg-violet-600 text-white shadow-md'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                : 'text-theme-secondary hover:text-theme-primary'
             )}
           >
             {t.toLowerCase()}
@@ -62,9 +62,9 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
       </div>
 
       {/* Spending Velocity Card */}
-      <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-5 shadow-sm transition-colors">
-        <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Outflow</p>
-        <p className="mt-1 text-3xl font-bold text-slate-900 dark:text-white tabular-nums">
+      <div className="rounded-3xl border border-theme-border bg-theme-card p-5 shadow-sm transition-colors">
+        <p className="text-xs font-medium text-theme-muted">Total Outflow</p>
+        <p className="mt-1 text-3xl font-bold text-theme-primary tabular-nums">
           {hideBalances ? '••••••' : formatCurrency(totalExpense)}
         </p>
         <p className="mt-1 text-xs text-emerald-600 dark:text-emerald-400">
@@ -73,13 +73,13 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
 
         {/* Visual Bar Distribution */}
         <div className="mt-5 space-y-2">
-          <div className="flex h-3 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+          <div className="flex h-3 w-full overflow-hidden rounded-full bg-theme-card-subtle">
             <div className="h-full bg-amber-400" style={{ width: '45%' }} />
             <div className="h-full bg-emerald-400" style={{ width: '30%' }} />
             <div className="h-full bg-sky-400" style={{ width: '15%' }} />
             <div className="h-full bg-violet-400" style={{ width: '10%' }} />
           </div>
-          <div className="flex justify-between text-[11px] text-slate-500 dark:text-slate-400">
+          <div className="flex justify-between text-[11px] text-theme-muted">
             <span>Dining (45%)</span>
             <span>Bills (30%)</span>
             <span>Fuel (15%)</span>
@@ -89,7 +89,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
 
       {/* Category Breakdown */}
       <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-200">
+        <h2 className="text-sm font-semibold text-theme-primary">
           Category Envelopes
         </h2>
 
@@ -99,7 +99,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
             return (
               <div
                 key={cat.id}
-                className="flex items-center justify-between rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-3.5 shadow-sm transition-colors"
+                className="flex items-center justify-between rounded-2xl border border-theme-border bg-theme-card p-3.5 shadow-sm transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <span
@@ -112,12 +112,12 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                     <CategoryIcon name={cat.iconName} size={18} />
                   </span>
                   <div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{cat.name}</p>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400">{percent}% of total</p>
+                    <p className="text-sm font-semibold text-theme-primary">{cat.name}</p>
+                    <p className="text-[11px] text-theme-muted">{percent}% of total</p>
                   </div>
                 </div>
 
-                <p className="text-sm font-semibold text-slate-900 dark:text-white tabular-nums">
+                <p className="text-sm font-semibold text-theme-primary tabular-nums">
                   {hideBalances ? '••••••' : formatCurrency(cat.total)}
                 </p>
               </div>

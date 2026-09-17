@@ -236,11 +236,11 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
       className={cn(
         'relative z-10 flex items-center gap-3.5 p-3.5 transition-colors',
         shouldSwipe
-          ? 'bg-white dark:bg-zinc-900'
-          : 'rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900/85 shadow-sm backdrop-blur-sm',
+          ? 'bg-theme-card'
+          : 'rounded-2xl border border-theme-border bg-theme-card shadow-sm backdrop-blur-sm',
         shouldSwipe && isDragging ? 'cursor-grabbing' : shouldSwipe ? 'cursor-grab touch-pan-y' : '',
-        onClick && !shouldSwipe ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-zinc-850 active:bg-slate-100 dark:active:bg-zinc-800' : '',
-        offsetX !== 0 ? 'shadow-2xl shadow-black/30 dark:shadow-black/70' : '',
+        onClick && !shouldSwipe ? 'cursor-pointer hover:bg-theme-card-subtle active:bg-theme-card-hover' : '',
+        offsetX !== 0 ? 'shadow-2xl shadow-black/20 dark:shadow-black/70' : '',
         className
       )}
     >
@@ -259,18 +259,18 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
 
       {/* Title & Metadata */}
       <div className="min-w-0 flex-1 pointer-events-none">
-        <p className="truncate text-sm font-semibold tracking-tight text-slate-900 dark:text-zinc-100">
+        <p className="truncate text-sm font-semibold tracking-tight text-theme-primary">
           {tx.merchantName}
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
           {showCategory && (
-            <span className="truncate text-[11px] font-normal text-slate-500 dark:text-zinc-400">
+            <span className="truncate text-[11px] font-normal text-theme-secondary">
               {category.name}
             </span>
           )}
 
           {showCategory && (showSourceBadge || (showNotesTag && tx.notes?.includes('items'))) && (
-            <span className="size-1 shrink-0 rounded-full bg-slate-400 dark:bg-zinc-600" />
+            <span className="size-1 shrink-0 rounded-full bg-theme-muted" />
           )}
 
           {showSourceBadge && (
@@ -279,7 +279,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
                 'inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-wide',
                 tx.source === 'AUTO_SMS'
                   ? 'bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-500/25'
-                  : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-white/5'
+                  : 'bg-theme-card-subtle text-theme-secondary border border-theme-border'
               )}
             >
               {tx.source === 'AUTO_SMS' ? 'SMS' : 'MANUAL'}
@@ -287,7 +287,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
           )}
 
           {showNotesTag && tx.notes && tx.notes.includes('items') && (
-            <span className="rounded bg-slate-100 dark:bg-zinc-800 px-1 py-0.2 text-[10px] text-slate-500 dark:text-zinc-400">
+            <span className="rounded bg-theme-card-subtle px-1 py-0.2 text-[10px] text-theme-muted">
               {tx.notes}
             </span>
           )}
@@ -299,14 +299,14 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
         <p
           className={cn(
             'text-sm font-bold tracking-tight tabular-nums',
-            isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-zinc-100'
+            isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-theme-primary'
           )}
         >
           {hideBalances
             ? '••••••'
             : `${isIncome ? '+' : '-'}${formatCurrency(tx.amount)}`}
         </p>
-        <p className="mt-0.5 text-[11px] font-medium text-slate-400 dark:text-zinc-500 tabular-nums">
+        <p className="mt-0.5 text-[11px] font-medium text-theme-muted tabular-nums">
           {timestampStr}
         </p>
       </div>
@@ -320,14 +320,14 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
 
   // Swipeable container with unified master border and flush reveal actions
   return (
-    <li className="relative overflow-hidden rounded-2xl border border-white/10 bg-zinc-900 select-none shadow-sm">
+    <li className="relative overflow-hidden rounded-2xl border border-theme-border bg-theme-card select-none shadow-sm">
       {/* 1. Edit Action Background (Left - Revealed on swipe right) */}
-      <div className="absolute inset-y-0 left-0 flex w-[76px] items-center justify-center bg-blue-600/20">
+      <div className="absolute inset-y-0 left-0 flex w-[76px] items-center justify-center bg-blue-500/15">
         <button
           type="button"
           onClick={handleEditClick}
           aria-label={`Edit ${tx.merchantName}`}
-          className="flex flex-col items-center justify-center gap-1 size-12 rounded-xl text-blue-300 hover:text-blue-100 active:scale-90 transition-transform"
+          className="flex flex-col items-center justify-center gap-1 size-12 rounded-xl text-blue-600 dark:text-blue-300 hover:text-blue-700 dark:hover:text-blue-100 active:scale-90 transition-transform"
         >
           <Pencil className="size-4" />
           <span className="text-[10px] font-semibold">Edit</span>
@@ -335,12 +335,12 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
       </div>
 
       {/* 2. Delete Action Background (Right - Revealed on swipe left) */}
-      <div className="absolute inset-y-0 right-0 flex w-[76px] items-center justify-center bg-rose-600/20">
+      <div className="absolute inset-y-0 right-0 flex w-[76px] items-center justify-center bg-rose-500/15">
         <button
           type="button"
           onClick={handleDeleteClick}
           aria-label={`Delete ${tx.merchantName}`}
-          className="flex flex-col items-center justify-center gap-1 size-12 rounded-xl text-rose-300 hover:text-rose-100 active:scale-90 transition-transform"
+          className="flex flex-col items-center justify-center gap-1 size-12 rounded-xl text-rose-600 dark:text-rose-300 hover:text-rose-700 dark:hover:text-rose-100 active:scale-90 transition-transform"
         >
           <Trash2 className="size-4" />
           <span className="text-[10px] font-semibold">Delete</span>

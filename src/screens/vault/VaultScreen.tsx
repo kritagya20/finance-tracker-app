@@ -55,13 +55,13 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
           <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-500 dark:text-violet-400 border border-violet-500/20">
             <Shield className="size-5" />
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Settings</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-theme-primary">Settings</h1>
         </div>
         {onLogout && (
           <button
             type="button"
             onClick={onLogout}
-            className="flex h-10 items-center gap-1.5 rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 px-3.5 text-xs font-medium text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white active:bg-slate-100 dark:active:bg-zinc-800 transition-colors shadow-sm"
+            className="flex h-10 items-center gap-1.5 rounded-2xl border border-theme-border bg-theme-card px-3.5 text-xs font-medium text-theme-secondary hover:text-theme-primary active:bg-theme-card-subtle transition-colors shadow-sm"
           >
             <LogOut className="size-3.5 text-rose-500 dark:text-rose-400" />
             <span>Lock Vault</span>
@@ -70,7 +70,7 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
       </header>
 
       {/* 1. Appearance & Theme Selection (Default: System Device Theme) */}
-      <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-4 space-y-3 shadow-sm">
+      <div className="rounded-3xl border border-theme-border bg-theme-card p-4 space-y-3 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="flex size-8 items-center justify-center rounded-xl bg-violet-500/15 text-violet-500 dark:text-violet-400">
@@ -83,10 +83,10 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
               )}
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              <p className="text-sm font-semibold text-theme-primary">
                 Appearance & Theme
               </p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              <p className="text-[11px] text-theme-muted">
                 {themePreference === 'system'
                   ? `Device Default (${effectiveTheme === 'dark' ? 'Dark mode' : 'Light mode'} active)`
                   : themePreference === 'dark'
@@ -98,15 +98,15 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
         </div>
 
         {/* 3-Way Segmented Theme Selector */}
-        <div className="grid grid-cols-3 gap-1.5 rounded-2xl bg-slate-100 dark:bg-slate-800/80 p-1 border border-slate-200/60 dark:border-white/5">
+        <div className="grid grid-cols-3 gap-1.5 rounded-2xl bg-theme-card-subtle p-1 border border-theme-border">
           <button
             type="button"
             onClick={() => setThemePreference('system')}
             className={cn(
               'flex flex-col items-center gap-1 rounded-xl py-2 px-1 text-xs font-semibold transition-all',
               themePreference === 'system'
-                ? 'bg-white dark:bg-zinc-800 text-violet-600 dark:text-violet-400 shadow-sm border border-slate-200 dark:border-white/10'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                ? 'bg-theme-card text-violet-600 dark:text-violet-400 shadow-sm border border-theme-border'
+                : 'text-theme-secondary hover:text-theme-primary'
             )}
           >
             <Laptop className="size-4" />
@@ -120,8 +120,8 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
             className={cn(
               'flex flex-col items-center gap-1 rounded-xl py-2 px-1 text-xs font-semibold transition-all',
               themePreference === 'light'
-                ? 'bg-white dark:bg-zinc-800 text-violet-600 dark:text-violet-400 shadow-sm border border-slate-200 dark:border-white/10'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                ? 'bg-theme-card text-violet-600 dark:text-violet-400 shadow-sm border border-theme-border'
+                : 'text-theme-secondary hover:text-theme-primary'
             )}
           >
             <Sun className="size-4" />
@@ -135,8 +135,8 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
             className={cn(
               'flex flex-col items-center gap-1 rounded-xl py-2 px-1 text-xs font-semibold transition-all',
               themePreference === 'dark'
-                ? 'bg-white dark:bg-zinc-800 text-violet-600 dark:text-violet-400 shadow-sm border border-slate-200 dark:border-white/10'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                ? 'bg-theme-card text-violet-600 dark:text-violet-400 shadow-sm border border-theme-border'
+                : 'text-theme-secondary hover:text-theme-primary'
             )}
           >
             <Moon className="size-4" />
@@ -147,17 +147,17 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
       </div>
 
       {/* 2. Financial Profile & Baseline Metrics */}
-      <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-4 space-y-3.5 shadow-sm">
+      <div className="rounded-3xl border border-theme-border bg-theme-card p-4 space-y-3.5 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex size-10 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white font-bold text-sm shadow-md shadow-violet-900/30">
               {(profile?.name || 'Alex Morgan').charAt(0).toUpperCase()}
             </div>
             <div>
-              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+              <p className="text-sm font-semibold text-theme-primary">
                 {profile?.name || 'Alex Morgan'}
               </p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              <p className="text-[11px] text-theme-muted">
                 {profile?.employmentType === 'SALARIED'
                   ? 'Salaried (Fixed Income)'
                   : profile?.employmentType === 'FREELANCE_BUSINESS'
@@ -181,17 +181,17 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
 
         {/* Financial Metrics Summary */}
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3 border border-slate-100 dark:border-transparent">
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">Monthly In-Hand</p>
-            <p className="text-base font-bold text-slate-900 dark:text-white mt-0.5 tabular-nums">
+          <div className="rounded-2xl bg-theme-card-subtle p-3 border border-theme-border">
+            <p className="text-[11px] text-theme-muted">Monthly In-Hand</p>
+            <p className="text-base font-bold text-theme-primary mt-0.5 tabular-nums">
               {formatCurrency(profile?.monthlyIncome || 8500000)}
             </p>
           </div>
-          <div className="rounded-2xl bg-slate-50 dark:bg-slate-800/60 p-3 border border-slate-100 dark:border-transparent">
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">Target Savings</p>
+          <div className="rounded-2xl bg-theme-card-subtle p-3 border border-theme-border">
+            <p className="text-[11px] text-theme-muted">Target Savings</p>
             <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 mt-0.5 tabular-nums">
               {profile?.savingsTargetPercent || 20}%{' '}
-              <span className="text-[11px] font-normal text-slate-400">
+              <span className="text-[11px] font-normal text-theme-muted">
                 ({formatCurrency(monthlySavingsTarget)})
               </span>
             </p>
@@ -199,8 +199,8 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
         </div>
 
         {/* Priority Goal Badge */}
-        <div className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-slate-800/40 px-3 py-2 text-xs border border-slate-200/60 dark:border-white/5">
-          <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400">
+        <div className="flex items-center justify-between rounded-xl bg-theme-card-subtle px-3 py-2 text-xs border border-theme-border">
+          <div className="flex items-center gap-1.5 text-theme-muted">
             <Target className="size-3.5 text-violet-500 dark:text-violet-400" />
             <span>Primary Focus</span>
           </div>
@@ -229,11 +229,11 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
       </div>
 
       {/* 4. Local Storage Metrics */}
-      <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-4 space-y-3 shadow-sm">
+      <div className="rounded-3xl border border-theme-border bg-theme-card p-4 space-y-3 shadow-sm">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <Database className="size-5 text-violet-500 dark:text-violet-400" />
-            <span className="text-sm font-semibold text-slate-900 dark:text-slate-200">
+            <span className="text-sm font-semibold text-theme-primary">
               Local Storage Engine
             </span>
           </div>
@@ -243,25 +243,25 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-xs">
-          <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-2.5 border border-slate-100 dark:border-transparent">
-            <p className="text-slate-500 dark:text-slate-400">Records Stored</p>
-            <p className="text-base font-semibold text-slate-900 dark:text-white mt-0.5">4 Transactions</p>
+          <div className="rounded-xl bg-theme-card-subtle p-2.5 border border-theme-border">
+            <p className="text-theme-muted">Records Stored</p>
+            <p className="text-base font-semibold text-theme-primary mt-0.5">4 Transactions</p>
           </div>
-          <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-2.5 border border-slate-100 dark:border-transparent">
-            <p className="text-slate-500 dark:text-slate-400">Space Consumed</p>
-            <p className="text-base font-semibold text-slate-900 dark:text-white mt-0.5">14.2 KB</p>
+          <div className="rounded-xl bg-theme-card-subtle p-2.5 border border-theme-border">
+            <p className="text-theme-muted">Space Consumed</p>
+            <p className="text-base font-semibold text-theme-primary mt-0.5">14.2 KB</p>
           </div>
         </div>
       </div>
 
       {/* 5. Auto Feed Settings */}
-      <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-4 space-y-3 shadow-sm">
-        <p className="text-sm font-semibold text-slate-900 dark:text-slate-200">Auto-Feed & Ingestion</p>
+      <div className="rounded-3xl border border-theme-border bg-theme-card p-4 space-y-3 shadow-sm">
+        <p className="text-sm font-semibold text-theme-primary">Auto-Feed & Ingestion</p>
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-xs font-medium text-slate-900 dark:text-slate-200">SMS / Bank Detection</p>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+            <p className="text-xs font-medium text-theme-primary">SMS / Bank Detection</p>
+            <p className="text-[11px] text-theme-muted">
               Parse financial SMS and statements locally
             </p>
           </div>
@@ -274,29 +274,29 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
       </div>
 
       {/* 6. Backup & Portability */}
-      <div className="rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-4 space-y-2 shadow-sm">
-        <p className="text-sm font-semibold text-slate-900 dark:text-slate-200">Backup & Export</p>
+      <div className="rounded-3xl border border-theme-border bg-theme-card p-4 space-y-2 shadow-sm">
+        <p className="text-sm font-semibold text-theme-primary">Backup & Export</p>
 
         <button
           type="button"
-          className="flex w-full items-center justify-between rounded-xl bg-slate-50 dark:bg-slate-800/60 px-3.5 py-2.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="flex w-full items-center justify-between rounded-xl bg-theme-card-subtle px-3.5 py-2.5 text-xs font-medium text-theme-secondary hover:bg-theme-card-hover hover:text-theme-primary transition-colors border border-theme-border"
         >
           <span className="flex items-center gap-2">
             <Download className="size-4 text-violet-500 dark:text-violet-400" />
             Export Encrypted Vault (.vault)
           </span>
-          <span className="text-[10px] text-slate-400">AES-256</span>
+          <span className="text-[10px] text-theme-muted">AES-256</span>
         </button>
 
         <button
           type="button"
-          className="flex w-full items-center justify-between rounded-xl bg-slate-50 dark:bg-slate-800/60 px-3.5 py-2.5 text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          className="flex w-full items-center justify-between rounded-xl bg-theme-card-subtle px-3.5 py-2.5 text-xs font-medium text-theme-secondary hover:bg-theme-card-hover hover:text-theme-primary transition-colors border border-theme-border"
         >
           <span className="flex items-center gap-2">
             <Upload className="size-4 text-emerald-500 dark:text-emerald-400" />
             Restore from Backup File
           </span>
-          <span className="text-[10px] text-slate-400">Import</span>
+          <span className="text-[10px] text-theme-muted">Import</span>
         </button>
       </div>
 

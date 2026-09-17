@@ -18,12 +18,12 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
 
   return (
     <div className="rounded-3xl bg-gradient-to-br from-violet-600/60 via-violet-500/20 to-emerald-500/30 p-px shadow-xl shadow-violet-950/20 dark:shadow-violet-950/40">
-      <div className="rounded-[calc(1.5rem-1px)] bg-white dark:bg-slate-900 p-5 transition-colors">
-        <p className="text-xs font-medium uppercase tracking-wide text-slate-500 dark:text-slate-400">
+      <div className="rounded-[calc(1.5rem-1px)] bg-theme-card p-5 transition-colors">
+        <p className="text-xs font-medium uppercase tracking-wide text-theme-muted">
           Total Balance
         </p>
 
-        <p className="mt-1.5 text-4xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">
+        <p className="mt-1.5 text-4xl font-bold tracking-tight text-theme-primary tabular-nums">
           {hideBalances ? '••••••••' : formatCurrency(total)}
         </p>
 

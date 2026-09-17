@@ -166,16 +166,16 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
   return (
     <div
       className={cn(
-        'w-full max-w-[340px] rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 p-4 shadow-xl text-slate-900 dark:text-white select-none',
+        'w-full max-w-[340px] rounded-3xl border border-theme-border bg-theme-elevated p-4 shadow-xl text-theme-primary select-none',
         className
       )}
     >
       {/* Calendar Header: Month/Year navigation */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-white/5">
+      <div className="flex items-center justify-between pb-3 border-b border-theme-divider">
         <div className="flex items-center gap-2">
           <CalendarIcon className="size-4 text-violet-500" />
-          <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-            {monthName} <span className="text-slate-500 dark:text-zinc-400 font-normal">{viewYear}</span>
+          <h3 className="text-sm font-bold text-theme-primary">
+            {monthName} <span className="text-theme-muted font-normal">{viewYear}</span>
           </h3>
         </div>
 
@@ -192,7 +192,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
           <button
             type="button"
             onClick={handlePrevMonth}
-            className="flex size-7 items-center justify-center rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-700 active:scale-95 transition-all"
+            className="flex size-7 items-center justify-center rounded-lg border border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover active:scale-95 transition-all"
             aria-label="Previous month"
           >
             <ChevronLeft className="size-4" />
@@ -200,7 +200,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
           <button
             type="button"
             onClick={handleNextMonth}
-            className="flex size-7 items-center justify-center rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800 text-slate-600 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-700 active:scale-95 transition-all"
+            className="flex size-7 items-center justify-center rounded-lg border border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover active:scale-95 transition-all"
             aria-label="Next month"
           >
             <ChevronRight className="size-4" />
@@ -209,7 +209,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
       </div>
 
       {/* Weekday Header */}
-      <div className="grid grid-cols-7 pt-3 pb-1 text-center text-[11px] font-semibold text-slate-400 dark:text-zinc-500">
+      <div className="grid grid-cols-7 pt-3 pb-1 text-center text-[11px] font-semibold text-theme-muted">
         {WEEKDAYS.map((wd, i) => (
           <div key={i} className="py-1">
             {wd}
@@ -225,7 +225,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
           return (
             <div
               key={`prev-${i}`}
-              className="flex size-8 mx-auto items-center justify-center text-[11px] text-slate-300 dark:text-zinc-600"
+              className="flex size-8 mx-auto items-center justify-center text-[11px] text-theme-muted/40"
             >
               {prevDayNum}
             </div>
@@ -259,7 +259,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
               className={cn(
                 'relative flex size-8 mx-auto items-center justify-center rounded-full text-xs font-medium transition-all active:scale-95',
                 // Default Day
-                'text-slate-800 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-800',
+                'text-theme-primary hover:bg-theme-card-hover',
                 // Today indicator
                 isToday && !isSingleSelected && !isRangeStart && !isRangeEnd && 'border border-violet-500 text-violet-600 dark:text-violet-400 font-bold',
                 // Single mode selected
@@ -280,8 +280,8 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
 
       {/* Quick Presets Strip */}
       {showPresets && (
-        <div className="mt-4 pt-3 border-t border-slate-100 dark:border-white/5 space-y-1.5">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
+        <div className="mt-4 pt-3 border-t border-theme-divider space-y-1.5">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-theme-muted">
             Quick Presets
           </span>
           <div className="flex flex-wrap gap-1.5">
@@ -293,7 +293,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
                     onSelectDate?.(todayYMD);
                     onClose?.();
                   }}
-                  className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800 px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-500/20 dark:hover:text-violet-300 transition-colors"
+                  className="rounded-lg border border-theme-border bg-theme-card-subtle px-2.5 py-1 text-[11px] font-medium text-theme-secondary hover:bg-theme-card-hover hover:text-theme-primary transition-colors"
                 >
                   Today
                 </button>
@@ -304,7 +304,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
                     onSelectDate?.(formatDateToYMD(y));
                     onClose?.();
                   }}
-                  className="rounded-lg border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800 px-2.5 py-1 text-[11px] font-medium text-slate-700 dark:text-zinc-300 hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-500/20 dark:hover:text-violet-300 transition-colors"
+                  className="rounded-lg border border-theme-border bg-theme-card-subtle px-2.5 py-1 text-[11px] font-medium text-theme-secondary hover:bg-theme-card-hover hover:text-theme-primary transition-colors"
                 >
                   Yesterday
                 </button>
@@ -318,7 +318,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
                     'rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
                     activePreset === 'THIS_MONTH'
                       ? 'border-violet-500 bg-violet-600 text-white'
-                      : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-700'
+                      : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
                   )}
                 >
                   This Month
@@ -330,7 +330,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
                     'rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
                     activePreset === 'LAST_MONTH'
                       ? 'border-violet-500 bg-violet-600 text-white'
-                      : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-700'
+                      : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
                   )}
                 >
                   Last Month
@@ -342,7 +342,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
                     'rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
                     activePreset === 'LAST_30_DAYS'
                       ? 'border-violet-500 bg-violet-600 text-white'
-                      : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-700'
+                      : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
                   )}
                 >
                   Last 30 Days
@@ -354,7 +354,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
                     'rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
                     activePreset === 'ALL'
                       ? 'border-violet-500 bg-violet-600 text-white'
-                      : 'border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-700'
+                      : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
                   )}
                 >
                   All Time

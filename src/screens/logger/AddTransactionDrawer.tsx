@@ -211,7 +211,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
             : 'translateY(100%)',
           transition: isDragging ? 'none' : 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
-        className="relative z-10 flex w-full max-h-[92dvh] flex-col rounded-t-3xl border-t border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 shadow-2xl transition-colors"
+        className="relative z-10 flex w-full max-h-[92dvh] flex-col rounded-t-3xl border-t border-theme-border bg-theme-elevated shadow-2xl transition-colors"
       >
         {/* Drag Handle & Header */}
         <div
@@ -221,18 +221,18 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
           onPointerCancel={handlePointerUp}
           className="relative shrink-0 px-4 pt-3 pb-2 cursor-grab active:cursor-grabbing touch-none select-none"
         >
-          <div className="mx-auto h-1.5 w-10 rounded-full bg-slate-300 dark:bg-zinc-700/80" />
+          <div className="mx-auto h-1.5 w-10 rounded-full bg-theme-muted/40" />
           <div className="mt-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="flex size-7 items-center justify-center rounded-lg bg-violet-500/15 text-violet-600 dark:text-violet-400">
                 <Plus className="size-4" />
               </div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">Add Transaction</h2>
+              <h2 className="text-base font-bold text-theme-primary">Add Transaction</h2>
             </div>
             <button
               type="button"
               onClick={onClose}
-              className="flex size-8 items-center justify-center rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+              className="flex size-8 items-center justify-center rounded-full bg-theme-card-subtle text-theme-secondary hover:text-theme-primary transition-colors"
             >
               <X className="size-4" />
             </button>
@@ -241,7 +241,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
 
         <div className="flex-1 overflow-y-auto px-4 pt-1 no-scrollbar space-y-4">
           {/* Segmented Type Control */}
-          <div className="flex gap-1.5 rounded-2xl bg-slate-100 dark:bg-zinc-850 p-1.5 border border-slate-200/60 dark:border-white/5">
+          <div className="flex gap-1.5 rounded-2xl bg-theme-card-subtle p-1.5 border border-theme-border">
             <button
               type="button"
               onClick={() => setType('EXPENSE')}
@@ -249,7 +249,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                 'flex-1 rounded-xl py-2 text-xs font-semibold transition-all',
                 type === 'EXPENSE'
                   ? 'bg-rose-500 text-white shadow-md shadow-rose-950/40'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                  : 'text-theme-secondary hover:text-theme-primary'
               )}
             >
               Expense
@@ -261,7 +261,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                 'flex-1 rounded-xl py-2 text-xs font-semibold transition-all',
                 type === 'INCOME'
                   ? 'bg-emerald-500 text-white shadow-md shadow-emerald-950/40'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                  : 'text-theme-secondary hover:text-theme-primary'
               )}
             >
               Income
@@ -273,7 +273,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                 'flex-1 rounded-xl py-2 text-xs font-semibold transition-all',
                 type === 'TRANSFER'
                   ? 'bg-blue-500 text-white shadow-md shadow-blue-950/40'
-                  : 'text-slate-600 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-zinc-200'
+                  : 'text-theme-secondary hover:text-theme-primary'
               )}
             >
               Transfer
@@ -282,12 +282,12 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
 
           {/* Amount Display */}
           <div className="flex flex-col items-center py-2">
-            <span className="text-[11px] font-medium uppercase tracking-widest text-slate-400 dark:text-zinc-500">
+            <span className="text-[11px] font-medium uppercase tracking-widest text-theme-muted">
               Amount
             </span>
             <div className="mt-0.5 flex items-baseline gap-1">
-              <span className="text-2xl font-semibold text-slate-400 dark:text-zinc-500">₹</span>
-              <span className="text-4xl font-bold tracking-tight text-slate-900 dark:text-white tabular-nums">
+              <span className="text-2xl font-semibold text-theme-muted">₹</span>
+              <span className="text-4xl font-bold tracking-tight text-theme-primary tabular-nums">
                 {amountStr}
               </span>
               <span className="ml-0.5 h-8 w-0.5 animate-pulse rounded-full bg-violet-500" />
@@ -296,7 +296,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
 
           {/* Horizontal Category Carousel */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600 dark:text-zinc-400">Category</label>
+            <label className="text-xs font-medium text-theme-secondary">Category</label>
             <div className="-mx-4 overflow-x-auto px-4 pb-1 no-scrollbar">
               <div className="flex gap-2.5">
                 {categories.map((cat) => {
@@ -315,7 +315,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                           cat.textClass,
                           isSelected
                             ? 'border-violet-500 ring-2 ring-violet-500/40 scale-105'
-                            : 'border-slate-200 dark:border-white/5 opacity-75 hover:opacity-100'
+                            : 'border-theme-border opacity-75 hover:opacity-100'
                         )}
                       >
                         <CategoryIcon name={cat.iconName} size={20} />
@@ -323,7 +323,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                       <span
                         className={cn(
                           'text-center text-[10px] leading-tight truncate w-full',
-                          isSelected ? 'font-semibold text-slate-900 dark:text-white' : 'text-slate-500 dark:text-zinc-400'
+                          isSelected ? 'font-semibold text-theme-primary' : 'text-theme-muted'
                         )}
                       >
                         {cat.name}
@@ -346,10 +346,10 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                   const nextIdx = (currIdx + 1) % accountList.length;
                   setSelectedAccountId(accountList[nextIdx].id);
                 }}
-                className="flex flex-1 items-center justify-between gap-1 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800/80 px-3.5 py-2.5 text-left text-xs font-medium text-slate-800 dark:text-zinc-200 active:bg-slate-100 dark:active:bg-zinc-750 transition-colors"
+                className="flex flex-1 items-center justify-between gap-1 rounded-xl border border-theme-border bg-theme-input px-3.5 py-2.5 text-left text-xs font-medium text-theme-primary active:bg-theme-card-subtle transition-colors"
               >
                 <span className="truncate">{currentAccount.name} ····{('maskNumber' in currentAccount ? currentAccount.maskNumber : '')}</span>
-                <ArrowUpDown className="size-3.5 shrink-0 text-slate-400 dark:text-zinc-500" />
+                <ArrowUpDown className="size-3.5 shrink-0 text-theme-muted" />
               </button>
 
               {/* Interactive Calendar Picker Date Button */}
@@ -357,7 +357,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsCalendarOpen(!isCalendarOpen)}
-                  className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800/80 px-3 py-2.5 text-xs font-medium text-slate-700 dark:text-zinc-200 hover:bg-slate-100 dark:hover:bg-zinc-750 transition-colors"
+                  className="flex items-center gap-1.5 rounded-xl border border-theme-border bg-theme-input px-3 py-2.5 text-xs font-medium text-theme-primary hover:bg-theme-card-subtle transition-colors"
                 >
                   <Calendar className="size-3.5 text-violet-500" />
                   <span>{dateDisplayLabel}</span>
@@ -391,16 +391,16 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
               placeholder="Merchant / Note (e.g. Blue Tokai Coffee)..."
               value={merchantNote}
               onChange={(e) => setMerchantNote(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800/80 px-3.5 py-2.5 text-sm text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-zinc-500 focus:border-violet-500/50 focus:outline-none"
+              className="w-full rounded-xl border border-theme-border bg-theme-input px-3.5 py-2.5 text-sm text-theme-primary placeholder:text-theme-muted focus:border-violet-500/50 focus:outline-none"
             />
 
             {/* Split Switch */}
-            <div className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-800/80 px-3.5 py-2.5">
+            <div className="flex items-center justify-between rounded-xl border border-theme-border bg-theme-input px-3.5 py-2.5">
               <div className="flex flex-col">
-                <span className="text-xs font-semibold text-slate-800 dark:text-zinc-100">
+                <span className="text-xs font-semibold text-theme-primary">
                   Split Transaction
                 </span>
-                <span className="text-[10px] text-slate-500 dark:text-zinc-400">
+                <span className="text-[10px] text-theme-muted">
                   Split across multiple categories
                 </span>
               </div>
@@ -417,7 +417,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                   <Split className="size-3.5" />
                   <span>Split Breakdown</span>
                 </div>
-                <p className="text-[11px] text-slate-600 dark:text-zinc-300">
+                <p className="text-[11px] text-theme-secondary">
                   This transaction will be flagged for itemized split categorization in Activity.
                 </p>
               </div>
@@ -433,10 +433,10 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                     key={key}
                     type="button"
                     onClick={() => handleKeypadPress(key)}
-                    className="flex h-12 items-center justify-center rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-zinc-800/80 dark:hover:bg-zinc-750 dark:text-white text-base font-semibold active:scale-95 transition-all shadow-sm"
+                    className="flex h-12 items-center justify-center rounded-2xl bg-theme-card-subtle hover:bg-theme-card-hover text-theme-primary text-base font-semibold active:scale-95 transition-all shadow-sm"
                   >
                     {key === 'BACKSPACE' ? (
-                      <Delete className="size-5 text-slate-500 dark:text-zinc-400" />
+                      <Delete className="size-5 text-theme-secondary" />
                     ) : (
                       key
                     )}

@@ -154,12 +154,12 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
             type="button"
             onClick={onBack}
             aria-label="Go back"
-            className="flex size-10 items-center justify-center rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-95"
+            className="flex size-10 items-center justify-center rounded-full border border-theme-border bg-theme-card text-theme-secondary hover:bg-theme-card-hover hover:text-theme-primary transition-colors active:scale-95 shadow-sm"
           >
             <ArrowLeft className="size-5" />
           </button>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-2xl font-bold tracking-tight text-theme-primary">
               Notifications
             </h1>
             {unreadCount > 0 && (
@@ -176,7 +176,7 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
               type="button"
               onClick={onMarkAllAsRead}
               title="Mark all as read"
-              className="flex size-10 items-center justify-center rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+              className="flex size-10 items-center justify-center rounded-full border border-theme-border bg-theme-card text-theme-secondary hover:text-theme-primary transition-colors shadow-sm"
             >
               <CheckCheck className="size-4 text-emerald-500" />
             </button>
@@ -191,7 +191,7 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
                 }
               }}
               title="Clear all"
-              className="flex size-10 items-center justify-center rounded-full border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-400 hover:text-rose-500 transition-colors"
+              className="flex size-10 items-center justify-center rounded-full border border-theme-border bg-theme-card text-theme-secondary hover:text-rose-500 transition-colors shadow-sm"
             >
               <Trash2 className="size-4 text-rose-400" />
             </button>
@@ -207,10 +207,10 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
               <MessageSquareCode className="size-4" />
             </span>
             <div>
-              <p className="text-xs font-semibold text-slate-900 dark:text-violet-200">
+              <p className="text-xs font-semibold text-theme-primary">
                 SMS Ingestion Auto-Trigger
               </p>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400">
+              <p className="text-[11px] text-theme-muted">
                 Simulate bank alerts to test auto-capture
               </p>
             </div>
@@ -233,7 +233,7 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
         {/* Dropdown presets */}
         {isSimulateOpen && (
           <div className="mt-3 pt-3 border-t border-violet-500/15 space-y-1.5">
-            <p className="text-[11px] font-medium text-slate-500 dark:text-zinc-400">
+            <p className="text-[11px] font-medium text-theme-muted">
               Tap a bank SMS to trigger instant parsing & notification:
             </p>
             <div className="grid grid-cols-1 gap-1.5">
@@ -243,10 +243,10 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
                   type="button"
                   disabled={isSimulating}
                   onClick={() => handleSimulateTemplate(tmpl.smsText)}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 dark:border-white/5 bg-white/70 dark:bg-slate-900/80 px-3 py-2 text-left text-xs text-slate-800 dark:text-zinc-200 hover:bg-violet-50 dark:hover:bg-slate-800 active:scale-[0.99] transition-colors"
+                  className="flex items-center justify-between rounded-xl border border-theme-border bg-theme-card px-3 py-2 text-left text-xs text-theme-primary hover:bg-theme-card-hover active:scale-[0.99] transition-colors"
                 >
                   <span className="font-medium truncate">{tmpl.label}</span>
-                  <span className="text-[10px] text-violet-500 dark:text-violet-400 font-semibold shrink-0 ml-2">
+                  <span className="text-[10px] text-violet-600 dark:text-violet-400 font-semibold shrink-0 ml-2">
                     Ingest SMS →
                   </span>
                 </button>
@@ -262,10 +262,10 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
           type="button"
           onClick={() => setActiveTab('ALL')}
           className={cn(
-            'flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-all',
+            'flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-all shadow-sm',
             activeTab === 'ALL'
-              ? 'border-violet-500/40 bg-violet-600 text-white shadow-sm'
-              : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              ? 'border-violet-500/40 bg-violet-600 text-white'
+              : 'border-theme-border bg-theme-card text-theme-secondary hover:bg-theme-card-hover'
           )}
         >
           All
@@ -276,10 +276,10 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
           type="button"
           onClick={() => setActiveTab('SMS_CAPTURED')}
           className={cn(
-            'flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-all',
+            'flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-all shadow-sm',
             activeTab === 'SMS_CAPTURED'
-              ? 'border-violet-500/40 bg-violet-600 text-white shadow-sm'
-              : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              ? 'border-violet-500/40 bg-violet-600 text-white'
+              : 'border-theme-border bg-theme-card text-theme-secondary hover:bg-theme-card-hover'
           )}
         >
           SMS Captured
@@ -289,10 +289,10 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
           type="button"
           onClick={() => setActiveTab('ALERTS')}
           className={cn(
-            'flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-all',
+            'flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-all shadow-sm',
             activeTab === 'ALERTS'
-              ? 'border-violet-500/40 bg-violet-600 text-white shadow-sm'
-              : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              ? 'border-violet-500/40 bg-violet-600 text-white'
+              : 'border-theme-border bg-theme-card text-theme-secondary hover:bg-theme-card-hover'
           )}
         >
           Alerts
@@ -302,10 +302,10 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
           type="button"
           onClick={() => setActiveTab('SYSTEM')}
           className={cn(
-            'flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-all',
+            'flex shrink-0 items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-medium transition-all shadow-sm',
             activeTab === 'SYSTEM'
-              ? 'border-violet-500/40 bg-violet-600 text-white shadow-sm'
-              : 'border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 text-slate-600 dark:text-zinc-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+              ? 'border-violet-500/40 bg-violet-600 text-white'
+              : 'border-theme-border bg-theme-card text-theme-secondary hover:bg-theme-card-hover'
           )}
         >
           System
@@ -315,14 +315,14 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
       {/* 4. Notification Items List */}
       <div className="space-y-2.5">
         {filteredNotifications.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 py-12 px-4 text-center">
-            <div className="flex size-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-zinc-500 mb-3">
+          <div className="flex flex-col items-center justify-center rounded-3xl border border-theme-border bg-theme-card py-12 px-4 text-center">
+            <div className="flex size-14 items-center justify-center rounded-full bg-theme-card-subtle text-theme-muted mb-3">
               <BellOff className="size-7" />
             </div>
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white">
+            <h3 className="text-base font-semibold text-theme-primary">
               All caught up!
             </h3>
-            <p className="mt-1 max-w-[240px] text-xs text-slate-500 dark:text-zinc-400 leading-relaxed">
+            <p className="mt-1 max-w-[240px] text-xs text-theme-muted leading-relaxed">
               No notifications in this filter. As SMS data is ingested, alerts will drop here automatically.
             </p>
           </div>
@@ -338,8 +338,8 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
                 className={cn(
                   'group relative rounded-2xl border transition-all p-3.5',
                   item.isRead
-                    ? 'border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 opacity-85'
-                    : 'border-violet-500/40 bg-white dark:bg-zinc-900 ring-1 ring-violet-500/30 shadow-sm shadow-violet-950/20'
+                    ? 'border-theme-border bg-theme-card opacity-85'
+                    : 'border-violet-500/40 bg-theme-card ring-1 ring-violet-500/30 shadow-sm shadow-violet-950/20'
                 )}
               >
                 <div className="flex items-start gap-3">
@@ -356,27 +356,27 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
                   {/* Body Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-1">
-                      <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                      <h4 className="text-xs font-bold text-theme-primary truncate">
                         {item.title}
                       </h4>
-                      <span className="text-[10px] text-slate-400 dark:text-zinc-500 shrink-0 tabular-nums">
+                      <span className="text-[10px] text-theme-muted shrink-0 tabular-nums">
                         {formatRelativeTime(item.timestamp)}
                       </span>
                     </div>
 
-                    <p className="mt-0.5 text-xs text-slate-600 dark:text-zinc-300 leading-snug">
+                    <p className="mt-0.5 text-xs text-theme-secondary leading-snug">
                       {item.message}
                     </p>
 
                     {/* Metadata tags */}
                     <div className="mt-2 flex flex-wrap items-center gap-1.5">
                       {item.accountMask && (
-                        <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:text-zinc-400">
+                        <span className="rounded-md bg-theme-card-subtle px-1.5 py-0.5 text-[10px] font-medium text-theme-secondary">
                           A/C ····{item.accountMask}
                         </span>
                       )}
                       {item.categoryName && (
-                        <span className="rounded-md bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 text-[10px] font-medium text-slate-600 dark:text-zinc-400">
+                        <span className="rounded-md bg-theme-card-subtle px-1.5 py-0.5 text-[10px] font-medium text-theme-secondary">
                           {item.categoryName}
                         </span>
                       )}
@@ -401,13 +401,13 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
 
                     {/* Collapsible raw SMS snippet */}
                     {isExpanded && item.rawSmsText && (
-                      <div className="mt-2.5 rounded-xl border border-slate-200 dark:border-white/5 bg-slate-50 dark:bg-black/40 p-2 text-[11px] font-mono text-slate-700 dark:text-zinc-400 break-words leading-relaxed select-text">
+                      <div className="mt-2.5 rounded-xl border border-theme-border bg-theme-card-subtle p-2 text-[11px] font-mono text-theme-secondary break-words leading-relaxed select-text">
                         {item.rawSmsText}
                       </div>
                     )}
 
                     {/* Action buttons */}
-                    <div className="mt-2.5 flex items-center justify-between pt-1 border-t border-slate-100 dark:border-white/5">
+                    <div className="mt-2.5 flex items-center justify-between pt-1 border-t border-theme-divider">
                       {onNavigateToActivity ? (
                         <button
                           type="button"
@@ -432,7 +432,7 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
                           onDeleteNotification(item.id);
                         }}
                         title="Dismiss"
-                        className="rounded-lg p-1 text-slate-400 hover:text-rose-500 transition-colors"
+                        className="rounded-lg p-1 text-theme-muted hover:text-rose-500 transition-colors"
                       >
                         <X className="size-3.5" />
                       </button>
@@ -442,7 +442,7 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
 
                 {/* Unread dot */}
                 {!item.isRead && (
-                  <span className="absolute top-3 right-3 size-2 rounded-full bg-violet-500 ring-2 ring-white dark:ring-zinc-900" />
+                  <span className="absolute top-3 right-3 size-2 rounded-full bg-violet-500 ring-2 ring-theme-card" />
                 )}
               </div>
             );

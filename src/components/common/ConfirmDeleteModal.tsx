@@ -37,13 +37,13 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="delete-dialog-title"
-        className="relative z-10 w-full rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200 transition-colors"
+        className="relative z-10 w-full rounded-3xl border border-theme-border bg-theme-elevated p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200 transition-colors"
       >
         {/* Close Button */}
         <button
           type="button"
           onClick={onCancel}
-          className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition-colors"
+          className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-full bg-theme-card-subtle text-theme-secondary hover:text-theme-primary transition-colors"
         >
           <X className="size-4" />
         </button>
@@ -56,17 +56,17 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
 
           <h3
             id="delete-dialog-title"
-            className="mt-3.5 text-lg font-bold tracking-tight text-slate-900 dark:text-white"
+            className="mt-3.5 text-lg font-bold tracking-tight text-theme-primary"
           >
             Delete Transaction?
           </h3>
-          <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400 max-w-[260px] leading-relaxed">
+          <p className="mt-1 text-xs text-theme-muted max-w-[260px] leading-relaxed">
             This transaction will be permanently removed and balances will be recalculated.
           </p>
         </div>
 
         {/* Transaction Summary Card */}
-        <div className="mt-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-850 p-3.5 flex items-center justify-between">
+        <div className="mt-4 rounded-2xl border border-theme-border bg-theme-card-subtle p-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <span
               className={cn(
@@ -78,10 +78,10 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
               <CategoryIcon name={category.iconName} size={18} />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-xs font-semibold text-slate-900 dark:text-zinc-100">
+              <p className="truncate text-xs font-semibold text-theme-primary">
                 {transaction.merchantName}
               </p>
-              <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
+              <p className="text-[11px] text-theme-muted truncate">
                 {category.name}
               </p>
             </div>
@@ -90,7 +90,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
           <span
             className={cn(
               'text-sm font-bold tabular-nums shrink-0 ml-2',
-              isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-zinc-100'
+              isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-theme-primary'
             )}
           >
             {isIncome ? '+' : '-'}{formatCurrency(transaction.amount)}
@@ -102,7 +102,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-zinc-800 py-3 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-750 transition-colors"
+            className="rounded-2xl border border-theme-border bg-theme-card-subtle py-3 text-xs font-semibold text-theme-secondary hover:bg-theme-card-hover transition-colors"
           >
             Cancel
           </button>

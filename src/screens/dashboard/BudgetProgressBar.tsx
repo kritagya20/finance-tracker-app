@@ -15,19 +15,19 @@ export const BudgetProgressBar: React.FC<BudgetProgressBarProps> = ({
   const remaining = summary?.budgetRemaining ?? 1785000;
 
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-slate-900 p-4 shadow-sm transition-colors">
+    <div className="rounded-2xl border border-theme-border bg-theme-card p-4 shadow-sm transition-colors">
       <div className="flex items-end justify-between">
         <div>
-          <p className="text-xs text-slate-500 dark:text-slate-400">Monthly Budget</p>
-          <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">{percent}% used</p>
+          <p className="text-xs text-theme-muted">Monthly Budget</p>
+          <p className="text-sm font-semibold text-theme-primary">{percent}% used</p>
         </div>
-        <p className="text-xs font-medium text-slate-600 dark:text-slate-300 tabular-nums">
+        <p className="text-xs font-medium text-theme-secondary tabular-nums">
           {hideBalances ? '•••• left' : `${formatCurrency(remaining, 'INR', false)} left`}
         </p>
       </div>
 
       <div
-        className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800"
+        className="mt-3 h-2 w-full overflow-hidden rounded-full bg-theme-card-subtle"
         role="progressbar"
         aria-valuenow={percent}
         aria-valuemin={0}
