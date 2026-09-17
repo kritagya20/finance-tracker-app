@@ -234,10 +234,13 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
       onPointerCancel={shouldSwipe ? handlePointerUp : undefined}
       onClick={handleCardClick}
       className={cn(
-        'relative flex items-center gap-3.5 rounded-2xl border border-white/[0.08] bg-zinc-900/85 p-3.5 shadow-sm backdrop-blur-sm transition-colors',
+        'relative z-10 flex items-center gap-3.5 p-3.5 transition-colors',
+        shouldSwipe
+          ? 'bg-zinc-900'
+          : 'rounded-2xl border border-white/10 bg-zinc-900/85 shadow-sm backdrop-blur-sm',
         shouldSwipe && isDragging ? 'cursor-grabbing' : shouldSwipe ? 'cursor-grab touch-pan-y' : '',
         onClick && !shouldSwipe ? 'cursor-pointer hover:bg-zinc-850 active:bg-zinc-800' : '',
-        offsetX !== 0 ? 'shadow-xl shadow-black/50' : '',
+        offsetX !== 0 ? 'shadow-2xl shadow-black/70' : '',
         className
       )}
     >
@@ -318,32 +321,32 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
     return <li className="select-none">{cardContent}</li>;
   }
 
-  // Swipeable container with reveal actions
+  // Swipeable container with unified master border and flush reveal actions
   return (
-    <li className="relative overflow-hidden rounded-2xl select-none">
+    <li className="relative overflow-hidden rounded-2xl border border-white/10 bg-zinc-900 select-none shadow-sm">
       {/* 1. Edit Action Background (Left - Revealed on swipe right) */}
-      <div className="absolute inset-y-0 left-0 flex w-[76px] items-center justify-center bg-blue-600/25 border-r border-blue-500/30">
+      <div className="absolute inset-y-0 left-0 flex w-[76px] items-center justify-center bg-blue-600/20">
         <button
           type="button"
           onClick={handleEditClick}
           aria-label={`Edit ${tx.merchantName}`}
-          className="flex flex-col items-center gap-1 text-blue-300 hover:text-blue-200 active:scale-95 transition-transform"
+          className="flex flex-col items-center justify-center gap-1 size-12 rounded-xl text-blue-300 hover:text-blue-100 active:scale-90 transition-transform"
         >
-          <Pencil className="size-5" />
-          <span className="text-[10px] font-medium">Edit</span>
+          <Pencil className="size-4" />
+          <span className="text-[10px] font-semibold">Edit</span>
         </button>
       </div>
 
       {/* 2. Delete Action Background (Right - Revealed on swipe left) */}
-      <div className="absolute inset-y-0 right-0 flex w-[76px] items-center justify-center bg-rose-600/25 border-l border-rose-500/30">
+      <div className="absolute inset-y-0 right-0 flex w-[76px] items-center justify-center bg-rose-600/20">
         <button
           type="button"
           onClick={handleDeleteClick}
           aria-label={`Delete ${tx.merchantName}`}
-          className="flex flex-col items-center gap-1 text-rose-300 hover:text-rose-200 active:scale-95 transition-transform"
+          className="flex flex-col items-center justify-center gap-1 size-12 rounded-xl text-rose-300 hover:text-rose-100 active:scale-90 transition-transform"
         >
-          <Trash2 className="size-5" />
-          <span className="text-[10px] font-medium">Delete</span>
+          <Trash2 className="size-4" />
+          <span className="text-[10px] font-semibold">Delete</span>
         </button>
       </div>
 
