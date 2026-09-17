@@ -3,6 +3,7 @@ import { X, Delete, ChevronDown } from 'lucide-react';
 import { Category, TransactionType } from '../../domain/models/types';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
 import { parseKeypadToPaise } from '../../domain/engine/moneyUtils';
+import { Switch } from '../../components/ui/Switch';
 import { cn } from '../../lib/utils';
 
 interface AddTransactionDrawerProps {
@@ -260,23 +261,11 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                   Split across multiple categories
                 </span>
               </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={isSplit}
-                onClick={() => setIsSplit(!isSplit)}
-                className={cn(
-                  'relative h-6 w-11 shrink-0 rounded-full transition-colors',
-                  isSplit ? 'bg-violet-600' : 'bg-slate-700'
-                )}
-              >
-                <span
-                  className={cn(
-                    'absolute top-0.5 size-5 rounded-full bg-white transition-transform',
-                    isSplit ? 'translate-x-5.5' : 'translate-x-0.5'
-                  )}
-                />
-              </button>
+              <Switch
+                checked={isSplit}
+                onCheckedChange={setIsSplit}
+                ariaLabel="Split Transaction"
+              />
             </div>
           </div>
 

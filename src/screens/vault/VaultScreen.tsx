@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Shield, Database, Lock, Download, Upload, AlertTriangle, LogOut } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { Switch } from '../../components/ui/Switch';
+
 
 interface VaultScreenProps {
   onLogout?: () => void;
@@ -83,23 +84,11 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({ onLogout }) => {
               Parse financial SMS and statements locally
             </p>
           </div>
-          <button
-            type="button"
-            role="switch"
-            aria-checked={autoDetect}
-            onClick={() => setAutoDetect(!autoDetect)}
-            className={cn(
-              'relative h-6 w-11 shrink-0 rounded-full transition-colors',
-              autoDetect ? 'bg-violet-600' : 'bg-slate-700'
-            )}
-          >
-            <span
-              className={cn(
-                'absolute top-0.5 size-5 rounded-full bg-white transition-transform',
-                autoDetect ? 'translate-x-5.5' : 'translate-x-0.5'
-              )}
-            />
-          </button>
+          <Switch
+            checked={autoDetect}
+            onCheckedChange={setAutoDetect}
+            ariaLabel="SMS / Bank Detection"
+          />
         </div>
       </div>
 
