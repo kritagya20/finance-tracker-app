@@ -30,12 +30,13 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-100">Analytics</h1>
-        <span className="rounded-xl border border-white/10 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-300">
+      {/* Screen-Specific Header */}
+      <header className="flex items-center justify-between pt-2">
+        <h1 className="text-2xl font-bold tracking-tight text-zinc-50">Analytics</h1>
+        <span className="rounded-xl border border-white/10 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300">
           Sep 2026 ▾
         </span>
-      </div>
+      </header>
 
       {/* Timeframe Segment */}
       <div className="flex rounded-2xl bg-slate-900 p-1 border border-white/5">

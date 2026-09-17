@@ -221,15 +221,39 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
   const displayTotal = isIncomeView ? totalIncome : totalSpent;
   const displayLabel = isIncomeView ? 'Total Income' : 'Total Spent';
 
+  const handleExportCSV = () => {
+    const headers = ['Date', 'Merchant', 'Category', 'Type', 'Amount (INR)', 'Source', 'Notes'];
+    const rows = filtered.map((tx) => [
+      new Date(tx.date).toLocaleDateString('en-IN'),
+      `"${tx.merchantName.replace(/"/g, '""')}"`,
+      `"${categories.find((c) => c.id === tx.categoryId)?.name || 'Other'}"`,
+      tx.type,
+      (tx.amount / 100).toFixed(2),
+      tx.source,
+      `"${(tx.notes || '').replace(/"/g, '""')}"`,
+    ]);
+    const csvContent = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `activity_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex flex-col gap-3 pb-8">
-      {/* Header */}
+      {/* Screen-Specific Header */}
       <header className="flex items-center justify-between pt-2">
         <h1 className="text-2xl font-bold tracking-tight text-zinc-50">Activity</h1>
         <button
           type="button"
+          onClick={handleExportCSV}
           aria-label="Export as CSV"
-          className="flex size-10 items-center justify-center rounded-full border border-white/10 bg-zinc-900 text-zinc-300 transition-colors active:bg-zinc-800"
+          className="flex size-10 items-center justify-center rounded-full border border-white/10 bg-zinc-900 text-zinc-300 transition-colors hover:text-white active:bg-zinc-800"
         >
           <Download className="size-5" />
         </button>

@@ -81,22 +81,22 @@ export function App() {
         ) : (
           /* Authenticated Application Views */
           <div className="flex flex-col gap-5">
-            {/* Top App Header */}
-            <TopHeader
-              userName={userName}
-              hideBalances={hideBalances}
-              onToggleHideBalances={toggleHideBalances}
-            />
-
-            {/* Dynamic Screen View */}
+            {/* Dynamic Screen Views (Screen-specific headers) */}
             {activeTab === 'home' && (
-              <DashboardScreen
-                summary={summary}
-                transactions={transactions}
-                hideBalances={hideBalances}
-                onOpenAddModal={() => setIsAddDrawerOpen(true)}
-                onNavigate={setActiveTab}
-              />
+              <>
+                <TopHeader
+                  userName={userName}
+                  hideBalances={hideBalances}
+                  onToggleHideBalances={toggleHideBalances}
+                />
+                <DashboardScreen
+                  summary={summary}
+                  transactions={transactions}
+                  hideBalances={hideBalances}
+                  onOpenAddModal={() => setIsAddDrawerOpen(true)}
+                  onNavigate={setActiveTab}
+                />
+              </>
             )}
 
             {activeTab === 'activity' && (

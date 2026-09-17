@@ -12,22 +12,23 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({ onLogout }) => {
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-center justify-between">
+      {/* Screen-Specific Header */}
+      <header className="flex items-center justify-between pt-2">
         <div className="flex items-center gap-2">
           <Shield className="size-6 text-violet-400" />
-          <h1 className="text-xl font-bold text-slate-100">Privacy Vault</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-50">Privacy Vault</h1>
         </div>
         {onLogout && (
           <button
             type="button"
             onClick={onLogout}
-            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-slate-900 px-3 py-1.5 text-xs font-medium text-slate-400 hover:text-white transition-colors"
+            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white active:bg-zinc-800 transition-colors"
           >
             <LogOut className="size-3.5 text-rose-400" />
             <span>Lock Vault</span>
           </button>
         )}
-      </div>
+      </header>
 
       {/* Zero Knowledge Banner */}
       <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/10 p-4">
