@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useFinance } from './hooks/useFinance';
+import { useNotifications } from './hooks/useNotifications';
 import { TopHeader } from './components/layout/TopHeader';
 import { BottomNav, NavTab } from './components/layout/BottomNav';
 import { DashboardScreen } from './screens/dashboard/DashboardScreen';
 import { ActivityScreen } from './screens/activity/ActivityScreen';
 import { AnalyticsScreen } from './screens/analytics/AnalyticsScreen';
 import { VaultScreen } from './screens/vault/VaultScreen';
+import { NotificationScreen } from './screens/notifications/NotificationScreen';
 import { AddTransactionDrawer } from './screens/logger/AddTransactionDrawer';
 import { LoginScreen } from './screens/auth/LoginScreen';
 import { SignupScreen } from './screens/auth/SignupScreen';
@@ -36,6 +38,16 @@ export function App() {
     refreshData,
   } = useFinance();
 
+  const {
+    notifications,
+    unreadCount,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    clearAll,
+    notifyTransactionCreated,
+  } = useNotifications();
+
   // Authentication State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
     return localStorage.getItem('is_authenticated') === 'true';
@@ -48,6 +60,7 @@ export function App() {
 
   // Modal / In-App Subview State
   const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
+  const [isViewingNotifications, setIsViewingNotifications] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
 
@@ -56,7 +69,7 @@ export function App() {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
-  }, [activeTab, authView, isAuthenticated, isEditingProfile]);
+  }, [activeTab, authView, isAuthenticated, isEditingProfile, isViewingNotifications]);
 
   const handleLoginSuccess = (name = 'User') => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -76,6 +89,7 @@ export function App() {
   const handleLogout = () => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     setIsAuthenticated(false);
+    setIsViewingNotifications(false);
     localStorage.removeItem('is_authenticated');
     setAuthView('login');
   };
@@ -86,7 +100,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-dvh bg-slate-950 text-slate-50 selection:bg-violet-500 selection:text-white">
+    <div className="min-h-dvh bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-50 selection:bg-violet-500 selection:text-white transition-colors">
       {/* Mobile Frame Container */}
       <main className="mx-auto flex min-h-dvh max-w-[390px] flex-col px-4 pb-28 pt-4">
         {!isAuthenticated ? (
@@ -129,6 +143,25 @@ export function App() {
               />
             )}
           </>
+        ) : isViewingNotifications ? (
+          /* Full Notification Screen View */
+          <NotificationScreen
+            notifications={notifications}
+            unreadCount={unreadCount}
+            onBack={() => setIsViewingNotifications(false)}
+            onMarkAsRead={markAsRead}
+            onMarkAllAsRead={markAllAsRead}
+            onDeleteNotification={deleteNotification}
+            onClearAll={clearAll}
+            onNavigateToActivity={() => {
+              setIsViewingNotifications(false);
+              setActiveTab('activity');
+            }}
+            onSimulateSms={async (txData, rawSms) => {
+              const created = await addTransaction(txData);
+              notifyTransactionCreated(created, rawSms);
+            }}
+          />
         ) : isEditingProfile ? (
           /* Full Profile Settings Editor */
           <ProfileSetupScreen
@@ -154,6 +187,8 @@ export function App() {
                   hideBalances={hideBalances}
                   onToggleHideBalances={toggleHideBalances}
                   onProfileClick={() => setIsEditingProfile(true)}
+                  onNotificationsClick={() => setIsViewingNotifications(true)}
+                  unreadCount={unreadCount}
                 />
                 <DashboardScreen
                   summary={summary}
@@ -196,11 +231,14 @@ export function App() {
         )}
       </main>
 
-      {/* Fixed Bottom Navigation (Only visible when authenticated) */}
-      {isAuthenticated && (
+      {/* Fixed Bottom Navigation (Only visible when authenticated and not inside subviews) */}
+      {isAuthenticated && !isViewingNotifications && !isEditingProfile && (
         <BottomNav
           activeTab={activeTab}
-          onTabChange={setActiveTab}
+          onTabChange={(tab) => {
+            setIsViewingNotifications(false);
+            setActiveTab(tab);
+          }}
           onOpenAddModal={() => setIsAddDrawerOpen(true)}
         />
       )}
@@ -213,7 +251,10 @@ export function App() {
           categories={categories}
           accounts={accounts}
           onSave={async (tx) => {
-            await addTransaction(tx);
+            const created = await addTransaction(tx);
+            if (tx.source === 'AUTO_SMS') {
+              notifyTransactionCreated(created, tx.rawSmsText);
+            }
           }}
         />
       )}
