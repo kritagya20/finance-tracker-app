@@ -141,10 +141,10 @@ export const Dropdown: React.FC<DropdownProps> = ({
         aria-haspopup="listbox"
         onClick={() => setOpen(!isOpen)}
         className={cn(
-          'flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
+          'flex shrink-0 items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors shadow-sm',
           isActive
-            ? 'border-violet-500/40 bg-violet-500/15 text-violet-300'
-            : 'border-white/10 bg-zinc-900 text-zinc-300 active:bg-zinc-800',
+            ? 'border-violet-500/40 bg-violet-500/15 text-violet-600 dark:text-violet-300'
+            : 'border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 text-slate-700 dark:text-zinc-300 hover:bg-slate-100 dark:hover:bg-zinc-800',
           triggerClassName
         )}
       >
@@ -169,11 +169,11 @@ export const Dropdown: React.FC<DropdownProps> = ({
               ...(coords.right !== undefined ? { right: `${coords.right}px` } : {}),
             }}
             className={cn(
-              'fixed z-50 min-w-[190px] max-w-[calc(100vw-32px)] rounded-2xl border border-white/10 bg-zinc-900/95 p-1.5 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150',
+              'fixed z-50 min-w-[190px] max-w-[calc(100vw-32px)] rounded-2xl border border-slate-200 dark:border-white/10 bg-white/95 dark:bg-zinc-900/95 p-1.5 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150',
               menuClassName
             )}
           >
-            <div className="flex max-h-56 flex-col gap-0.5 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden text-xs font-medium text-zinc-300">
+            <div className="flex max-h-56 flex-col gap-0.5 overflow-y-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden text-xs font-medium text-slate-800 dark:text-zinc-300">
               {options.map((opt) => {
                 const isSelected = selectedValue === opt.value;
                 return (
@@ -189,15 +189,15 @@ export const Dropdown: React.FC<DropdownProps> = ({
                     className={cn(
                       'flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors',
                       isSelected
-                        ? 'bg-violet-600/20 text-violet-300'
-                        : 'hover:bg-zinc-800 text-zinc-300 active:bg-zinc-700'
+                        ? 'bg-violet-500/15 text-violet-600 dark:text-violet-300'
+                        : 'hover:bg-slate-100 text-slate-700 dark:hover:bg-zinc-800 dark:text-zinc-300 active:bg-slate-200 dark:active:bg-zinc-700'
                     )}
                   >
                     <span className="flex items-center gap-2 truncate">
                       {opt.icon}
                       <span className="truncate">{opt.label}</span>
                     </span>
-                    {isSelected && <Check className="size-3.5 shrink-0 text-violet-400" />}
+                    {isSelected && <Check className="size-3.5 shrink-0 text-violet-600 dark:text-violet-400" />}
                   </button>
                 );
               })}

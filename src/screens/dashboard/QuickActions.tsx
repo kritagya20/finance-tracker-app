@@ -21,7 +21,7 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
         <span className="flex size-14 items-center justify-center rounded-full bg-violet-600 text-white shadow-md shadow-violet-900/40">
           <Plus className="size-6" />
         </span>
-        <span className="text-[11px] font-medium text-slate-400">Add</span>
+        <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Add</span>
       </button>
 
       <button
@@ -29,10 +29,10 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
         onClick={() => onNavigate('settings')}
         className="flex flex-col items-center gap-2 rounded-2xl py-1 transition-transform active:scale-95"
       >
-        <span className="flex size-14 items-center justify-center rounded-full bg-slate-800 text-slate-200 border border-slate-700/50">
+        <span className="flex size-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/50 shadow-sm">
           <MessageSquareText className="size-6" />
         </span>
-        <span className="text-[11px] font-medium text-slate-400">Import SMS</span>
+        <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Import SMS</span>
       </button>
 
       <button
@@ -40,10 +40,10 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
         onClick={() => onNavigate('analytics')}
         className="flex flex-col items-center gap-2 rounded-2xl py-1 transition-transform active:scale-95"
       >
-        <span className="flex size-14 items-center justify-center rounded-full bg-slate-800 text-slate-200 border border-slate-700/50">
+        <span className="flex size-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/50 shadow-sm">
           <ChartColumn className="size-6" />
         </span>
-        <span className="text-[11px] font-medium text-slate-400">Analytics</span>
+        <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Analytics</span>
       </button>
 
       <button
@@ -51,10 +51,10 @@ export const QuickActions: React.FC<QuickActionsProps> = ({
         onClick={() => onNavigate('settings')}
         className="flex flex-col items-center gap-2 rounded-2xl py-1 transition-transform active:scale-95"
       >
-        <span className="flex size-14 items-center justify-center rounded-full bg-slate-800 text-slate-200 border border-slate-700/50">
+        <span className="flex size-14 items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/50 shadow-sm">
           <Lock className="size-6" />
         </span>
-        <span className="text-[11px] font-medium text-slate-400">Vault</span>
+        <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">Vault</span>
       </button>
     </div>
   );

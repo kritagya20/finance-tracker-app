@@ -37,36 +37,36 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="delete-dialog-title"
-        className="relative z-10 w-full rounded-3xl border border-white/10 bg-zinc-900 p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+        className="relative z-10 w-full rounded-3xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900 p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200 transition-colors"
       >
         {/* Close Button */}
         <button
           type="button"
           onClick={onCancel}
-          className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 hover:text-white transition-colors"
+          className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-full bg-slate-100 dark:bg-zinc-800 text-slate-500 dark:text-zinc-400 hover:text-slate-900 dark:hover:text-white transition-colors"
         >
           <X className="size-4" />
         </button>
 
         {/* Header Alert Badge */}
         <div className="flex flex-col items-center text-center">
-          <div className="flex size-14 items-center justify-center rounded-2xl border border-rose-500/30 bg-rose-500/15 text-rose-400 shadow-lg shadow-rose-950/40">
+          <div className="flex size-14 items-center justify-center rounded-2xl border border-rose-500/30 bg-rose-500/15 text-rose-500 dark:text-rose-400 shadow-lg shadow-rose-950/40">
             <AlertTriangle className="size-7" />
           </div>
 
           <h3
             id="delete-dialog-title"
-            className="mt-3.5 text-lg font-bold tracking-tight text-white"
+            className="mt-3.5 text-lg font-bold tracking-tight text-slate-900 dark:text-white"
           >
             Delete Transaction?
           </h3>
-          <p className="mt-1 text-xs text-zinc-400 max-w-[260px] leading-relaxed">
+          <p className="mt-1 text-xs text-slate-500 dark:text-zinc-400 max-w-[260px] leading-relaxed">
             This transaction will be permanently removed and balances will be recalculated.
           </p>
         </div>
 
         {/* Transaction Summary Card */}
-        <div className="mt-4 rounded-2xl border border-white/10 bg-zinc-850 p-3.5 flex items-center justify-between">
+        <div className="mt-4 rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-zinc-850 p-3.5 flex items-center justify-between">
           <div className="flex items-center gap-3 min-w-0">
             <span
               className={cn(
@@ -78,10 +78,10 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
               <CategoryIcon name={category.iconName} size={18} />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-xs font-semibold text-zinc-100">
+              <p className="truncate text-xs font-semibold text-slate-900 dark:text-zinc-100">
                 {transaction.merchantName}
               </p>
-              <p className="text-[11px] text-zinc-400 truncate">
+              <p className="text-[11px] text-slate-500 dark:text-zinc-400 truncate">
                 {category.name}
               </p>
             </div>
@@ -90,7 +90,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
           <span
             className={cn(
               'text-sm font-bold tabular-nums shrink-0 ml-2',
-              isIncome ? 'text-emerald-400' : 'text-zinc-100'
+              isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-zinc-100'
             )}
           >
             {isIncome ? '+' : '-'}{formatCurrency(transaction.amount)}
@@ -102,7 +102,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-2xl border border-white/10 bg-zinc-800 py-3 text-xs font-semibold text-zinc-300 hover:bg-zinc-750 transition-colors"
+            className="rounded-2xl border border-slate-200 dark:border-white/10 bg-slate-100 dark:bg-zinc-800 py-3 text-xs font-semibold text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-750 transition-colors"
           >
             Cancel
           </button>

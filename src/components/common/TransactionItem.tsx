@@ -236,11 +236,11 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
       className={cn(
         'relative z-10 flex items-center gap-3.5 p-3.5 transition-colors',
         shouldSwipe
-          ? 'bg-zinc-900'
-          : 'rounded-2xl border border-white/10 bg-zinc-900/85 shadow-sm backdrop-blur-sm',
+          ? 'bg-white dark:bg-zinc-900'
+          : 'rounded-2xl border border-slate-200 dark:border-white/10 bg-white dark:bg-zinc-900/85 shadow-sm backdrop-blur-sm',
         shouldSwipe && isDragging ? 'cursor-grabbing' : shouldSwipe ? 'cursor-grab touch-pan-y' : '',
-        onClick && !shouldSwipe ? 'cursor-pointer hover:bg-zinc-850 active:bg-zinc-800' : '',
-        offsetX !== 0 ? 'shadow-2xl shadow-black/70' : '',
+        onClick && !shouldSwipe ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-zinc-850 active:bg-slate-100 dark:active:bg-zinc-800' : '',
+        offsetX !== 0 ? 'shadow-2xl shadow-black/30 dark:shadow-black/70' : '',
         className
       )}
     >
@@ -259,18 +259,18 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
 
       {/* Title & Metadata */}
       <div className="min-w-0 flex-1 pointer-events-none">
-        <p className="truncate text-sm font-semibold tracking-tight text-zinc-100">
+        <p className="truncate text-sm font-semibold tracking-tight text-slate-900 dark:text-zinc-100">
           {tx.merchantName}
         </p>
         <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
           {showCategory && (
-            <span className="truncate text-[11px] font-normal text-zinc-400">
+            <span className="truncate text-[11px] font-normal text-slate-500 dark:text-zinc-400">
               {category.name}
             </span>
           )}
 
           {showCategory && (showSourceBadge || (showNotesTag && tx.notes?.includes('items'))) && (
-            <span className="size-1 shrink-0 rounded-full bg-zinc-600" />
+            <span className="size-1 shrink-0 rounded-full bg-slate-400 dark:bg-zinc-600" />
           )}
 
           {showSourceBadge && (
@@ -278,38 +278,35 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
               className={cn(
                 'inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-wide',
                 tx.source === 'AUTO_SMS'
-                  ? 'border border-violet-500/25 bg-violet-500/15 text-violet-300'
-                  : 'border border-white/5 bg-zinc-800 text-zinc-400'
+                  ? 'bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-500/25'
+                  : 'bg-slate-100 dark:bg-zinc-800 text-slate-600 dark:text-zinc-400 border border-slate-200 dark:border-white/5'
               )}
             >
-              {tx.source === 'AUTO_SMS' ? 'Auto-SMS' : 'Manual'}
+              {tx.source === 'AUTO_SMS' ? 'SMS' : 'MANUAL'}
             </span>
           )}
 
           {showNotesTag && tx.notes && tx.notes.includes('items') && (
-            <>
-              <span className="size-1 shrink-0 rounded-full bg-zinc-600" />
-              <span className="inline-flex items-center rounded-md border border-amber-500/25 bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-300">
-                2 items
-              </span>
-            </>
+            <span className="rounded bg-slate-100 dark:bg-zinc-800 px-1 py-0.2 text-[10px] text-slate-500 dark:text-zinc-400">
+              {tx.notes}
+            </span>
           )}
         </div>
       </div>
 
-      {/* Amount & Timestamp */}
+      {/* Amount Display */}
       <div className="shrink-0 text-right pointer-events-none">
         <p
           className={cn(
-            'text-[15px] font-bold tracking-tight tabular-nums',
-            isIncome ? 'text-emerald-400' : 'text-zinc-100'
+            'text-sm font-bold tracking-tight tabular-nums',
+            isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-zinc-100'
           )}
         >
           {hideBalances
             ? '••••••'
             : `${isIncome ? '+' : '-'}${formatCurrency(tx.amount)}`}
         </p>
-        <p className="mt-0.5 text-[11px] font-medium text-zinc-500 tabular-nums">
+        <p className="mt-0.5 text-[11px] font-medium text-slate-400 dark:text-zinc-500 tabular-nums">
           {timestampStr}
         </p>
       </div>
