@@ -7,17 +7,21 @@ import {
   ArrowUpRight,
   Receipt,
 } from 'lucide-react';
-import { Transaction, Category } from '../../domain/models/types';
+import { Transaction, Category, Account } from '../../domain/models/types';
 import { formatCurrency } from '../../domain/engine/moneyUtils';
 import { TransactionItem } from '../../components/common/TransactionItem';
 import { Dropdown } from '../../components/ui/Dropdown';
+import { EditTransactionDrawer } from './EditTransactionDrawer';
+import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
 import { cn } from '../../lib/utils';
 
 interface ActivityScreenProps {
   transactions: Transaction[];
   categories: Category[];
+  accounts?: Account[];
   hideBalances: boolean;
   onDeleteTransaction: (id: string) => void;
+  onUpdateTransaction?: (id: string, updates: Partial<Transaction>) => Promise<unknown>;
 }
 
 type TypeFilter = 'ALL' | 'EXPENSE' | 'INCOME' | 'TRANSFER';
@@ -27,9 +31,14 @@ type SourceFilter = 'ALL' | 'AUTO_SMS' | 'MANUAL';
 export const ActivityScreen: React.FC<ActivityScreenProps> = ({
   transactions,
   categories,
+  accounts = [],
   hideBalances,
   onDeleteTransaction,
+  onUpdateTransaction,
 }) => {
+  const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [deletingTransaction, setDeletingTransaction] = useState<Transaction | null>(null);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('ALL');
   const [dateFilter, setDateFilter] = useState<DateFilter>('THIS_MONTH');
@@ -410,10 +419,8 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
                         category={category}
                         variant="activity"
                         hideBalances={hideBalances}
-                        onDelete={onDeleteTransaction}
-                        onEdit={(t) => {
-                          console.log('Edit transaction:', t);
-                        }}
+                        onDelete={() => setDeletingTransaction(tx)}
+                        onEdit={(t) => setEditingTransaction(t)}
                       />
                     );
                   })}
@@ -423,6 +430,39 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
           })
         )}
       </div>
+
+      {/* Edit Transaction Drawer */}
+      <EditTransactionDrawer
+        isOpen={!!editingTransaction}
+        transaction={editingTransaction}
+        categories={categories}
+        accounts={accounts}
+        onSave={async (updates) => {
+          if (editingTransaction && onUpdateTransaction) {
+            await onUpdateTransaction(editingTransaction.id, updates);
+          }
+          setEditingTransaction(null);
+        }}
+        onDelete={(id) => {
+          const target = transactions.find((t) => t.id === id) || editingTransaction;
+          setEditingTransaction(null);
+          setDeletingTransaction(target);
+        }}
+        onClose={() => setEditingTransaction(null)}
+      />
+
+      {/* Confirm Delete Pop-Up Dialog */}
+      <ConfirmDeleteModal
+        isOpen={!!deletingTransaction}
+        transaction={deletingTransaction}
+        onConfirm={() => {
+          if (deletingTransaction) {
+            onDeleteTransaction(deletingTransaction.id);
+            setDeletingTransaction(null);
+          }
+        }}
+        onCancel={() => setDeletingTransaction(null)}
+      />
     </div>
   );
 };

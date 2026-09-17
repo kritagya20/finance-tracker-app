@@ -24,11 +24,13 @@ export function App() {
   const {
     summary,
     transactions,
+    accounts,
     categories,
     profile,
     hideBalances,
     toggleHideBalances,
     addTransaction,
+    updateTransaction,
     deleteTransaction,
     updateProfile,
     refreshData,
@@ -167,8 +169,10 @@ export function App() {
               <ActivityScreen
                 transactions={transactions}
                 categories={categories}
+                accounts={accounts}
                 hideBalances={hideBalances}
                 onDeleteTransaction={deleteTransaction}
+                onUpdateTransaction={updateTransaction}
               />
             )}
 
@@ -207,6 +211,7 @@ export function App() {
           isOpen={isAddDrawerOpen}
           onClose={() => setIsAddDrawerOpen(false)}
           categories={categories}
+          accounts={accounts}
           onSave={async (tx) => {
             await addTransaction(tx);
           }}
