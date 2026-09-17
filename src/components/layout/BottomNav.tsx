@@ -75,7 +75,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           )}
         >
           <Settings className="size-5" />
-          <span className="text-[10px] font-medium">Vault</span>
+          <span className="text-[10px] font-medium">Settings</span>
         </button>
       </div>
       <div className="h-1" />
