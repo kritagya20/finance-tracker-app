@@ -10,18 +10,23 @@ import { AddTransactionDrawer } from './screens/logger/AddTransactionDrawer';
 import { LoginScreen } from './screens/auth/LoginScreen';
 import { SignupScreen } from './screens/auth/SignupScreen';
 import { ForgotPasswordScreen } from './screens/auth/ForgotPasswordScreen';
+import { ProfileSetupScreen } from './screens/profile/ProfileSetupScreen';
+import { resetMockDatabase } from './data/data';
 
-type AuthView = 'login' | 'signup' | 'forgot_password';
+type AuthView = 'login' | 'signup' | 'forgot_password' | 'profile_setup';
 
 export function App() {
   const {
     summary,
     transactions,
     categories,
+    profile,
     hideBalances,
     toggleHideBalances,
     addTransaction,
     deleteTransaction,
+    updateProfile,
+    refreshData,
   } = useFinance();
 
   // Authentication State
@@ -31,9 +36,11 @@ export function App() {
   const [userName, setUserName] = useState<string>(() => {
     return localStorage.getItem('user_name') || 'User';
   });
+  const [pendingSignupName, setPendingSignupName] = useState<string>('Alex Morgan');
   const [authView, setAuthView] = useState<AuthView>('login');
 
-  // Navigation & Modal State
+  // Modal / In-App Subview State
+  const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
 
@@ -45,10 +52,20 @@ export function App() {
     setActiveTab('home');
   };
 
+  const handleSignupSuccess = (name = 'Alex Morgan') => {
+    setPendingSignupName(name);
+    setAuthView('profile_setup');
+  };
+
   const handleLogout = () => {
     setIsAuthenticated(false);
     localStorage.removeItem('is_authenticated');
     setAuthView('login');
+  };
+
+  const handleResetData = async () => {
+    resetMockDatabase();
+    await refreshData();
   };
 
   return (
@@ -56,7 +73,7 @@ export function App() {
       {/* Mobile Frame Container */}
       <main className="mx-auto flex min-h-dvh max-w-[390px] flex-col justify-between px-4 pb-28 pt-4">
         {!isAuthenticated ? (
-          /* Authentication Screen Flows */
+          /* Authentication & Onboarding Screen Flows */
           <>
             {authView === 'login' && (
               <LoginScreen
@@ -67,7 +84,7 @@ export function App() {
             )}
             {authView === 'signup' && (
               <SignupScreen
-                onSignupSuccess={handleLoginSuccess}
+                onSignupSuccess={handleSignupSuccess}
                 onNavigateLogin={() => setAuthView('login')}
               />
             )}
@@ -77,7 +94,38 @@ export function App() {
                 onNavigateLogin={() => setAuthView('login')}
               />
             )}
+            {authView === 'profile_setup' && (
+              <ProfileSetupScreen
+                initialName={pendingSignupName}
+                onComplete={async (profileData) => {
+                  await updateProfile(profileData);
+                  const effectiveName = profileData.name || pendingSignupName;
+                  handleLoginSuccess(effectiveName);
+                }}
+                onSkip={async () => {
+                  await updateProfile({
+                    name: pendingSignupName,
+                    onboardingCompleted: true,
+                  });
+                  handleLoginSuccess(pendingSignupName);
+                }}
+              />
+            )}
           </>
+        ) : isEditingProfile ? (
+          /* Full Profile Settings Editor */
+          <ProfileSetupScreen
+            initialName={profile?.name || userName}
+            onComplete={async (profileData) => {
+              await updateProfile(profileData);
+              if (profileData.name) {
+                setUserName(profileData.name);
+                localStorage.setItem('user_name', profileData.name);
+              }
+              setIsEditingProfile(false);
+            }}
+            onSkip={() => setIsEditingProfile(false)}
+          />
         ) : (
           /* Authenticated Application Views */
           <div className="flex flex-col gap-5">
@@ -85,9 +133,10 @@ export function App() {
             {activeTab === 'home' && (
               <>
                 <TopHeader
-                  userName={userName}
+                  userName={profile?.name || userName}
                   hideBalances={hideBalances}
                   onToggleHideBalances={toggleHideBalances}
+                  onProfileClick={() => setIsEditingProfile(true)}
                 />
                 <DashboardScreen
                   summary={summary}
@@ -116,7 +165,14 @@ export function App() {
               />
             )}
 
-            {activeTab === 'settings' && <VaultScreen onLogout={handleLogout} />}
+            {activeTab === 'settings' && (
+              <VaultScreen
+                profile={profile}
+                onEditProfile={() => setIsEditingProfile(true)}
+                onResetData={handleResetData}
+                onLogout={handleLogout}
+              />
+            )}
           </div>
         )}
       </main>

@@ -5,16 +5,23 @@ interface TopHeaderProps {
   userName?: string;
   hideBalances: boolean;
   onToggleHideBalances: () => void;
+  onProfileClick?: () => void;
 }
 
 export const TopHeader: React.FC<TopHeaderProps> = ({
   userName = 'User',
   hideBalances,
   onToggleHideBalances,
+  onProfileClick,
 }) => {
   return (
     <header className="flex items-center justify-between pt-2 pb-1">
-      <div className="flex items-center gap-3">
+      <button
+        type="button"
+        onClick={onProfileClick}
+        className="flex items-center gap-3 text-left transition-opacity hover:opacity-90 active:scale-[0.98]"
+        title="View financial profile & settings"
+      >
         <div className="flex size-11 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-violet-400 text-sm font-semibold text-white shadow-md shadow-violet-900/30">
           {userName.charAt(0).toUpperCase()}
         </div>
@@ -22,7 +29,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           <p className="text-xs text-slate-400">Namaste,</p>
           <p className="text-base font-semibold text-slate-100">{userName}</p>
         </div>
-      </div>
+      </button>
 
       <div className="flex items-center gap-2">
         <button
