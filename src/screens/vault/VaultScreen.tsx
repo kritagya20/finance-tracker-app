@@ -44,21 +44,18 @@ export const VaultScreen: React.FC<VaultScreenProps> = ({
   return (
     <div className="flex flex-col gap-5">
       {/* Screen-Specific Header */}
-      <header className="flex items-center justify-between pt-2">
+      <header className="flex h-14 items-center justify-between">
         <div className="flex items-center gap-2.5">
-          <div className="flex size-9 items-center justify-center rounded-xl bg-violet-500/15 text-violet-400 border border-violet-500/20">
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-400 border border-violet-500/20">
             <Shield className="size-5" />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-zinc-50">Settings</h1>
-            <p className="text-[11px] text-zinc-400">Vault & Financial Profile</p>
-          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-white">Settings</h1>
         </div>
         {onLogout && (
           <button
             type="button"
             onClick={onLogout}
-            className="flex items-center gap-1.5 rounded-xl border border-white/10 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:text-white active:bg-zinc-800 transition-colors"
+            className="flex h-10 items-center gap-1.5 rounded-2xl border border-white/10 bg-zinc-900 px-3.5 text-xs font-medium text-zinc-400 hover:text-white active:bg-zinc-800 transition-colors"
           >
             <LogOut className="size-3.5 text-rose-400" />
             <span>Lock Vault</span>

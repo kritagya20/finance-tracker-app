@@ -227,8 +227,8 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
   return (
     <div className="flex flex-col gap-3 pb-8">
       {/* Screen-Specific Header */}
-      <header className="flex items-center justify-between pt-2">
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-50">Activity</h1>
+      <header className="flex h-14 items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight text-white">Activity</h1>
         <button
           type="button"
           onClick={handleExportCSV}

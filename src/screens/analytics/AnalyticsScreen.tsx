@@ -31,11 +31,15 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
   return (
     <div className="flex flex-col gap-5">
       {/* Screen-Specific Header */}
-      <header className="flex items-center justify-between pt-2">
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-50">Analytics</h1>
-        <span className="rounded-xl border border-white/10 bg-zinc-900 px-3 py-1.5 text-xs font-medium text-zinc-300">
-          Sep 2026 ▾
-        </span>
+      <header className="flex h-14 items-center justify-between">
+        <h1 className="text-2xl font-bold tracking-tight text-white">Analytics</h1>
+        <button
+          type="button"
+          className="flex h-10 items-center gap-1.5 rounded-2xl border border-white/10 bg-zinc-900 px-3.5 text-xs font-medium text-zinc-300 hover:text-white active:bg-zinc-800 transition-colors"
+        >
+          <span>Sep 2026</span>
+          <span className="text-[10px] text-zinc-500">▾</span>
+        </button>
       </header>
 
       {/* Timeframe Segment */}
