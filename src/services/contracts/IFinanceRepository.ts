@@ -23,6 +23,10 @@ export interface IFinanceRepository {
   addTransaction(
     tx: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>
   ): Promise<Transaction>;
+  updateTransaction(
+    id: string,
+    updates: Partial<Transaction>
+  ): Promise<Transaction>;
   deleteTransaction(id: string): Promise<boolean>;
   getAccounts(): Promise<Account[]>;
   getCategories(): Promise<Category[]>;

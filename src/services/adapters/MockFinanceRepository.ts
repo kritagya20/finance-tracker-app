@@ -61,6 +61,14 @@ export class MockFinanceRepository implements IFinanceRepository {
     return res.data;
   }
 
+  async updateTransaction(
+    id: string,
+    updates: Partial<Transaction>
+  ): Promise<Transaction> {
+    const res = await MockApiClient.updateTransaction(id, updates);
+    return res.data;
+  }
+
   async deleteTransaction(id: string): Promise<boolean> {
     const res = await MockApiClient.deleteTransaction(id);
     return res.success;

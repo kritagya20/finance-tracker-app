@@ -64,6 +64,16 @@ export function useFinance() {
     [refreshData]
   );
 
+  const updateTransaction = useCallback(
+    async (id: string, updates: Partial<Transaction>) => {
+      const repo = FinanceService.getRepo();
+      const updated = await repo.updateTransaction(id, updates);
+      await refreshData();
+      return updated;
+    },
+    [refreshData]
+  );
+
   const deleteTransaction = useCallback(
     async (id: string) => {
       const repo = FinanceService.getRepo();
@@ -97,6 +107,7 @@ export function useFinance() {
     hideBalances,
     toggleHideBalances,
     addTransaction,
+    updateTransaction,
     deleteTransaction,
     updateProfile,
     refreshData,

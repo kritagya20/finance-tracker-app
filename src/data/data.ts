@@ -530,6 +530,22 @@ export const MockApiClient = {
     return createApiResponse({ id }, undefined, 'Transaction deleted successfully');
   },
 
+  async updateTransaction(id: string, updates: Partial<Transaction>): Promise<ApiResponse<Transaction>> {
+    const db = getMockDatabase();
+    const idx = db.transactions.findIndex((t) => t.id === id);
+    if (idx === -1) {
+      throw new Error(`Transaction with id "${id}" not found`);
+    }
+    const updated: Transaction = {
+      ...db.transactions[idx],
+      ...updates,
+      updatedAt: Date.now(),
+    };
+    db.transactions[idx] = updated;
+    saveMockDatabase(db);
+    return createApiResponse(updated, undefined, 'Transaction updated successfully');
+  },
+
   // --- Accounts ---
   async getAccounts(): Promise<ApiResponse<Account[]>> {
     const db = getMockDatabase();
