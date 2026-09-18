@@ -6,9 +6,8 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   Receipt,
-  ChevronDown,
 } from 'lucide-react';
-import { Transaction, Category, Account } from '../../domain/models/types';
+import { Transaction, Category, Account, DatePreset } from '../../domain/models/types';
 import { formatCurrency } from '../../domain/engine/moneyUtils';
 import { TransactionItem } from '../../components/common/TransactionItem';
 import { Dropdown } from '../../components/ui/Dropdown';
@@ -27,7 +26,7 @@ interface ActivityScreenProps {
 }
 
 type TypeFilter = 'ALL' | 'EXPENSE' | 'INCOME' | 'TRANSFER';
-type DateFilter = 'THIS_MONTH' | 'LAST_MONTH' | 'LAST_30_DAYS' | 'ALL' | 'CUSTOM';
+type DateFilter = DatePreset;
 type SourceFilter = 'ALL' | 'AUTO_SMS' | 'MANUAL';
 
 export const ActivityScreen: React.FC<ActivityScreenProps> = ({
@@ -45,6 +44,7 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('ALL');
   const [dateFilter, setDateFilter] = useState<DateFilter>('THIS_MONTH');
   const [customRange, setCustomRange] = useState<DateRange | null>(null);
+  const [showCustomCalendar, setShowCustomCalendar] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('AUTO_SMS');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
 
@@ -75,17 +75,41 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
 
       // Date Filtering
       const txDate = new Date(tx.date);
-      if (dateFilter === 'THIS_MONTH') {
-        const start = new Date(now.getFullYear(), now.getMonth(), 1);
+      if (dateFilter === 'THIS_WEEK') {
+        const day = now.getDay();
+        const diffToMonday = (day + 6) % 7;
+        const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMonday, 0, 0, 0, 0);
+        const end = new Date(start.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
+        if (txDate < start || txDate > end) return false;
+      } else if (dateFilter === 'LAST_WEEK') {
+        const day = now.getDay();
+        const diffToMonday = (day + 6) % 7;
+        const startThis = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMonday, 0, 0, 0, 0);
+        const start = new Date(startThis.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const end = new Date(startThis.getTime() - 1);
+        if (txDate < start || txDate > end) return false;
+      } else if (dateFilter === 'THIS_MONTH') {
+        const start = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
         const end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
         if (txDate < start || txDate > end) return false;
       } else if (dateFilter === 'LAST_MONTH') {
-        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const start = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
         const end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
         if (txDate < start || txDate > end) return false;
-      } else if (dateFilter === 'LAST_30_DAYS') {
-        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        if (txDate < thirtyDaysAgo || txDate > now) return false;
+      } else if (dateFilter === 'LAST_60_DAYS') {
+        const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+        sixtyDaysAgo.setHours(0, 0, 0, 0);
+        const endToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        if (txDate < sixtyDaysAgo || txDate > endToday) return false;
+      } else if (dateFilter === 'LAST_90_DAYS') {
+        const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+        ninetyDaysAgo.setHours(0, 0, 0, 0);
+        const endToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        if (txDate < ninetyDaysAgo || txDate > endToday) return false;
+      } else if (dateFilter === 'THIS_YEAR') {
+        const start = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+        const end = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+        if (txDate < start || txDate > end) return false;
       } else if (dateFilter === 'CUSTOM' && customRange) {
         const [sy, sm, sd] = customRange.startDate.split('-').map(Number);
         const start = new Date(sy, sm - 1, sd, 0, 0, 0, 0);
@@ -163,6 +187,18 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
     { label: 'Transfer', value: 'TRANSFER' },
   ];
 
+  const DATE_OPTIONS = [
+    { label: 'This Week', value: 'THIS_WEEK' },
+    { label: 'Last Week', value: 'LAST_WEEK' },
+    { label: 'This Month', value: 'THIS_MONTH' },
+    { label: 'Last Month', value: 'LAST_MONTH' },
+    { label: 'Last 60 Days', value: 'LAST_60_DAYS' },
+    { label: 'Last 90 Days', value: 'LAST_90_DAYS' },
+    { label: 'This Year', value: 'THIS_YEAR' },
+    { label: 'All Time', value: 'ALL' },
+    { label: 'Custom Range...', value: 'CUSTOM' },
+  ];
+
   const SOURCE_OPTIONS = [
     { label: 'All Sources', value: 'ALL' },
     { label: 'Source: Auto-SMS', value: 'AUTO_SMS' },
@@ -182,12 +218,22 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
   const dateLabel =
     dateFilter === 'CUSTOM' && customRange
       ? `${new Date(customRange.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} - ${new Date(customRange.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+      : dateFilter === 'THIS_WEEK'
+      ? 'This Week'
+      : dateFilter === 'LAST_WEEK'
+      ? 'Last Week'
       : dateFilter === 'THIS_MONTH'
       ? 'This Month'
       : dateFilter === 'LAST_MONTH'
       ? 'Last Month'
-      : dateFilter === 'LAST_30_DAYS'
-      ? 'Last 30 Days'
+      : dateFilter === 'LAST_60_DAYS'
+      ? 'Last 60 Days'
+      : dateFilter === 'LAST_90_DAYS'
+      ? 'Last 90 Days'
+      : dateFilter === 'THIS_YEAR'
+      ? 'This Year'
+      : dateFilter === 'CUSTOM'
+      ? 'Custom Range'
       : 'All Time';
 
   const sourceLabel =
@@ -281,54 +327,25 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
             ariaLabel="Filter by transaction type"
           />
 
-          {/* Common Calendar Picker Dropdown for Date Filtering */}
-          <div className="relative inline-block text-left shrink-0">
-            <button
-              type="button"
-              onClick={() => setActiveDropdown(activeDropdown === 'date' ? null : 'date')}
-              aria-label="Filter by date range"
-              className={cn(
-                'flex h-8 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-colors border shadow-sm',
-                dateFilter !== 'ALL'
-                  ? 'border-violet-500/40 bg-violet-500/15 text-violet-600 dark:text-violet-300'
-                  : 'border-theme-border bg-theme-card text-theme-secondary hover:bg-theme-card-hover'
-              )}
-            >
-              <span>{dateLabel}</span>
-              <ChevronDown
-                className={cn(
-                  'size-3.5 transition-transform duration-200 text-theme-muted',
-                  activeDropdown === 'date' && 'rotate-180'
-                )}
-              />
-            </button>
-
-            {activeDropdown === 'date' && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setActiveDropdown(null)}
-                />
-                <div className="absolute left-0 top-full z-50 mt-1.5">
-                  <CalendarPicker
-                    mode="range"
-                    selectedRange={customRange || undefined}
-                    onSelectRange={(range) => {
-                      setCustomRange(range);
-                      setDateFilter('CUSTOM');
-                    }}
-                    onPresetSelect={(preset) => {
-                      setDateFilter(preset as DateFilter);
-                      setCustomRange(null);
-                      setActiveDropdown(null);
-                    }}
-                    activePreset={dateFilter}
-                    onClose={() => setActiveDropdown(null)}
-                  />
-                </div>
-              </>
-            )}
-          </div>
+          {/* Date Filter Dropdown */}
+          <Dropdown
+            label={dateLabel}
+            options={DATE_OPTIONS}
+            selectedValue={dateFilter}
+            onSelect={(val) => {
+              if (val === 'CUSTOM') {
+                setShowCustomCalendar(true);
+              } else {
+                setDateFilter(val as DateFilter);
+                setCustomRange(null);
+              }
+            }}
+            isActive={dateFilter !== 'ALL'}
+            isOpen={activeDropdown === 'date'}
+            onOpenChange={(open) => setActiveDropdown(open ? 'date' : null)}
+            align="auto"
+            ariaLabel="Filter by date range"
+          />
 
           <Dropdown
             label={sourceLabel}
@@ -462,6 +479,7 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
                         hideBalances={hideBalances}
                         onDelete={() => setDeletingTransaction(tx)}
                         onEdit={(t) => setEditingTransaction(t)}
+                        onClick={(t) => setEditingTransaction(t)}
                       />
                     );
                   })}
@@ -504,6 +522,35 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
         }}
         onCancel={() => setDeletingTransaction(null)}
       />
+
+      {/* Custom Date Range Picker Modal */}
+      {showCustomCalendar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="w-full max-w-sm rounded-2xl border border-theme-border bg-theme-card p-4 shadow-xl">
+            <div className="flex items-center justify-between pb-3 border-b border-theme-border mb-3">
+              <h3 className="text-sm font-semibold text-theme-primary">Custom Date Range</h3>
+              <button
+                type="button"
+                onClick={() => setShowCustomCalendar(false)}
+                className="text-xs text-theme-muted hover:text-theme-primary font-medium"
+              >
+                Close
+              </button>
+            </div>
+            <CalendarPicker
+              mode="range"
+              selectedRange={customRange || undefined}
+              onSelectRange={(range) => {
+                setCustomRange(range);
+                setDateFilter('CUSTOM');
+                setShowCustomCalendar(false);
+              }}
+              showPresets={false}
+              onClose={() => setShowCustomCalendar(false)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -44,17 +44,41 @@ export function filterTransactions(
     // 5. Date-wise filtering
     const txDate = new Date(tx.date);
 
-    if (filter.datePreset === 'THIS_MONTH') {
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    if (filter.datePreset === 'THIS_WEEK') {
+      const day = now.getDay();
+      const diffToMonday = (day + 6) % 7;
+      const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMonday, 0, 0, 0, 0);
+      const endOfWeek = new Date(startOfWeek.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
+      if (txDate < startOfWeek || txDate > endOfWeek) return false;
+    } else if (filter.datePreset === 'LAST_WEEK') {
+      const day = now.getDay();
+      const diffToMonday = (day + 6) % 7;
+      const startOfThisWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMonday, 0, 0, 0, 0);
+      const startOfLastWeek = new Date(startOfThisWeek.getTime() - 7 * 24 * 60 * 60 * 1000);
+      const endOfLastWeek = new Date(startOfThisWeek.getTime() - 1);
+      if (txDate < startOfLastWeek || txDate > endOfLastWeek) return false;
+    } else if (filter.datePreset === 'THIS_MONTH') {
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0);
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
       if (txDate < startOfMonth || txDate > endOfMonth) return false;
     } else if (filter.datePreset === 'LAST_MONTH') {
-      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1, 0, 0, 0, 0);
       const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
       if (txDate < startOfLastMonth || txDate > endOfLastMonth) return false;
-    } else if (filter.datePreset === 'LAST_30_DAYS') {
-      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-      if (txDate < thirtyDaysAgo || txDate > now) return false;
+    } else if (filter.datePreset === 'LAST_60_DAYS') {
+      const sixtyDaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+      sixtyDaysAgo.setHours(0, 0, 0, 0);
+      const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      if (txDate < sixtyDaysAgo || txDate > endOfToday) return false;
+    } else if (filter.datePreset === 'LAST_90_DAYS') {
+      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+      ninetyDaysAgo.setHours(0, 0, 0, 0);
+      const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      if (txDate < ninetyDaysAgo || txDate > endOfToday) return false;
+    } else if (filter.datePreset === 'THIS_YEAR') {
+      const startOfYear = new Date(now.getFullYear(), 0, 1, 0, 0, 0, 0);
+      const endOfYear = new Date(now.getFullYear(), 11, 31, 23, 59, 59, 999);
+      if (txDate < startOfYear || txDate > endOfYear) return false;
     } else if (filter.datePreset === 'CUSTOM') {
       if (filter.startDate) {
         const start = new Date(filter.startDate);

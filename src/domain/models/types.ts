@@ -74,7 +74,16 @@ export interface FinanceSummary {
   budgetRemaining: IntegerMoney;
 }
 
-export type DatePreset = 'ALL' | 'THIS_MONTH' | 'LAST_MONTH' | 'LAST_30_DAYS' | 'CUSTOM';
+export type DatePreset =
+  | 'ALL'
+  | 'THIS_WEEK'
+  | 'LAST_WEEK'
+  | 'THIS_MONTH'
+  | 'LAST_MONTH'
+  | 'LAST_60_DAYS'
+  | 'LAST_90_DAYS'
+  | 'THIS_YEAR'
+  | 'CUSTOM';
 export type FilterType = 'ALL' | 'EXPENSE' | 'INCOME' | 'TRANSFER';
 
 export interface ActivityFilterState {
