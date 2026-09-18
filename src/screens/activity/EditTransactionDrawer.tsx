@@ -862,53 +862,6 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
               <X className="size-5" />
             </button>
           </div>
-          
-          <div className="flex gap-2 mb-3">
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedDate(todayStr);
-                setErrors((prev) => {
-                  const next = { ...prev, date: false };
-                  if (!next.amount && !next.category && !next.account) {
-                    setErrorMessage(null);
-                  }
-                  return next;
-                });
-                setActivePicker(null);
-              }}
-              className={cn(
-                'flex-1 py-2 text-xs font-semibold rounded-full border transition-all',
-                selectedDate === todayStr
-                  ? 'border-violet-500 bg-violet-500/15 text-violet-500'
-                  : 'border-theme-divider bg-theme-card-subtle text-theme-secondary hover:bg-theme-card'
-              )}
-            >
-              Today
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedDate(yesterdayStr);
-                setErrors((prev) => {
-                  const next = { ...prev, date: false };
-                  if (!next.amount && !next.category && !next.account) {
-                    setErrorMessage(null);
-                  }
-                  return next;
-                });
-                setActivePicker(null);
-              }}
-              className={cn(
-                'flex-1 py-2 text-xs font-semibold rounded-full border transition-all',
-                selectedDate === yesterdayStr
-                  ? 'border-violet-500 bg-violet-500/15 text-violet-500'
-                  : 'border-theme-divider bg-theme-card-subtle text-theme-secondary hover:bg-theme-card'
-              )}
-            >
-              Yesterday
-            </button>
-          </div>
 
           <div className="flex items-center justify-center">
             <CalendarPicker

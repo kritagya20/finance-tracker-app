@@ -279,88 +279,60 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
       </div>
 
       {/* Quick Presets Strip */}
-      {showPresets && (
+      {showPresets && mode === 'range' && (
         <div className="mt-4 pt-3 border-t border-theme-divider space-y-1.5">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-theme-muted">
             Quick Presets
           </span>
           <div className="flex flex-wrap gap-1.5">
-            {mode === 'single' ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    onSelectDate?.(todayYMD);
-                    onClose?.();
-                  }}
-                  className="rounded-lg border border-theme-border bg-theme-card-subtle px-2.5 py-1 text-[11px] font-medium text-theme-secondary hover:bg-theme-card-hover hover:text-theme-primary transition-colors"
-                >
-                  Today
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const y = new Date(Date.now() - 86400000);
-                    onSelectDate?.(formatDateToYMD(y));
-                    onClose?.();
-                  }}
-                  className="rounded-lg border border-theme-border bg-theme-card-subtle px-2.5 py-1 text-[11px] font-medium text-theme-secondary hover:bg-theme-card-hover hover:text-theme-primary transition-colors"
-                >
-                  Yesterday
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => handleApplyRangePreset('THIS_MONTH')}
-                  className={cn(
-                    'rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
-                    activePreset === 'THIS_MONTH'
-                      ? 'border-violet-500 bg-violet-600 text-white'
-                      : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
-                  )}
-                >
-                  This Month
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleApplyRangePreset('LAST_MONTH')}
-                  className={cn(
-                    'rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
-                    activePreset === 'LAST_MONTH'
-                      ? 'border-violet-500 bg-violet-600 text-white'
-                      : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
-                  )}
-                >
-                  Last Month
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleApplyRangePreset('LAST_30_DAYS')}
-                  className={cn(
-                    'rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
-                    activePreset === 'LAST_30_DAYS'
-                      ? 'border-violet-500 bg-violet-600 text-white'
-                      : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
-                  )}
-                >
-                  Last 30 Days
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleApplyRangePreset('ALL')}
-                  className={cn(
-                    'rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
-                    activePreset === 'ALL'
-                      ? 'border-violet-500 bg-violet-600 text-white'
-                      : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
-                  )}
-                >
-                  All Time
-                </button>
-              </>
-            )}
+            <button
+              type="button"
+              onClick={() => handleApplyRangePreset('THIS_MONTH')}
+              className={cn(
+                'rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
+                activePreset === 'THIS_MONTH'
+                  ? 'border-violet-500 bg-violet-600 text-white'
+                  : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
+              )}
+            >
+              This Month
+            </button>
+            <button
+              type="button"
+              onClick={() => handleApplyRangePreset('LAST_MONTH')}
+              className={cn(
+                'rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
+                activePreset === 'LAST_MONTH'
+                  ? 'border-violet-500 bg-violet-600 text-white'
+                  : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
+              )}
+            >
+              Last Month
+            </button>
+            <button
+              type="button"
+              onClick={() => handleApplyRangePreset('LAST_30_DAYS')}
+              className={cn(
+                'rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
+                activePreset === 'LAST_30_DAYS'
+                  ? 'border-violet-500 bg-violet-600 text-white'
+                  : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
+              )}
+            >
+              Last 30 Days
+            </button>
+            <button
+              type="button"
+              onClick={() => handleApplyRangePreset('ALL')}
+              className={cn(
+                'rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
+                activePreset === 'ALL'
+                  ? 'border-violet-500 bg-violet-600 text-white'
+                  : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
+              )}
+            >
+              All Time
+            </button>
           </div>
         </div>
       )}
