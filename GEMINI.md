@@ -16,8 +16,12 @@ BEFORE implementing, modifying, or refactoring ANY screen, component, UI element
   - `font-sans` ('Inter', sans-serif) for all general UI copy, headings, and labels.
   - `font-mono` ('JetBrains Mono', monospace) **MANDATORY for all financial figures, currency amounts, percentages, dates, MPIN dots, and account masks**.
 - **Navigation Invariant**:
+  - Primary bottom navigation tabs (`Home`, `Activity`, `Analytics`, `Profile`) MUST NOT have a top back button.
   - Drill-down and sub-screens MUST use a single **ArrowLeft (`ArrowLeft`)** back navigation button at the top-left.
   - **NEVER use dual conflicting icons** (e.g., placing both `ArrowLeft` AND `X` on the same header is strictly prohibited).
+- **Security & Credential Isolation**:
+  - Sensitive credential modifications (e.g. Change MPIN, Biometric setup) MUST NEVER be mixed into general profile editing forms.
+  - Changing credentials requires a dedicated multi-stage drawer or screen (`ChangeMpinDrawer`) featuring identity challenge verification (Biometrics or OTP) followed by two-stage MPIN entry and explicit success confirmation.
 - **Form Validation**:
   - Validation errors MUST trigger **only on blur (`onBlur`) or form submission**, NEVER while the user is actively typing.
   - Error messages must be clean, human-readable instructions without character count indicators (e.g., avoid `(1/6)`).
@@ -33,3 +37,4 @@ BEFORE implementing, modifying, or refactoring ANY screen, component, UI element
   - Sheet container: `rounded-t-3xl bg-theme-elevated border-t border-theme-border shadow-2xl`.
   - Pull handle: 36×4px `rounded-full bg-slate-600/40 mx-auto my-2.5`.
 - **Disabled States**: 38% opacity (`opacity-[0.38] pointer-events-none`).
+

@@ -1705,20 +1705,47 @@ Once this works reliably, the backend and synchronization layers can be introduc
 
 # 44. Current Project Status
 
-**Status:** Initial architecture and project planning
+**Status:** Active Client & Engine Development (React 19 Frontend + Local-First Architecture)
 
-Current technology decisions:
+Current technology stack & architecture:
 
 ```text
+Frontend:     React 19, TypeScript, Tailwind CSS, Lucide Icons, Vite
 Backend:      Go
-Database:     PostgreSQL
+Database:     PostgreSQL (Cloud Sync / Backup)
 Cache:        Redis
-Local DB:     SQLite
-Architecture: Local-first
-Security:     Privacy-first
+Local DB:     SQLite / IndexedDB (Zero-knowledge encrypted)
+Money Unit:   64-bit Integer Minor Units (Paise: ₹1.00 = 100)
+Architecture: Local-first, Offline-capable
+Security:     Privacy-first, Zero-knowledge, Biometric & MPIN Authenticated
 ```
 
-The client technology will be finalized as implementation begins, with cross-platform support being a primary requirement.
+## 44.1 Implemented Frontend Architecture
+
+The client application is built with React 19, TypeScript, and Tailwind CSS, adhering strictly to [`DESIGN_SYSTEM.md`](DESIGN_SYSTEM.md):
+
+1. **Navigation Structure**:
+   - 4 primary tabs: **Home** (`House`), **Activity** (`Activity`), **Analytics** (`ChartColumn`), and **Profile** (`User`), with an elevated center FAB for quick transaction creation (`+`).
+   - Primary bottom navigation tabs omit top-left back navigation buttons.
+   - Drill-down sub-screens, settings sub-pages, and bottom drawers use a single, non-conflicting `ArrowLeft` back button.
+
+2. **CRED-Inspired Profile Hub**:
+   - Centralized account management, security controls, payment methods, categories, and application preferences.
+   - Clean, capitalized section headers without cluttered count badges.
+   - Native Dark / Light theme toggle with persisted theme tokens.
+
+3. **Bank-Grade Credential Modification (Change MPIN)**:
+   - Complete security isolation: Personal profile editing (Name, Email, Phone) is strictly decoupled from MPIN modifications.
+   - Dedicated 4-stage drawer workflow:
+     1. **Security Challenge**: Biometrics (`Fingerprint`) or SMS OTP challenge verification.
+     2. **Enter New MPIN**: Obfuscated 4-digit or 6-digit numeric input (`font-mono`).
+     3. **Confirm New MPIN**: Two-step validation preventing mismatch errors.
+     4. **Success State**: Visual confirmation with haptic-aligned feedback and session persistence.
+
+4. **Deterministic Integer Financial Engine**:
+   - Strictly handles all currency values as 64-bit integer paise (minor units, e.g. ₹500.00 = `50000`), completely eliminating IEEE-754 floating-point rounding errors.
+   - Multi-category transaction splitting and real-time budget threshold monitoring.
+
 
 ---
 

@@ -501,10 +501,11 @@ Haptic feedback provides physical confirmation for digital actions. Use sparingl
 
 - **Height**: 64px + safe-area padding.
 - **Surface**: `fixed inset-x-0 bottom-0 z-30 bg-theme-card border-t border-theme-border shadow-lg`.
-- **Tabs**: 4 slots — Home, Activity, Analytics, Settings.
+- **Tabs**: 4 slots — Home (`House`), Activity (`Activity`), Analytics (`ChartColumn`), Profile (`User`).
   - Active: `text-violet-600 dark:text-violet-400`, icon 20px, label 10px `font-semibold`.
   - Inactive: `text-theme-muted`, icon 20px, label 10px `font-medium`.
   - Indicator: Animated underline or dot (spring-snappy, 200ms).
+  - Primary bottom tabs do NOT display a top back arrow; only sub-screens and drill-down pages use the single `ArrowLeft` navigation invariant.
 - **FAB (Add Transaction)**:
   - 56×56px `rounded-full`.
   - Position: Raised `-mt-8` (32px above bar).
@@ -606,9 +607,18 @@ Empty states are **engagement opportunities**, not dead ends. Every empty state 
 - Copy must be specific: "Delete Income Deposit (+₹2,61,100.00) permanently?" NOT "Are you sure?"
 - For critical deletions (account deletion, data wipe): Require **typed confirmation** (e.g., "Type DELETE to confirm").
 
-## 28.1 Settings & Storage Rules
-- **Appearance Selection**: Clean 2-way toggle between **Light Mode** and **Dark Mode**. Avoid confusing 3-way or multi-tier day/night/system dropdowns.
-- **Storage Metrics**: Transparent on-device statistics (Records Stored, Space Consumed) without exposing sensitive or intimidating technical jargon like `SQLite (OPFS) Ready`.
+## 28.1 Settings & Appearance Standards
+- **Appearance Selection**: Clean toggle switch between **Light Mode** and **Dark Mode** via app-native `<Switch checked={effectiveTheme === 'dark'} />`. Displays Moon/Sun icon and active mode subtitle. Avoid confusing multi-tier dropdowns.
+- **Storage Metrics**: Transparent on-device statistics without exposing sensitive or intimidating technical jargon.
+
+## 28.2 Credential Modification Architecture (Change MPIN)
+In accordance with production fintech standards (CRED, Google Pay, Paytm):
+- **Separation of Concerns**: General profile editing (`EditAccountDetailsDrawer.tsx`) must strictly manage identity attributes (Full Name, Email, read-only Mobile). Security credentials must NEVER be edited inside general profile forms.
+- **Dedicated 4-Stage State Machine (`ChangeMpinDrawer.tsx`)**:
+  1. **Stage 1 (Identity Challenge)**: Step-up authentication challenge requiring user to validate identity via **Biometrics** (1-tap passkey scan) OR **SMS OTP** (6-digit OTP with 30s resend timer).
+  2. **Stage 2 (Enter New MPIN)**: 6-box discrete cell entry via `MpinInput` with strength checks rejecting sequential (`123456`) or repetitive (`000000`, `111111`) codes.
+  3. **Stage 3 (Confirm New MPIN)**: 6-box confirmation with equality check and shake animation on mismatch.
+  4. **Stage 4 (Success Confirmation)**: Emerald security badge animation, confirmation of local key re-encryption, and Done dismiss action.
 
 
 ---
