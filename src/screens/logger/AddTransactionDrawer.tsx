@@ -62,8 +62,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
   const [selectedDate, setSelectedDate] = useState('');
   const [merchantNote, setMerchantNote] = useState('');
   
-  // Categorization mode: 'single' | 'split'
-  const [categoryMode, setCategoryMode] = useState<'single' | 'split'>('single');
+  // Splits: if > 1 item, multi-category mode is active!
   const [splits, setSplits] = useState<SplitItem[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -94,7 +93,6 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
     setSelectedAccountId('');
     setSelectedDate('');
     setMerchantNote('');
-    setCategoryMode('single');
     setSplits([]);
     setActivePicker(null);
     setErrors({});
@@ -203,26 +201,66 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
     setStep(2);
   };
 
-  const handleSwitchCategoryMode = (mode: 'single' | 'split') => {
-    setCategoryMode(mode);
-    if (mode === 'split' && splits.length < 2) {
-      const paiseAmount = parseKeypadToPaise(amountStr);
+  const handleToggleCategoryInPicker = (catId: string) => {
+    if (errors.category) {
+      setErrors((prev) => ({ ...prev, category: false }));
+      setErrorMessage(null);
+    }
+
+    const paiseAmount = parseKeypadToPaise(amountStr);
+
+    // If already splitting across multiple categories
+    if (splits.length > 1) {
+      const exists = splits.some((s) => s.categoryId === catId);
+      if (exists) {
+        const remaining = splits.filter((s) => s.categoryId !== catId);
+        if (remaining.length === 1) {
+          setSelectedCategoryId(remaining[0].categoryId);
+          setSplits([]);
+        } else {
+          setSplits(remaining);
+        }
+      } else {
+        const allocated = splits.reduce((sum, s) => sum + (s.amount || 0), 0);
+        const unallocated = Math.max(0, paiseAmount - allocated);
+        setSplits([
+          ...splits,
+          {
+            id: `split_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+            categoryId: catId,
+            amount: unallocated,
+            note: '',
+          },
+        ]);
+      }
+      return;
+    }
+
+    // Currently single category or none selected
+    if (!selectedCategoryId) {
+      setSelectedCategoryId(catId);
+      setSplits([]);
+    } else if (selectedCategoryId === catId) {
+      // Tapped the same category - remain selected
+    } else {
+      // User tapped a SECOND category! Instantly initiate split!
       const half1 = Math.floor(paiseAmount / 2);
       const half2 = paiseAmount - half1;
       setSplits([
         {
           id: `split_1_${Date.now()}`,
-          categoryId: selectedCategoryId || 'cat_dining',
+          categoryId: selectedCategoryId,
           amount: half1,
           note: '',
         },
         {
           id: `split_2_${Date.now()}`,
-          categoryId: categories.find((c) => c.id !== (selectedCategoryId || 'cat_dining'))?.id || 'cat_groceries',
+          categoryId: catId,
           amount: half2,
           note: '',
         },
       ]);
+      setSelectedCategoryId('');
     }
   };
 
@@ -250,7 +288,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
       missing.push('date');
     }
 
-    const isSplit = categoryMode === 'split' && type === 'EXPENSE';
+    const isSplit = splits.length > 1 && type === 'EXPENSE';
 
     if (isSplit) {
       const allocatedPaise = splits.reduce((sum, s) => sum + (s.amount || 0), 0);
@@ -264,7 +302,8 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
         }
       }
     } else {
-      if (!selectedCategoryId) {
+      const effectiveCatId = selectedCategoryId || (splits.length === 1 ? splits[0].categoryId : '');
+      if (!effectiveCatId) {
         newErrors.category = true;
         missing.push('category');
       }
@@ -281,7 +320,9 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
 
     try {
       setIsSubmitting(true);
-      const effectiveCategoryId = isSplit ? (splits[0]?.categoryId || 'cat_dining') : selectedCategoryId;
+      const effectiveCategoryId = isSplit
+        ? (splits[0]?.categoryId || 'cat_dining')
+        : (selectedCategoryId || (splits.length === 1 ? splits[0].categoryId : '') || 'cat_dining');
       const effectiveMerchant = merchantNote.trim() || (isSplit ? 'Multi-Category Expense' : 'Expense');
 
       await onSave({
@@ -309,7 +350,8 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
 
   const accountOptions = accounts.length > 0 ? accounts : DEFAULT_ACCOUNTS;
   const currentAccount = accountOptions.find((a) => a.id === selectedAccountId);
-  const currentCategory = categories.find((c) => c.id === selectedCategoryId);
+  const activeCategoryId = selectedCategoryId || (splits.length === 1 ? splits[0].categoryId : '');
+  const currentCategory = categories.find((c) => c.id === activeCategoryId);
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
@@ -326,7 +368,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
     maximumFractionDigits: 2,
   });
 
-  const isSplit = categoryMode === 'split' && type === 'EXPENSE';
+  const isSplit = splits.length > 1 && type === 'EXPENSE';
 
   return (
     <div className="fixed inset-0 z-50 mx-auto max-w-[390px] flex items-end justify-center">
@@ -349,7 +391,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
             : 'translateY(100%)',
           transition: isDragging ? 'none' : 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
-        className="relative z-10 flex w-full max-h-[94dvh] flex-col rounded-t-3xl border-t border-theme-border/50 bg-theme-elevated shadow-2xl transition-colors overflow-hidden"
+        className="relative z-10 flex w-full h-[88vh] h-[88dvh] max-h-[88dvh] min-h-[88dvh] flex-col rounded-t-3xl border-t border-theme-border/50 bg-theme-elevated shadow-2xl transition-colors overflow-hidden"
       >
         {/* Subtle Drag Handle */}
         <div
@@ -366,9 +408,9 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
         {/* STEP 1: AMOUNT KEYPAD (GPay Minimalist Rhythm)                     */}
         {/* ------------------------------------------------------------------ */}
         {step === 1 && (
-          <div className="flex flex-col flex-1 pb-5 px-4 animate-in fade-in duration-200">
+          <div className="flex flex-col flex-1 min-h-0 justify-between pb-5 px-4 animate-in fade-in duration-200">
             {/* Top Bar: Clean Minimal Switcher + Close */}
-            <div className="flex items-center justify-between pb-1">
+            <div className="flex items-center justify-between pb-1 shrink-0">
               <div className="flex items-center rounded-full bg-theme-card-subtle p-0.5 border border-theme-border/60">
                 {(['EXPENSE', 'INCOME', 'TRANSFER'] as TransactionType[]).map((t) => {
                   const isSelected = type === t;
@@ -403,14 +445,14 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
 
             {/* Error Message */}
             {errorMessage && (
-              <div className="my-1.5 flex items-center justify-center gap-1.5 text-xs text-rose-500 transition-all">
+              <div className="my-1 shrink-0 flex items-center justify-center gap-1.5 text-xs text-rose-500 transition-all">
                 <AlertCircle className="size-3.5" />
                 <span>{errorMessage}</span>
               </div>
             )}
 
             {/* Centered Hero: "Enter amount" + Large Amount + "What's this for?" Pill */}
-            <div className="flex flex-col items-center justify-center pt-4 pb-2">
+            <div className="flex flex-col items-center justify-center py-2 shrink-0">
               <span className="text-xs font-medium text-theme-muted tracking-wide mb-1">
                 Enter amount
               </span>
@@ -423,7 +465,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                 <span className="ml-0.5 h-8 w-0.5 animate-pulse rounded-full bg-violet-500" />
               </div>
 
-              {/* Centered Pill: "What's this for?" (Directly from GPay reference screenshot) */}
+              {/* Centered Pill: "What's this for?" */}
               <div className="mt-3 flex items-center justify-center">
                 <input
                   type="text"
@@ -450,7 +492,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
             </div>
 
             {/* Flat, Spacious Keypad */}
-            <div className="pt-2 pb-3 flex-1 flex flex-col justify-center">
+            <div className="py-2 flex-1 flex flex-col justify-center min-h-0">
               <div className="grid grid-cols-3 gap-2 max-w-[340px] mx-auto w-full">
                 {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'BACKSPACE'].map((key) => (
                   <button
@@ -470,7 +512,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
             </div>
 
             {/* GPay Pill CTA */}
-            <div className="pt-1">
+            <div className="pt-2 shrink-0">
               <button
                 type="button"
                 onClick={handleProceedToDetails}
@@ -487,9 +529,9 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
         {/* STEP 2: DETAILS CANVAS (GPay-Inspired Clean Rhythm)                 */}
         {/* ------------------------------------------------------------------ */}
         {step === 2 && (
-          <div className="flex flex-col flex-1 pb-5 px-4 animate-in fade-in duration-200 overflow-y-auto no-scrollbar">
-            {/* Top Bar: Back Arrow + Title + Close */}
-            <div className="flex items-center justify-between pb-2 border-b border-theme-border/40 shrink-0">
+          <div className="flex flex-col flex-1 min-h-0 animate-in fade-in duration-200">
+            {/* Top Bar: Back Arrow + Title + Close (Fixed Header) */}
+            <div className="flex items-center justify-between px-4 pb-2 border-b border-theme-border/40 shrink-0">
               <button
                 type="button"
                 onClick={() => setStep(1)}
@@ -512,171 +554,175 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
               </button>
             </div>
 
-            {/* Error Message */}
-            {errorMessage && (
-              <div className="my-2 flex items-center justify-center gap-1.5 text-xs text-rose-500 transition-all">
-                <AlertCircle className="size-3.5" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
+            {/* Scrollable Content Body */}
+            <div className="flex-1 overflow-y-auto no-scrollbar min-h-0 px-4 py-3 space-y-3">
+              {/* Error Message */}
+              {errorMessage && (
+                <div className="flex items-center justify-center gap-1.5 text-xs text-rose-500 transition-all">
+                  <AlertCircle className="size-3.5" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
 
-            {/* Centered Amount Hero & "What's this for?" */}
-            <div className="flex flex-col items-center justify-center py-3">
-              <span className="text-xs font-medium text-theme-muted mb-0.5">
-                {isSplit ? 'Amount to split' : `${type.toLowerCase()} amount`}
-              </span>
-
-              <div className="flex items-baseline justify-center gap-1">
-                <span className="text-xl font-semibold text-theme-muted">₹</span>
-                <span className="text-4xl font-light tracking-tight text-theme-primary tabular-nums">
-                  {formattedRupees}
+              {/* Centered Amount Hero & "What's this for?" */}
+              <div className="flex flex-col items-center justify-center py-1">
+                <span className="text-xs font-medium text-theme-muted mb-0.5">
+                  {isSplit ? 'Amount to split' : `${type.toLowerCase()} amount`}
                 </span>
+
+                <div className="flex items-baseline justify-center gap-1">
+                  <span className="text-xl font-semibold text-theme-muted">₹</span>
+                  <span className="text-4xl font-light tracking-tight text-theme-primary tabular-nums">
+                    {formattedRupees}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setStep(1)}
+                    className="ml-2 p-1 text-theme-muted hover:text-violet-400 transition-colors"
+                    title="Change amount"
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
+                </div>
+
+                {/* Note pill (editable) */}
+                <div className="mt-2">
+                  <input
+                    type="text"
+                    placeholder="What's this for?"
+                    value={merchantNote}
+                    onChange={(e) => setMerchantNote(e.target.value)}
+                    className="rounded-full bg-theme-card-subtle px-4 py-1.5 text-xs text-center text-theme-primary placeholder:text-theme-muted focus:outline-none border border-theme-border/60 focus:border-violet-500/60 max-w-[220px] transition-colors"
+                  />
+                </div>
+              </div>
+
+              {/* Context Pills: Account & Date (Subtle Pill Bar) */}
+              <div className="flex items-center justify-center gap-2 py-1">
+                {/* Account Pill */}
                 <button
                   type="button"
-                  onClick={() => setStep(1)}
-                  className="ml-2 p-1 text-theme-muted hover:text-violet-400 transition-colors"
-                  title="Change amount"
+                  onClick={() => setActivePicker('account')}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all shadow-xs',
+                    errors.account
+                      ? 'border border-rose-500 bg-rose-500/10 text-rose-500'
+                      : 'bg-theme-card-subtle hover:bg-theme-card text-theme-primary border border-theme-border/60'
+                  )}
                 >
-                  <Pencil className="size-3.5" />
+                  <CreditCard className="size-3.5 text-theme-muted" />
+                  <span className="truncate max-w-[110px]">
+                    {currentAccount ? currentAccount.name : 'Select Account'}
+                  </span>
+                  <ChevronDown className="size-3 text-theme-muted" />
+                </button>
+
+                {/* Date Pill */}
+                <button
+                  type="button"
+                  onClick={() => setActivePicker('date')}
+                  className={cn(
+                    'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all shadow-xs',
+                    errors.date
+                      ? 'border border-rose-500 bg-rose-500/10 text-rose-500'
+                      : 'bg-theme-card-subtle hover:bg-theme-card text-theme-primary border border-theme-border/60'
+                  )}
+                >
+                  <Calendar className="size-3.5 text-theme-muted" />
+                  <span>{dateDisplayLabel}</span>
+                  <ChevronDown className="size-3 text-theme-muted" />
                 </button>
               </div>
 
-              {/* Note pill (editable) */}
-              <div className="mt-2.5">
-                <input
-                  type="text"
-                  placeholder="What's this for?"
-                  value={merchantNote}
-                  onChange={(e) => setMerchantNote(e.target.value)}
-                  className="rounded-full bg-theme-card-subtle px-4 py-1.5 text-xs text-center text-theme-primary placeholder:text-theme-muted focus:outline-none border border-theme-border/60 focus:border-violet-500/60 max-w-[220px] transition-colors"
-                />
-              </div>
-            </div>
-
-            {/* Context Pills: Account & Date (Subtle Pill Bar) */}
-            <div className="flex items-center justify-center gap-2 py-2">
-              {/* Account Pill */}
-              <button
-                type="button"
-                onClick={() => setActivePicker('account')}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all shadow-xs',
-                  errors.account
-                    ? 'border border-rose-500 bg-rose-500/10 text-rose-500'
-                    : 'bg-theme-card-subtle hover:bg-theme-card text-theme-primary border border-theme-border/60'
-                )}
-              >
-                <CreditCard className="size-3.5 text-theme-muted" />
-                <span className="truncate max-w-[110px]">
-                  {currentAccount ? currentAccount.name : 'Select Account'}
-                </span>
-                <ChevronDown className="size-3 text-theme-muted" />
-              </button>
-
-              {/* Date Pill */}
-              <button
-                type="button"
-                onClick={() => setActivePicker('date')}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all shadow-xs',
-                  errors.date
-                    ? 'border border-rose-500 bg-rose-500/10 text-rose-500'
-                    : 'bg-theme-card-subtle hover:bg-theme-card text-theme-primary border border-theme-border/60'
-                )}
-              >
-                <Calendar className="size-3.5 text-theme-muted" />
-                <span>{dateDisplayLabel}</span>
-                <ChevronDown className="size-3 text-theme-muted" />
-              </button>
-            </div>
-
-            {/* Mode Switcher Tabs (Inspired by GPay icon bar) */}
-            {type === 'EXPENSE' && (
-              <div className="mt-3 mb-2 flex items-center justify-center border-b border-theme-border/40">
-                <button
-                  type="button"
-                  onClick={() => handleSwitchCategoryMode('single')}
-                  className={cn(
-                    'flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border-b-2 transition-all',
-                    categoryMode === 'single'
-                      ? 'border-violet-500 text-violet-500'
-                      : 'border-transparent text-theme-muted hover:text-theme-primary'
-                  )}
-                >
-                  <Tag className="size-3.5" />
-                  <span>Single category</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleSwitchCategoryMode('split')}
-                  className={cn(
-                    'flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border-b-2 transition-all',
-                    categoryMode === 'split'
-                      ? 'border-violet-500 text-violet-500'
-                      : 'border-transparent text-theme-muted hover:text-theme-primary'
-                  )}
-                >
-                  <Split className="size-3.5" />
-                  <span>Split categories</span>
-                </button>
-              </div>
-            )}
-
-            {/* Mode 1: Single Category (Clean borderless row) */}
-            {(!isSplit || type !== 'EXPENSE') && (
-              <div className="py-3 flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={() => setActivePicker('category')}
-                  className={cn(
-                    'flex items-center justify-between py-2.5 px-2 rounded-2xl transition-all',
-                    errors.category
-                      ? 'bg-rose-500/10 text-rose-500 border border-rose-500/40'
-                      : 'hover:bg-theme-card-subtle text-theme-primary'
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={cn(
-                        'flex size-10 items-center justify-center rounded-full text-white shadow-xs',
-                        currentCategory ? currentCategory.bgClass : 'bg-theme-card-subtle text-theme-muted'
-                      )}
+              {/* Unified Category Section (NO ARTIFICIAL TABS!) */}
+              {isSplit ? (
+                <div className="py-2">
+                  <div className="flex items-center justify-between pb-2">
+                    <span className="text-xs font-semibold text-theme-secondary">
+                      Split into {splits.length} categories
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setActivePicker('category')}
+                      className="text-xs font-semibold text-violet-500 hover:text-violet-400 transition-colors"
                     >
-                      {currentCategory ? (
-                        <CategoryIcon name={currentCategory.iconName} size={18} />
-                      ) : (
-                        <Tag className="size-4" />
-                      )}
-                    </div>
-                    <div className="text-left">
-                      <div className={cn('text-xs font-semibold', errors.category ? 'text-rose-500' : 'text-theme-primary')}>
-                        {currentCategory ? currentCategory.name : 'Choose category'}
-                      </div>
-                      <div className="text-[11px] text-theme-muted">
-                        {currentCategory ? 'Category' : 'Tap to select'}
-                      </div>
-                    </div>
+                      Edit categories
+                    </button>
                   </div>
-                  <ChevronDown className="size-4 text-theme-muted" />
-                </button>
-              </div>
-            )}
 
-            {/* Mode 2: Multi-Category Bill Splitting */}
-            {isSplit && type === 'EXPENSE' && (
-              <div className="py-1">
-                <CategorySplitEditor
-                  totalAmountPaise={activeAmount}
-                  splits={splits}
-                  categories={categories}
-                  onChange={setSplits}
-                />
-              </div>
-            )}
+                  <CategorySplitEditor
+                    totalAmountPaise={activeAmount}
+                    splits={splits}
+                    categories={categories}
+                    onChange={(updated) => {
+                      if (updated.length === 1) {
+                        setSelectedCategoryId(updated[0].categoryId);
+                        setSplits([]);
+                      } else {
+                        setSplits(updated);
+                      }
+                    }}
+                    onAddCategoryClick={() => setActivePicker('category')}
+                    allowRemoveToSingle={true}
+                  />
+                </div>
+              ) : (
+                <div className="py-2 flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActivePicker('category')}
+                    className={cn(
+                      'flex items-center justify-between py-2.5 px-3 rounded-2xl transition-all',
+                      errors.category
+                        ? 'bg-rose-500/10 text-rose-500 border border-rose-500/40'
+                        : 'bg-theme-card-subtle hover:bg-theme-card text-theme-primary border border-theme-border/60'
+                    )}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          'flex size-10 items-center justify-center rounded-full text-white shadow-xs',
+                          currentCategory ? currentCategory.bgClass : 'bg-theme-card-subtle text-theme-muted'
+                        )}
+                      >
+                        {currentCategory ? (
+                          <CategoryIcon name={currentCategory.iconName} size={18} />
+                        ) : (
+                          <Tag className="size-4" />
+                        )}
+                      </div>
+                      <div className="text-left">
+                        <div className={cn('text-xs font-semibold', errors.category ? 'text-rose-500' : 'text-theme-primary')}>
+                          {currentCategory ? currentCategory.name : 'Choose category'}
+                        </div>
+                        <div className="text-[11px] text-theme-muted">
+                          {currentCategory ? 'Tap to change or split' : 'Tap to select or split'}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-theme-muted">
+                      <span>{currentCategory ? 'Change / Split' : 'Select'}</span>
+                      <ChevronDown className="size-3.5" />
+                    </div>
+                  </button>
 
-            {/* GPay Rounded-Full Pill CTA */}
-            <div className="pt-4 mt-auto">
+                  {/* Subtle "+ Split with another category" button for direct discoverability */}
+                  {currentCategory && type === 'EXPENSE' && (
+                    <button
+                      type="button"
+                      onClick={() => setActivePicker('category')}
+                      className="flex items-center gap-1.5 self-start px-2 py-1 text-xs font-semibold text-violet-500 hover:text-violet-400 transition-colors"
+                    >
+                      <Split className="size-3.5" />
+                      <span>Split into multiple categories</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Pinned Sticky Bottom CTA Footer */}
+            <div className="shrink-0 px-4 pt-2 pb-5 border-t border-theme-border/40 bg-theme-elevated">
               <button
                 type="button"
                 disabled={isSubmitting}
@@ -695,11 +741,19 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
           </div>
         )}
 
-        {/* Quick Picker Sub-Sheet: Category */}
+        {/* Quick Picker Sub-Sheet: Category (Multi-Category Splitting Built-In!) */}
         {activePicker === 'category' && (
           <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated p-4 animate-in fade-in duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-theme-border/60">
-              <span className="text-sm font-bold text-theme-primary">Select Category</span>
+            {/* Fixed Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-theme-border/60 shrink-0">
+              <div>
+                <span className="text-sm font-bold text-theme-primary">Select Category</span>
+                <p className="text-[11px] text-theme-muted">
+                  {splits.length > 1
+                    ? `${splits.length} categories selected • Split bill below`
+                    : 'Select 1 category, or tap multiple to split'}
+                </p>
+              </div>
               <button
                 type="button"
                 onClick={() => setActivePicker(null)}
@@ -708,46 +762,92 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                 <X className="size-4" />
               </button>
             </div>
-            <div className="grid grid-cols-4 gap-3 py-4 overflow-y-auto no-scrollbar">
-              {categories.map((cat) => {
-                const isSelected = selectedCategoryId === cat.id;
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedCategoryId(cat.id);
-                      setErrors((prev) => {
-                        const next = { ...prev, category: false };
-                        if (!next.amount && !next.account && !next.date) {
-                          setErrorMessage(null);
-                        }
-                        return next;
-                      });
-                      setActivePicker(null);
+
+            {/* Scrollable Canvas: Category Grid + Categorization Breakdown */}
+            <div className="flex-1 overflow-y-auto no-scrollbar min-h-0 py-3 space-y-4">
+              {/* Category Grid */}
+              <div className="grid grid-cols-4 gap-3">
+                {categories.map((cat) => {
+                  const isSelectedInSplit = splits.some((s) => s.categoryId === cat.id);
+                  const isSingleSelected = !splits.length && selectedCategoryId === cat.id;
+                  const isSelected = isSelectedInSplit || isSingleSelected;
+
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => handleToggleCategoryInPicker(cat.id)}
+                      className="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-theme-card-hover active:scale-95 transition-all relative"
+                    >
+                      <div
+                        className={cn(
+                          'flex size-11 items-center justify-center rounded-full text-white transition-all relative',
+                          cat.bgClass,
+                          isSelected ? 'ring-2 ring-violet-500 ring-offset-2 ring-offset-theme-elevated scale-105' : ''
+                        )}
+                      >
+                        <CategoryIcon name={cat.iconName} size={18} />
+                        {isSelected && (
+                          <div className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-violet-600 text-white ring-1 ring-white">
+                            <Check className="size-2.5 stroke-[3]" />
+                          </div>
+                        )}
+                      </div>
+                      <span
+                        className={cn(
+                          'text-center text-[10px] truncate w-full',
+                          isSelected ? 'font-bold text-theme-primary' : 'text-theme-secondary'
+                        )}
+                      >
+                        {cat.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Whenever user clicks more than single category: Show Categorization Breakdown Right Here! */}
+              {splits.length > 1 && (
+                <div className="pt-3 border-t border-theme-border/40 animate-in fade-in duration-150">
+                  <CategorySplitEditor
+                    totalAmountPaise={activeAmount}
+                    splits={splits}
+                    categories={categories}
+                    onChange={(updated) => {
+                      if (updated.length === 1) {
+                        setSelectedCategoryId(updated[0].categoryId);
+                        setSplits([]);
+                      } else {
+                        setSplits(updated);
+                      }
                     }}
-                    className="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-theme-card-hover active:scale-95 transition-all"
-                  >
-                    <div
-                      className={cn(
-                        'flex size-11 items-center justify-center rounded-full text-white transition-all',
-                        cat.bgClass,
-                        isSelected ? 'ring-2 ring-violet-500 ring-offset-2 ring-offset-theme-elevated scale-105' : ''
-                      )}
-                    >
-                      <CategoryIcon name={cat.iconName} size={18} />
-                    </div>
-                    <span
-                      className={cn(
-                        'text-center text-[10px] truncate w-full',
-                        isSelected ? 'font-bold text-theme-primary' : 'text-theme-secondary'
-                      )}
-                    >
-                      {cat.name}
-                    </span>
-                  </button>
-                );
-              })}
+                    allowRemoveToSingle={true}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Pinned Bottom Apply Button */}
+            <div className="shrink-0 pt-2 pb-2 border-t border-theme-border/40 bg-theme-elevated">
+              <button
+                type="button"
+                onClick={() => {
+                  if (selectedCategoryId || splits.length > 0) {
+                    setErrors((prev) => ({ ...prev, category: false }));
+                    setErrorMessage(null);
+                  }
+                  setActivePicker(null);
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 shadow-md active:scale-[0.99] transition-all"
+              >
+                <span>
+                  {splits.length > 1
+                    ? `Apply Split (${splits.length} Categories)`
+                    : currentCategory
+                    ? `Apply ${currentCategory.name}`
+                    : 'Done'}
+                </span>
+              </button>
             </div>
           </div>
         )}

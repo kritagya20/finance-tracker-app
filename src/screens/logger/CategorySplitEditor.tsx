@@ -16,6 +16,8 @@ interface CategorySplitEditorProps {
   splits: SplitItem[];
   categories: Category[];
   onChange: (splits: SplitItem[]) => void;
+  onAddCategoryClick?: () => void;
+  allowRemoveToSingle?: boolean;
 }
 
 export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
@@ -23,6 +25,8 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
   splits,
   categories,
   onChange,
+  onAddCategoryClick,
+  allowRemoveToSingle = false,
 }) => {
   const [activePickerRowIndex, setActivePickerRowIndex] = useState<number | null>(null);
 
@@ -52,6 +56,10 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
   };
 
   const handleAddSplit = () => {
+    if (onAddCategoryClick) {
+      onAddCategoryClick();
+      return;
+    }
     const usedCategoryIds = new Set(splits.map((s) => s.categoryId));
     const nextCat = categories.find((c) => !usedCategoryIds.has(c.id)) || categories[0];
     const initialAmount = Math.max(0, remainingPaise);
@@ -66,7 +74,8 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
   };
 
   const handleRemoveSplit = (index: number) => {
-    if (splits.length <= 2) return;
+    const minSplits = allowRemoveToSingle ? 1 : 2;
+    if (splits.length <= minSplits) return;
     const updated = splits.filter((_, i) => i !== index);
     onChange(updated);
   };
@@ -83,6 +92,8 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
     }));
     onChange(updated);
   };
+
+  const minSplitsAllowed = allowRemoveToSingle ? 1 : 2;
 
   return (
     <div className="flex flex-col gap-3 py-1">
@@ -177,7 +188,7 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
                   />
                 </div>
 
-                {splits.length > 2 && (
+                {splits.length > minSplitsAllowed && (
                   <button
                     type="button"
                     onClick={() => handleRemoveSplit(index)}
