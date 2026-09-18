@@ -101,12 +101,20 @@ export type FinancialGoal =
   | 'EXPENSE_CONTROL'
   | 'DEBT_FREE';
 
-export type EmploymentType = 'SALARIED' | 'FREELANCE_BUSINESS' | 'STUDENT_OTHER';
+export type EmploymentType =
+  | 'SALARIED'
+  | 'FREELANCE'
+  | 'BUSINESS'
+  | 'STUDENT'
+  | 'OTHER'
+  | 'FREELANCE_BUSINESS'
+  | 'STUDENT_OTHER';
 
 export interface UserProfile {
   id: string;
   name: string;
   email: string;
+  phone?: string;
   currency: string;
   currencySymbol: string;
   monthlyIncome: IntegerMoney;

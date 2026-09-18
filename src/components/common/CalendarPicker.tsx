@@ -218,14 +218,14 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
       </div>
 
       {/* Days Grid */}
-      <div className="grid grid-cols-7 gap-y-1 text-center text-xs">
+      <div className="grid grid-cols-7 gap-y-1 text-center text-xs font-mono">
         {/* Previous Month Overflow Days */}
         {Array.from({ length: firstDayOfMonth }).map((_, i) => {
           const prevDayNum = daysInPrevMonth - firstDayOfMonth + i + 1;
           return (
             <div
               key={`prev-${i}`}
-              className="flex size-8 mx-auto items-center justify-center text-[11px] text-theme-muted opacity-40"
+              className="flex size-8 mx-auto items-center justify-center text-[11px] font-mono text-theme-muted opacity-40"
             >
               {prevDayNum}
             </div>
@@ -257,7 +257,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
               type="button"
               onClick={() => handleDayClick(dayStr)}
               className={cn(
-                'relative flex size-8 mx-auto items-center justify-center rounded-full text-xs font-medium transition-all active:scale-95',
+                'relative flex size-8 mx-auto items-center justify-center rounded-full text-xs font-medium font-mono transition-all active:scale-95',
                 // Default Day
                 'text-theme-primary hover:bg-theme-card-hover',
                 // Today indicator

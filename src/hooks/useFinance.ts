@@ -86,6 +86,50 @@ export function useFinance() {
     [refreshData]
   );
 
+  const addAccount = useCallback(
+    async (acc: Omit<Account, 'id'>) => {
+      const repo = FinanceService.getRepo();
+      const created = await repo.addAccount(acc);
+      await refreshData();
+      return created;
+    },
+    [refreshData]
+  );
+
+  const deleteAccount = useCallback(
+    async (id: string) => {
+      const repo = FinanceService.getRepo();
+      const success = await repo.deleteAccount(id);
+      if (success) {
+        await refreshData();
+      }
+      return success;
+    },
+    [refreshData]
+  );
+
+  const addCategory = useCallback(
+    async (cat: Omit<Category, 'id'>) => {
+      const repo = FinanceService.getRepo();
+      const created = await repo.addCategory(cat);
+      await refreshData();
+      return created;
+    },
+    [refreshData]
+  );
+
+  const deleteCategory = useCallback(
+    async (id: string) => {
+      const repo = FinanceService.getRepo();
+      const success = await repo.deleteCategory(id);
+      if (success) {
+        await refreshData();
+      }
+      return success;
+    },
+    [refreshData]
+  );
+
   const updateProfile = useCallback(
     async (updates: Partial<UserProfile>) => {
       const repo = FinanceService.getRepo();
@@ -109,6 +153,10 @@ export function useFinance() {
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    addAccount,
+    deleteAccount,
+    addCategory,
+    deleteCategory,
     updateProfile,
     refreshData,
   };

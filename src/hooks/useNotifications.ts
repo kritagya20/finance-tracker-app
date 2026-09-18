@@ -8,11 +8,12 @@ const INITIAL_SEEDED_NOTIFICATIONS: AppNotification[] = [
   {
     id: 'notif_seed_1',
     type: 'SMS_CAPTURED',
-    title: 'SMS Ingested · ₹280.00 at Starbucks',
+    title: 'SMS Ingested · ₹280 at Starbucks',
     message: 'Auto-captured from HDFC Bank A/C **4102. Categorized as Food & Dining.',
     timestamp: new Date(Date.now() - 35 * 60 * 1000).toISOString(), // 35 mins ago
     isRead: false,
     priority: 'NORMAL',
+    transactionId: 'tx_starbucks_today',
     amount: 28000,
     merchantName: 'Starbucks',
     accountMask: '4102',
@@ -22,13 +23,14 @@ const INITIAL_SEEDED_NOTIFICATIONS: AppNotification[] = [
   {
     id: 'notif_seed_2',
     type: 'SMS_CAPTURED',
-    title: 'SMS Ingested · ₹450.00 at Uber Trip',
+    title: 'SMS Ingested · ₹450 at Uber Ride',
     message: 'Auto-captured from HDFC Bank A/C **4102. Categorized as Transport.',
     timestamp: new Date(Date.now() - 4 * 3600 * 1000).toISOString(), // 4 hours ago
     isRead: false,
     priority: 'NORMAL',
+    transactionId: 'tx_uber_today',
     amount: 45000,
-    merchantName: 'Uber Trip',
+    merchantName: 'Uber Ride',
     accountMask: '4102',
     categoryName: 'Transport',
     rawSmsText: 'Debited Rs.450.00 at UBER TRIP from HDFC Bank A/C **4102 on 17-Sep-26.',
@@ -36,11 +38,12 @@ const INITIAL_SEEDED_NOTIFICATIONS: AppNotification[] = [
   {
     id: 'notif_seed_3',
     type: 'SALARY_CREDITED',
-    title: 'Salary Credited · ₹85,000.00 to HDFC Bank',
+    title: 'Salary Credited · ₹85,000 to HDFC Bank',
     message: 'Monthly payroll deposit received from TechCorp Solutions.',
     timestamp: new Date(Date.now() - 24 * 3600 * 1000 * 16).toISOString(), // 16 days ago
     isRead: true,
     priority: 'HIGH',
+    transactionId: 'tx_salary_1sep',
     amount: 8500000,
     merchantName: 'TechCorp Solutions Payroll',
     accountMask: '4102',

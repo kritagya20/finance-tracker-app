@@ -29,7 +29,11 @@ export interface IFinanceRepository {
   ): Promise<Transaction>;
   deleteTransaction(id: string): Promise<boolean>;
   getAccounts(): Promise<Account[]>;
+  addAccount(account: Omit<Account, 'id'>): Promise<Account>;
+  deleteAccount(id: string): Promise<boolean>;
   getCategories(): Promise<Category[]>;
+  addCategory(category: Omit<Category, 'id'>): Promise<Category>;
+  deleteCategory(id: string): Promise<boolean>;
   getBudgets(): Promise<Budget[]>;
   getProfile(): Promise<UserProfile>;
   updateProfile(updates: Partial<UserProfile>): Promise<UserProfile>;

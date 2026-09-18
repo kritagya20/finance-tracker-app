@@ -47,6 +47,7 @@ export const INITIAL_USER_PROFILE: UserProfile = {
   id: 'usr_001',
   name: 'Alex Morgan',
   email: 'alex.morgan@domain.com',
+  phone: '+91 98765 43210',
   currency: 'INR',
   currencySymbol: '₹',
   monthlyIncome: 8500000, // ₹85,000.00
@@ -556,10 +557,46 @@ export const MockApiClient = {
     return createApiResponse(db.accounts);
   },
 
+  async addAccount(account: Omit<Account, 'id'>): Promise<ApiResponse<Account>> {
+    const db = getMockDatabase();
+    const newAccount: Account = {
+      ...account,
+      id: `acc_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    };
+    db.accounts.push(newAccount);
+    saveMockDatabase(db);
+    return createApiResponse(newAccount, undefined, 'Account added successfully', 201);
+  },
+
+  async deleteAccount(id: string): Promise<ApiResponse<{ id: string }>> {
+    const db = getMockDatabase();
+    db.accounts = db.accounts.filter((a) => a.id !== id);
+    saveMockDatabase(db);
+    return createApiResponse({ id }, undefined, 'Account deleted successfully');
+  },
+
   // --- Categories ---
   async getCategories(): Promise<ApiResponse<Category[]>> {
     const db = getMockDatabase();
     return createApiResponse(db.categories);
+  },
+
+  async addCategory(category: Omit<Category, 'id'>): Promise<ApiResponse<Category>> {
+    const db = getMockDatabase();
+    const newCategory: Category = {
+      ...category,
+      id: `cat_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+    };
+    db.categories.push(newCategory);
+    saveMockDatabase(db);
+    return createApiResponse(newCategory, undefined, 'Category added successfully', 201);
+  },
+
+  async deleteCategory(id: string): Promise<ApiResponse<{ id: string }>> {
+    const db = getMockDatabase();
+    db.categories = db.categories.filter((c) => c.id !== id);
+    saveMockDatabase(db);
+    return createApiResponse({ id }, undefined, 'Category deleted successfully');
   },
 
   // --- Budgets ---

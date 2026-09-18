@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertTriangle, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Trash2 } from 'lucide-react';
 import { Transaction } from '../../domain/models/types';
 import { getCategoryById } from '../../domain/engine/categories';
 import { formatCurrency } from '../../domain/engine/moneyUtils';
@@ -29,7 +29,7 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
       {/* Backdrop */}
       <div
         onClick={onCancel}
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
       />
 
       {/* Modal Dialog */}
@@ -37,51 +37,42 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="delete-dialog-title"
-        className="relative z-10 w-full rounded-3xl border border-theme-border bg-theme-elevated p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200 transition-colors"
+        className="relative z-10 w-full rounded-3xl border border-theme-border/80 bg-theme-elevated p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200 transition-colors"
       >
-        {/* Close Button */}
-        <button
-          type="button"
-          onClick={onCancel}
-          className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-full bg-theme-card-subtle text-theme-secondary hover:text-theme-primary transition-colors"
-        >
-          <X className="size-4" />
-        </button>
-
         {/* Header Alert Badge */}
         <div className="flex flex-col items-center text-center">
-          <div className="flex size-14 items-center justify-center rounded-2xl border border-rose-500/30 bg-rose-500/15 text-rose-500 dark:text-rose-400 shadow-lg shadow-rose-950/40">
+          <div className="flex size-14 items-center justify-center rounded-2xl border border-rose-500/25 bg-rose-500/10 text-rose-500 dark:text-rose-400 shadow-inner">
             <AlertTriangle className="size-7" />
           </div>
 
           <h3
             id="delete-dialog-title"
-            className="mt-3.5 text-lg font-bold tracking-tight text-theme-primary"
+            className="mt-4 text-lg font-bold tracking-tight text-theme-primary"
           >
             Delete Transaction?
           </h3>
-          <p className="mt-1 text-xs text-theme-muted max-w-[260px] leading-relaxed">
-            This transaction will be permanently removed and balances will be recalculated.
+          <p className="mt-1 text-xs text-theme-muted max-w-[270px] leading-relaxed">
+            This transaction will be permanently removed from your private ledger. This action cannot be undone.
           </p>
         </div>
 
-        {/* Transaction Summary Card */}
-        <div className="mt-4 rounded-2xl border border-theme-border bg-theme-card-subtle p-3.5 flex items-center justify-between">
-          <div className="flex items-center gap-3 min-w-0">
+        {/* Transaction Summary Card (Generous layout preventing title clipping) */}
+        <div className="mt-5 rounded-2xl border border-theme-border/60 bg-theme-card-subtle/70 p-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             <span
               className={cn(
-                'flex size-10 shrink-0 items-center justify-center rounded-xl',
+                'flex size-11 shrink-0 items-center justify-center rounded-xl border border-theme-border',
                 category.bgClass,
                 category.textClass
               )}
             >
-              <CategoryIcon name={category.iconName} size={18} />
+              <CategoryIcon name={category.iconName} size={20} />
             </span>
-            <div className="min-w-0">
-              <p className="truncate text-xs font-semibold text-theme-primary">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-theme-primary break-words line-clamp-2 leading-snug">
                 {transaction.merchantName}
               </p>
-              <p className="text-[11px] text-theme-muted truncate">
+              <p className="text-xs text-theme-muted mt-0.5">
                 {category.name}
               </p>
             </div>
@@ -89,20 +80,20 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
 
           <span
             className={cn(
-              'text-sm font-bold tabular-nums shrink-0 ml-2',
-              isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-theme-primary'
+              'text-base font-bold font-mono tabular-nums shrink-0 pl-2',
+              isIncome ? 'text-emerald-500 dark:text-emerald-400' : 'text-theme-primary'
             )}
           >
             {isIncome ? '+' : '-'}{formatCurrency(transaction.amount)}
           </span>
         </div>
 
-        {/* Actions */}
-        <div className="mt-5 grid grid-cols-2 gap-2.5">
+        {/* Actions (Spacious 48px Buttons with M3 Active Scale) */}
+        <div className="mt-6 grid grid-cols-2 gap-3">
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-2xl border border-theme-border bg-theme-card-subtle py-3 text-xs font-semibold text-theme-secondary hover:bg-theme-card-hover transition-colors"
+            className="h-12 rounded-xl border border-theme-border bg-theme-card-subtle text-sm font-semibold text-theme-secondary hover:text-theme-primary hover:bg-theme-card-hover active:scale-[0.97] transition-all"
           >
             Cancel
           </button>
@@ -110,9 +101,9 @@ export const ConfirmDeleteModal: React.FC<ConfirmDeleteModalProps> = ({
           <button
             type="button"
             onClick={onConfirm}
-            className="flex items-center justify-center gap-1.5 rounded-2xl bg-gradient-to-r from-rose-600 to-rose-500 py-3 text-xs font-semibold text-white shadow-lg shadow-rose-950/50 hover:brightness-110 active:scale-[0.98] transition-all"
+            className="flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 text-sm font-semibold text-white shadow-lg shadow-rose-950/30 hover:brightness-110 active:scale-[0.97] transition-all"
           >
-            <Trash2 className="size-3.5" />
+            <Trash2 className="size-4" />
             <span>Yes, Delete</span>
           </button>
         </div>

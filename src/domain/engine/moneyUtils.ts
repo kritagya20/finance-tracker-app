@@ -3,21 +3,31 @@ import { IntegerMoney } from '../models/types';
 /**
  * Formats integer-based currency (in lowest denominator, e.g. paise/cents)
  * to a localized currency string.
- * Example: 14285000 -> "₹1,42,850.00"
+ * Uses adaptive decimal precision:
+ * - When showDecimals is 'auto' (default): drops '.00' for whole rupees (e.g. ₹5, ₹85,000),
+ *   but preserves exact paise when present (e.g. ₹4.50, ₹100.75).
+ * - When showDecimals is boolean: forces 2 or 0 decimals explicitly.
  */
 export function formatCurrency(
   amount: IntegerMoney,
   currency = 'INR',
-  showDecimals = true
+  showDecimals: boolean | 'auto' = 'auto'
 ): string {
   const isNegative = amount < 0;
-  const absUnits = Math.abs(amount) / 100;
+  const absPaise = Math.abs(amount);
+  const absUnits = absPaise / 100;
+  const hasPaise = absPaise % 100 !== 0;
+
+  const effectiveDecimals =
+    showDecimals === 'auto'
+      ? (hasPaise ? 2 : 0)
+      : (showDecimals ? 2 : 0);
 
   const formatter = new Intl.NumberFormat('en-IN', {
     style: 'currency',
     currency: currency,
-    minimumFractionDigits: showDecimals ? 2 : 0,
-    maximumFractionDigits: showDecimals ? 2 : 0,
+    minimumFractionDigits: effectiveDecimals,
+    maximumFractionDigits: effectiveDecimals,
   });
 
   const formatted = formatter.format(absUnits);

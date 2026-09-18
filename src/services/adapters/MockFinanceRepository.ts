@@ -79,9 +79,29 @@ export class MockFinanceRepository implements IFinanceRepository {
     return res.data;
   }
 
+  async addAccount(account: Omit<Account, 'id'>): Promise<Account> {
+    const res = await MockApiClient.addAccount(account);
+    return res.data;
+  }
+
+  async deleteAccount(id: string): Promise<boolean> {
+    const res = await MockApiClient.deleteAccount(id);
+    return res.success;
+  }
+
   async getCategories(): Promise<Category[]> {
     const res = await MockApiClient.getCategories();
     return res.data;
+  }
+
+  async addCategory(category: Omit<Category, 'id'>): Promise<Category> {
+    const res = await MockApiClient.addCategory(category);
+    return res.data;
+  }
+
+  async deleteCategory(id: string): Promise<boolean> {
+    const res = await MockApiClient.deleteCategory(id);
+    return res.success;
   }
 
   async getBudgets(): Promise<Budget[]> {

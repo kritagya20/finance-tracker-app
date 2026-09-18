@@ -12,6 +12,7 @@ import {
   DollarSign,
   CircleDollarSign,
   Split,
+  ChevronDown,
   type LucideIcon,
 } from 'lucide-react';
 import { Transaction, Category } from '../../domain/models/types';
@@ -51,7 +52,6 @@ export interface TransactionItemProps {
   showSwipe?: boolean;
   showCategory?: boolean;
   showSourceBadge?: boolean;
-  showNotesTag?: boolean;
   showTimeOrDate?: 'time' | 'date' | 'both' | 'auto';
   iconShape?: 'rounded' | 'circle';
   onDelete?: (id: string) => void;
@@ -104,7 +104,6 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
   showSwipe: propShowSwipe,
   showCategory = true,
   showSourceBadge = true,
-  showNotesTag = true,
   showTimeOrDate = 'auto',
   iconShape = 'rounded',
   onDelete,
@@ -119,6 +118,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
   // Swipe Gesture State
   const [offsetX, setOffsetX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [isAccordionOpen, setIsAccordionOpen] = useState(false);
 
   const startXRef = useRef(0);
   const startYRef = useRef(0);
@@ -126,7 +126,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
   const isHorizontalDragRef = useRef<boolean | null>(null);
 
   const IconComp = CATEGORY_ICON_MAP[category.iconName] || CircleDollarSign;
-  const iconBorderClass = CATEGORY_BORDER_MAP[category.id] || 'border-white/10';
+  const iconBorderClass = CATEGORY_BORDER_MAP[category.id] || 'border-theme-border';
   const timestampStr = formatTimestamp(tx.date, showTimeOrDate, variant);
 
   // Drag Gesture Handlers
@@ -236,103 +236,145 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
       onPointerCancel={shouldSwipe ? handlePointerUp : undefined}
       onClick={handleCardClick}
       className={cn(
-        'relative z-10 flex w-full items-center gap-3.5 p-3.5 transition-colors',
+        'relative z-10 flex flex-col w-full p-3.5 transition-colors',
         shouldSwipe
           ? 'bg-theme-card'
-          : 'rounded-2xl border border-theme-border bg-theme-card shadow-sm',
+          : 'rounded-xl border border-theme-border bg-theme-card shadow-sm',
         shouldSwipe && isDragging ? 'cursor-grabbing' : shouldSwipe ? 'cursor-grab touch-pan-y' : '',
-        onClick && !shouldSwipe ? 'cursor-pointer hover:bg-theme-card-subtle active:bg-theme-card-hover' : '',
+        onClick && !shouldSwipe ? 'cursor-pointer hover:bg-theme-card-hover/40 active:bg-theme-card-hover transition-colors duration-150' : '',
         offsetX !== 0 ? 'shadow-2xl shadow-black/20 dark:shadow-black/70' : '',
         className
       )}
     >
-      {/* Category Icon Container */}
-      <span
-        className={cn(
-          'flex size-11 shrink-0 items-center justify-center border transition-transform pointer-events-none',
-          iconShape === 'circle' ? 'rounded-full' : 'rounded-2xl',
-          category.bgClass,
-          category.textClass,
-          iconBorderClass
-        )}
-      >
-        <IconComp className="size-5" />
-      </span>
-
-      {/* Title & Metadata */}
-      <div className="min-w-0 flex-1 pointer-events-none">
-        <p className="truncate text-sm font-semibold tracking-tight text-theme-primary">
-          {tx.merchantName}
-        </p>
-        <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
-          {showCategory && (
-            <span className="truncate text-[11px] font-normal text-theme-secondary">
-              {category.name}
-            </span>
-          )}
-
-          {showCategory && (showSourceBadge || (showNotesTag && tx.notes?.includes('items'))) && (
-            <span className="size-1 shrink-0 rounded-full bg-theme-muted" />
-          )}
-
-          {showSourceBadge && (
-            <span
-              className={cn(
-                'inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-medium tracking-wide',
-                tx.source === 'AUTO_SMS'
-                  ? 'bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-500/25'
-                  : 'bg-theme-card-subtle text-theme-secondary border border-theme-border'
-              )}
-            >
-              {tx.source === 'AUTO_SMS' ? 'SMS' : 'MANUAL'}
-            </span>
-          )}
-
-          {showNotesTag && tx.notes && tx.notes.includes('items') && (
-            <span className="rounded bg-theme-card-subtle px-1 py-0.2 text-[10px] text-theme-muted">
-              {tx.notes}
-            </span>
-          )}
-
-          {tx.isSplit && tx.splits && tx.splits.length > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-500/25 px-1.5 py-0.5 text-[10px] font-semibold">
-              <Split className="size-2.5" />
-              Split ({tx.splits.length} categories)
-            </span>
-          )}
-        </div>
-
-        {tx.isSplit && tx.splits && tx.splits.length > 0 && (
-          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-theme-secondary">
-            {tx.splits.map((s, idx) => {
-              const cat = getCategoryById(s.categoryId);
-              return (
-                <span key={s.id || idx} className="inline-flex items-center gap-1 bg-theme-card-subtle px-1.5 py-0.5 rounded-md border border-theme-border">
-                  <span className={cn('size-1.5 rounded-full', cat?.bgClass || 'bg-violet-500')} />
-                  <span>{cat?.name || 'Category'}: <strong className="font-semibold text-theme-primary">{formatCurrency(s.amount)}</strong></span>
-                </span>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Amount Display */}
-      <div className="shrink-0 text-right pointer-events-none">
-        <p
+      {/* Primary Row */}
+      <div className="flex w-full items-center gap-3">
+        {/* Category Icon Container */}
+        <span
           className={cn(
-            'text-sm font-bold tracking-tight tabular-nums',
-            isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-theme-primary'
+            'flex size-10 shrink-0 items-center justify-center border transition-transform pointer-events-none',
+            iconShape === 'circle' ? 'rounded-full' : 'rounded-xl',
+            category.bgClass,
+            category.textClass,
+            iconBorderClass
           )}
         >
-          {hideBalances
-            ? '••••••'
-            : `${isIncome ? '+' : '-'}${formatCurrency(tx.amount)}`}
-        </p>
-        <p className="mt-0.5 text-[11px] font-medium text-theme-muted tabular-nums">
-          {timestampStr}
-        </p>
+          <IconComp className="size-5" />
+        </span>
+
+        {/* Title & Metadata (min-w-0 flex-1 guarantees title will wrap or truncate cleanly) */}
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium tracking-tight text-theme-primary">
+            {tx.merchantName}
+          </p>
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs">
+            {showCategory && (
+              <span className="truncate text-[11px] font-normal text-theme-secondary">
+                {category.name}
+              </span>
+            )}
+
+            {showCategory && showSourceBadge && (
+              <span className="size-1 shrink-0 rounded-full bg-theme-muted" />
+            )}
+
+            {showSourceBadge && (
+              <span
+                className={cn(
+                  'inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold tracking-wider uppercase',
+                  tx.source === 'AUTO_SMS'
+                    ? 'bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-500/25'
+                    : 'bg-theme-card-subtle text-theme-secondary border border-theme-border'
+                )}
+              >
+                {tx.source === 'AUTO_SMS' ? 'SMS' : 'MANUAL'}
+              </span>
+            )}
+
+            {/* Split Accordion Toggle Pill */}
+            {tx.isSplit && tx.splits && tx.splits.length > 0 && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsAccordionOpen((prev) => !prev);
+                }}
+                className="pointer-events-auto inline-flex items-center gap-1 rounded-full bg-violet-500/15 hover:bg-violet-500/25 text-violet-600 dark:text-violet-300 border border-violet-500/25 px-2 py-0.5 text-[9px] font-semibold active:scale-95 transition-all"
+                aria-label="Toggle split breakdown"
+              >
+                <Split className="size-2.5" />
+                <span>Split ({tx.splits.length})</span>
+                <ChevronDown
+                  className={cn(
+                    'size-2.5 transition-transform duration-200',
+                    isAccordionOpen && 'rotate-180'
+                  )}
+                />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Amount Display (Rigid shrink-0 min-w-fit so large amounts like +₹2,61,100.00 never break) */}
+        <div className="shrink-0 text-right min-w-fit pl-2.5 pointer-events-none">
+          <p
+            className={cn(
+              'text-[15px] font-semibold font-mono tracking-tight tabular-nums',
+              isIncome ? 'text-emerald-500 dark:text-emerald-400' : 'text-theme-primary'
+            )}
+          >
+            {hideBalances
+              ? '••••••'
+              : `${isIncome ? '+' : '-'}${formatCurrency(tx.amount)}`}
+          </p>
+          <p className="mt-0.5 text-[11px] font-medium font-mono text-theme-muted tabular-nums">
+            {timestampStr}
+          </p>
+        </div>
       </div>
+
+      {/* Accordion Content for Split Categories */}
+      {isAccordionOpen && tx.isSplit && tx.splits && tx.splits.length > 0 && (
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="mt-2.5 w-full pt-2.5 border-t border-theme-border/60 flex flex-col gap-1.5 animate-in fade-in duration-200 pointer-events-auto"
+        >
+          <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-wider text-theme-muted px-1">
+            <span>Category Breakdown</span>
+            <span>Allocated</span>
+          </div>
+          {tx.splits.map((s, idx) => {
+            const cat = getCategoryById(s.categoryId);
+            const CatIcon =
+              cat?.iconName && CATEGORY_ICON_MAP[cat.iconName]
+                ? CATEGORY_ICON_MAP[cat.iconName]
+                : CircleDollarSign;
+            return (
+              <div
+                key={s.id || idx}
+                className="flex items-center justify-between py-1 px-2.5 rounded-lg bg-theme-card-subtle/80 border border-theme-border/50 text-xs"
+              >
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className={cn(
+                      'flex size-5 shrink-0 items-center justify-center rounded-md text-[10px]',
+                      cat?.bgClass || 'bg-violet-500/20',
+                      cat?.textClass || 'text-violet-400'
+                    )}
+                  >
+                    <CatIcon className="size-3" />
+                  </span>
+                  <span className="truncate text-[11px] font-medium text-theme-secondary">
+                    {cat?.name || 'Category'}
+                  </span>
+                </div>
+                <span className="font-mono text-[11px] font-semibold text-theme-primary tabular-nums shrink-0 pl-2">
+                  {formatCurrency(s.amount)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 
@@ -343,7 +385,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
 
   // Swipeable container with unified master border and flush reveal actions
   return (
-    <li className="relative overflow-hidden rounded-2xl border border-theme-border bg-theme-card select-none shadow-sm">
+    <li className="relative overflow-hidden rounded-xl border border-theme-border bg-theme-card select-none shadow-sm">
       {/* 1. Edit Action Background (Left - Revealed on swipe right) */}
       <div
         className={cn(
