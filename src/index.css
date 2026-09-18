@@ -24,6 +24,10 @@
   --border-divider: #f1f5f9; /* slate-100 hairline */
   --border-focus: #7c3aed; /* violet-600 */
 
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --bg-scrim: rgba(0, 0, 0, 0.60);
+  --text-disabled: rgba(15, 23, 42, 0.38);
+
   /* Accent Colors */
   --accent-primary: #7c3aed;
   --accent-primary-hover: #6d28d9;
@@ -37,11 +41,11 @@ html.dark, [data-theme='dark'] {
 
   /* Surface & Background Variables */
   --bg-app: #020617; /* deep slate-950 */
-  --bg-card: #0f172a; /* slate-900 / zinc-900 surface */
+  --bg-card: #0f172a; /* slate-900 surface */
   --bg-card-subtle: #1e293b; /* slate-800 */
   --bg-card-hover: #334155; /* slate-700 */
-  --bg-input: #1e293b; /* slate-800 / zinc-800 input */
-  --bg-elevated: #18181b; /* zinc-900 modal / drawer */
+  --bg-input: #1e293b; /* slate-800 input */
+  --bg-elevated: #0f172a; /* slate-900 elevated surface */
 
   /* Text & Typography Variables */
   --text-primary: #f8fafc; /* slate-50 high contrast */
@@ -50,9 +54,13 @@ html.dark, [data-theme='dark'] {
   --text-inverse: #0f172a;
 
   /* Border & Divider Variables */
-  --border-subtle: rgba(255, 255, 255, 0.1);
-  --border-divider: rgba(255, 255, 255, 0.08);
+  --border-subtle: #1e293b; /* refined slate-800 subtle card border */
+  --border-divider: #172033; /* subtle hairline divider */
   --border-focus: #8b5cf6;
+
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --bg-scrim: rgba(0, 0, 0, 0.60);
+  --text-disabled: rgba(248, 250, 252, 0.38);
 
   /* Accent Colors */
   --accent-primary: #8b5cf6;
@@ -60,6 +68,16 @@ html.dark, [data-theme='dark'] {
   --accent-success: #34d399;
   --accent-danger: #fb7185;
   --accent-warning: #fbbf24;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.animate-shake {
+  animation: shake 0.35s cubic-bezier(0.2, 0, 0, 1);
 }
 
 body {

@@ -31,6 +31,23 @@ export default {
       },
       fontFamily: {
         sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
+      },
+      transitionTimingFunction: {
+        'emphasized': 'cubic-bezier(0.2, 0, 0, 1)',
+        'emphasized-decel': 'cubic-bezier(0, 0, 0, 1)',
+        'emphasized-accel': 'cubic-bezier(0.3, 0, 0.8, 0.15)',
+        'standard': 'cubic-bezier(0.2, 0, 0, 1)',
+        'standard-decel': 'cubic-bezier(0, 0, 0, 1)',
+        'standard-accel': 'cubic-bezier(0.3, 0, 1, 1)',
+      },
+      transitionDuration: {
+        'instant': '100ms',
+        'fast': '150ms',
+        'normal': '200ms',
+        'moderate': '300ms',
+        'slow': '400ms',
+        'deliberate': '500ms',
       },
       maxWidth: {
         'mobile': '390px',
