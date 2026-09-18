@@ -6,9 +6,10 @@ import {
   Calendar,
   CreditCard,
   MessageSquare,
-  Split,
   ChevronDown,
+  ChevronRight,
   Check,
+  Users,
   AlertCircle,
   Tag,
 } from 'lucide-react';
@@ -17,10 +18,12 @@ import {
   Account,
   TransactionType,
   Transaction,
+  SplitDetails,
 } from '../../domain/models/types';
 import { parseKeypadToPaise, paiseToRupees } from '../../domain/engine/moneyUtils';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
 import { CalendarPicker } from '../../components/common/CalendarPicker';
+import { SplitExpenseModal } from './SplitExpenseModal';
 import { cn } from '../../lib/utils';
 
 interface AddTransactionDrawerProps {
@@ -56,7 +59,8 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [merchantNote, setMerchantNote] = useState('');
-  const [isSplit, setIsSplit] = useState(false);
+  const [splitDetails, setSplitDetails] = useState<SplitDetails | undefined>(undefined);
+  const [isSplitModalOpen, setIsSplitModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Validation error state
@@ -84,7 +88,8 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
     setSelectedAccountId('');
     setSelectedDate('');
     setMerchantNote('');
-    setIsSplit(false);
+    setSplitDetails(undefined);
+    setIsSplitModalOpen(false);
     setActivePicker(null);
     setErrors({});
     setErrorMessage(null);
@@ -149,33 +154,56 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
     }
   };
 
+  const updateEqualSplit = (newPaise: number) => {
+    setSplitDetails((prev) => {
+      if (!prev || prev.splitType !== 'EQUAL') return prev;
+      const count = prev.participants.length;
+      if (count <= 0) return prev;
+      const eq = Math.floor(newPaise / count);
+      const rem = newPaise - eq * count;
+      const myShare = eq + rem;
+      const lent = newPaise - myShare;
+      return {
+        ...prev,
+        totalAmount: newPaise,
+        myShare,
+        lentAmount: lent,
+        participants: prev.participants.map((p) => ({
+          ...p,
+          amount: p.isPaidByMe ? myShare : eq,
+        })),
+      };
+    });
+  };
+
   const handleKeypadPress = (key: string) => {
     if (errors.amount) {
       setErrors((prev) => ({ ...prev, amount: false }));
       setErrorMessage(null);
     }
 
+    let nextStr = amountStr;
     if (key === 'BACKSPACE') {
-      setAmountStr((prev) => {
-        if (prev.length <= 1) return '0';
-        return prev.slice(0, -1);
-      });
-      return;
+      nextStr = amountStr.length <= 1 ? '0' : amountStr.slice(0, -1);
+    } else if (key === '.') {
+      if (!amountStr.includes('.')) {
+        nextStr = amountStr + '.';
+      }
+    } else {
+      // Numbers 0-9
+      if (amountStr === '0') {
+        nextStr = key;
+      } else {
+        const parts = amountStr.split('.');
+        if (parts.length <= 1 || parts[1].length < 2) {
+          nextStr = amountStr + key;
+        }
+      }
     }
 
-    if (key === '.') {
-      if (amountStr.includes('.')) return;
-      setAmountStr((prev) => prev + '.');
-      return;
-    }
-
-    // Numbers 0-9
-    setAmountStr((prev) => {
-      if (prev === '0') return key;
-      const parts = prev.split('.');
-      if (parts.length > 1 && parts[1].length >= 2) return prev;
-      return prev + key;
-    });
+    setAmountStr(nextStr);
+    const newPaise = parseKeypadToPaise(nextStr);
+    updateEqualSplit(newPaise);
   };
 
   const handleQuickAdd = (rupeesToAdd: number) => {
@@ -186,7 +214,10 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
     const currentPaise = parseKeypadToPaise(amountStr);
     const currentRupees = paiseToRupees(currentPaise);
     const newRupees = currentRupees + rupeesToAdd;
-    setAmountStr(newRupees.toString());
+    const nextStr = newRupees.toString();
+    setAmountStr(nextStr);
+    const newPaise = parseKeypadToPaise(nextStr);
+    updateEqualSplit(newPaise);
   };
 
   const handleSave = async () => {
@@ -241,7 +272,8 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
         notes: merchantNote.trim() || undefined,
         date: chosenDate.toISOString(),
         source: 'MANUAL',
-        isSplit,
+        isSplit: Boolean(splitDetails),
+        splitDetails: splitDetails || undefined,
       });
       resetForm();
       onClose();
@@ -454,8 +486,8 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
           </div>
         </div>
 
-        {/* Minimal Inline Note & Split Bar */}
-        <div className="px-4 py-1.5">
+        {/* Clean Note Input */}
+        <div className="px-4 py-1">
           <div className="flex items-center gap-2 rounded-xl border border-theme-border bg-theme-input px-3 py-2 shadow-xs transition-colors focus-within:border-violet-500/50">
             <MessageSquare className="size-3.5 text-theme-muted shrink-0" />
             <input
@@ -465,24 +497,76 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
               onChange={(e) => setMerchantNote(e.target.value)}
               className="w-full bg-transparent text-xs text-theme-primary placeholder:text-theme-muted focus:outline-none"
             />
-            <button
-              type="button"
-              onClick={() => setIsSplit(!isSplit)}
-              className={cn(
-                'flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-semibold transition-all shrink-0',
-                isSplit
-                  ? 'bg-violet-500 text-white shadow-xs'
-                  : 'bg-theme-card-subtle text-theme-muted hover:text-theme-primary'
-              )}
-            >
-              <Split className="size-3" />
-              <span>Split</span>
-            </button>
           </div>
+
+          {/* Dedicated Splitwise Bar (Only for Expenses) */}
+          {type === 'EXPENSE' && (
+            <div className="mt-1.5">
+              {!splitDetails ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (activeAmount <= 0) {
+                      setErrors((prev) => ({ ...prev, amount: true }));
+                      setErrorMessage('Please enter an amount before splitting');
+                      return;
+                    }
+                    setIsSplitModalOpen(true);
+                  }}
+                  className="flex w-full items-center justify-between rounded-xl border border-dashed border-violet-500/35 bg-violet-500/5 hover:bg-violet-500/10 px-3 py-1.5 text-xs font-medium text-violet-600 dark:text-violet-400 transition-all active:scale-[0.99] shadow-xs"
+                >
+                  <div className="flex items-center gap-2">
+                    <div className="flex size-5 items-center justify-center rounded-md bg-violet-500/15 text-violet-600 dark:text-violet-400">
+                      <Users className="size-3" />
+                    </div>
+                    <span className="text-[11px] font-semibold">Split this expense with friends (Splitwise)</span>
+                  </div>
+                  <ChevronRight className="size-3.5 text-violet-400" />
+                </button>
+              ) : (
+                <div className="flex w-full items-center justify-between rounded-xl border border-violet-500/40 bg-violet-500/10 px-3 py-1.5 text-xs transition-all shadow-xs">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="flex size-6 items-center justify-center rounded-lg bg-violet-600 text-white shrink-0">
+                      <Users className="size-3" />
+                    </div>
+                    <div className="min-w-0 text-left">
+                      <div className="text-[11px] font-bold text-theme-primary truncate">
+                        Split with {splitDetails.participants.filter((p) => !p.isPaidByMe).map((p) => p.name.split(' ')[0]).join(', ')}
+                      </div>
+                      <div className="text-[10px] text-theme-secondary">
+                        Your share: <span className="font-bold text-violet-600 dark:text-violet-400">₹{(splitDetails.myShare / 100).toFixed(0)}</span>
+                        {' • '}
+                        Lent: <span className="font-bold text-emerald-600 dark:text-emerald-400">₹{(splitDetails.lentAmount / 100).toFixed(0)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0 ml-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setIsSplitModalOpen(true)}
+                      className="px-2 py-0.5 rounded-lg bg-violet-600 text-white text-[10px] font-semibold hover:bg-violet-500 transition-colors shadow-xs"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSplitDetails(undefined);
+                      }}
+                      className="p-1 rounded-lg text-theme-muted hover:text-rose-500 transition-colors"
+                      title="Remove split"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* GPay 3x4 Touch Keypad */}
-        <div className="px-4 py-1.5">
+        <div className="px-4 py-1">
           <div className="grid grid-cols-3 gap-1.5">
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'BACKSPACE'].map((key) => (
               <button
@@ -516,7 +600,9 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
               {isSubmitting
                 ? 'Saving...'
                 : activeAmount > 0
-                ? `Save ${type === 'EXPENSE' ? 'Expense' : type === 'INCOME' ? 'Income' : 'Transfer'} ₹${formattedRupees}`
+                ? splitDetails
+                  ? `Save Split Expense ₹${formattedRupees} (Your share ₹${(splitDetails.myShare / 100).toFixed(0)})`
+                  : `Save ${type === 'EXPENSE' ? 'Expense' : type === 'INCOME' ? 'Income' : 'Transfer'} ₹${formattedRupees}`
                 : 'Enter Amount & Save'}
             </span>
             <ArrowRight className="size-4" />
@@ -720,6 +806,22 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
             </div>
           </div>
         )}
+
+        {/* Splitwise Split Expense Modal */}
+        <SplitExpenseModal
+          isOpen={isSplitModalOpen}
+          totalAmountPaise={activeAmount}
+          initialSplitDetails={splitDetails}
+          onApply={(details) => {
+            setSplitDetails(details);
+            setIsSplitModalOpen(false);
+          }}
+          onRemove={() => {
+            setSplitDetails(undefined);
+            setIsSplitModalOpen(false);
+          }}
+          onClose={() => setIsSplitModalOpen(false)}
+        />
       </div>
     </div>
   );

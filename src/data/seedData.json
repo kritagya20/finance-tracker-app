@@ -386,5 +386,11 @@
         "metric": "4.4 mo"
       }
     ]
-  }
+  },
+  "friends": [
+    { "id": "frnd_01", "name": "Rahul Sharma", "avatar": "RS", "emailOrPhone": "+91 98201 12345" },
+    { "id": "frnd_02", "name": "Priya Patel", "avatar": "PP", "emailOrPhone": "+91 98302 67890" },
+    { "id": "frnd_03", "name": "Amit Verma", "avatar": "AV", "emailOrPhone": "+91 98403 11223" },
+    { "id": "frnd_04", "name": "Sneha Rao", "avatar": "SR", "emailOrPhone": "+91 98504 44556" }
+  ]
 }

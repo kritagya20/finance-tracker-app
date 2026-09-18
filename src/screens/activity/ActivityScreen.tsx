@@ -45,7 +45,7 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
   const [dateFilter, setDateFilter] = useState<DateFilter>('THIS_MONTH');
   const [customRange, setCustomRange] = useState<DateRange | null>(null);
   const [showCustomCalendar, setShowCustomCalendar] = useState(false);
-  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('AUTO_SMS');
+  const [sourceFilter, setSourceFilter] = useState<SourceFilter>('ALL');
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL');
 
   // Active Dropdown Popover

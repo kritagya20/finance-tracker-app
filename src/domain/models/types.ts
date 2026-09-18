@@ -16,6 +16,29 @@ export interface SplitItem {
   note?: string;
 }
 
+export interface SplitParticipant {
+  id: string;
+  name: string;
+  avatar?: string;
+  amount: IntegerMoney;      // Share in paise
+  isPaidByMe: boolean;       // True if current user paid
+}
+
+export interface SplitDetails {
+  splitType: 'EQUAL' | 'EXACT';
+  totalAmount: IntegerMoney;
+  myShare: IntegerMoney;
+  lentAmount: IntegerMoney;
+  participants: SplitParticipant[];
+}
+
+export interface FriendContact {
+  id: string;
+  name: string;
+  avatar?: string;
+  emailOrPhone?: string;
+}
+
 export interface Transaction {
   id: string;
   accountId: string;
@@ -28,6 +51,7 @@ export interface Transaction {
   source: TransactionSource;
   notes?: string;
   isSplit?: boolean;
+  splitDetails?: SplitDetails;
   splits?: SplitItem[];
   rawSmsText?: string;
   createdAt: number;
