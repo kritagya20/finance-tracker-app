@@ -141,13 +141,23 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
       .reduce((sum, t) => sum + t.amount, 0);
   }, [transactions, period]);
 
-  // Category breakdown for active period
+  // Category breakdown for active period (handles multi-category bill splits accurately)
   const categorySpending = useMemo(() => {
     return categories
       .map((cat) => {
-        const total = periodTransactions
-          .filter((t) => t.categoryId === cat.id && t.type === 'EXPENSE')
-          .reduce((sum, t) => sum + t.amount, 0);
+        let total = 0;
+        for (const t of periodTransactions) {
+          if (t.type !== 'EXPENSE') continue;
+          if (t.isSplit && t.splits && t.splits.length > 0) {
+            for (const s of t.splits) {
+              if (s.categoryId === cat.id) {
+                total += s.amount;
+              }
+            }
+          } else if (t.categoryId === cat.id) {
+            total += t.amount;
+          }
+        }
         return { ...cat, total };
       })
       .filter((c) => c.total > 0)

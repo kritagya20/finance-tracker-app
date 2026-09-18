@@ -11,7 +11,7 @@ import {
   Briefcase,
   DollarSign,
   CircleDollarSign,
-  Users,
+  Split,
   type LucideIcon,
 } from 'lucide-react';
 import { Transaction, Category } from '../../domain/models/types';
@@ -294,19 +294,25 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
             </span>
           )}
 
-          {tx.isSplit && tx.splitDetails && (
+          {tx.isSplit && tx.splits && tx.splits.length > 0 && (
             <span className="inline-flex items-center gap-1 rounded-md bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-500/25 px-1.5 py-0.5 text-[10px] font-semibold">
-              <Users className="size-2.5" />
-              Split ({tx.splitDetails.participants.length})
+              <Split className="size-2.5" />
+              Split ({tx.splits.length} categories)
             </span>
           )}
         </div>
 
-        {tx.isSplit && tx.splitDetails && (
-          <div className="mt-1 text-[10px] text-theme-secondary flex items-center gap-1.5">
-            <span>Your share: <strong className="font-semibold text-violet-600 dark:text-violet-400">{formatCurrency(tx.splitDetails.myShare)}</strong></span>
-            <span>•</span>
-            <span>Lent: <strong className="font-semibold text-emerald-600 dark:text-emerald-400">{formatCurrency(tx.splitDetails.lentAmount)}</strong></span>
+        {tx.isSplit && tx.splits && tx.splits.length > 0 && (
+          <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[10px] text-theme-secondary">
+            {tx.splits.map((s, idx) => {
+              const cat = getCategoryById(s.categoryId);
+              return (
+                <span key={s.id || idx} className="inline-flex items-center gap-1 bg-theme-card-subtle px-1.5 py-0.5 rounded-md border border-theme-border">
+                  <span className={cn('size-1.5 rounded-full', cat?.bgClass || 'bg-violet-500')} />
+                  <span>{cat?.name || 'Category'}: <strong className="font-semibold text-theme-primary">{formatCurrency(s.amount)}</strong></span>
+                </span>
+              );
+            })}
           </div>
         )}
       </div>

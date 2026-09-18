@@ -12,31 +12,8 @@ export type AccountType = 'CASH' | 'SAVINGS' | 'CHECKING' | 'CREDIT_CARD' | 'INV
 export interface SplitItem {
   id: string;
   categoryId: string;
-  amount: IntegerMoney;
+  amount: IntegerMoney; // Split amount in paise
   note?: string;
-}
-
-export interface SplitParticipant {
-  id: string;
-  name: string;
-  avatar?: string;
-  amount: IntegerMoney;      // Share in paise
-  isPaidByMe: boolean;       // True if current user paid
-}
-
-export interface SplitDetails {
-  splitType: 'EQUAL' | 'EXACT';
-  totalAmount: IntegerMoney;
-  myShare: IntegerMoney;
-  lentAmount: IntegerMoney;
-  participants: SplitParticipant[];
-}
-
-export interface FriendContact {
-  id: string;
-  name: string;
-  avatar?: string;
-  emailOrPhone?: string;
 }
 
 export interface Transaction {
@@ -51,7 +28,6 @@ export interface Transaction {
   source: TransactionSource;
   notes?: string;
   isSplit?: boolean;
-  splitDetails?: SplitDetails;
   splits?: SplitItem[];
   rawSmsText?: string;
   createdAt: number;
