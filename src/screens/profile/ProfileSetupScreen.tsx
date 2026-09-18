@@ -8,6 +8,8 @@ import {
   User,
   ArrowRight,
   Check,
+  Calendar,
+  ChevronDown,
 } from 'lucide-react';
 import {
   FinancialGoal,
@@ -66,10 +68,21 @@ const GOALS: {
 ];
 
 const EMPLOYMENT_TYPES: { id: EmploymentType; label: string }[] = [
-  { id: 'SALARIED', label: 'Salaried (Fixed)' },
-  { id: 'FREELANCE_BUSINESS', label: 'Freelance / Business' },
-  { id: 'STUDENT_OTHER', label: 'Student / Other' },
+  { id: 'SALARIED', label: 'Salaried' },
+  { id: 'FREELANCE', label: 'Freelance' },
+  { id: 'BUSINESS', label: 'Business' },
+  { id: 'STUDENT', label: 'Student' },
+  { id: 'OTHER', label: 'Other' },
 ];
+
+function getOrdinalDay(day: number): string {
+  const j = day % 10;
+  const k = day % 100;
+  if (j === 1 && k !== 11) return `${day}st`;
+  if (j === 2 && k !== 12) return `${day}nd`;
+  if (j === 3 && k !== 13) return `${day}rd`;
+  return `${day}th`;
+}
 
 const SAVINGS_TARGETS = [10, 20, 30, 50];
 
@@ -90,6 +103,7 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
   const [employmentType, setEmploymentType] = useState<EmploymentType>('SALARIED');
   const [savingsTargetPercent, setSavingsTargetPercent] = useState<number>(20);
   const [budgetStartDay, setBudgetStartDay] = useState<number>(1);
+  const [isCalendarExpanded, setIsCalendarExpanded] = useState<boolean>(true);
 
   const numericIncome = Math.max(0, parseInt(monthlyIncomeInput.replace(/\D/g, '') || '0', 10));
   const calculatedSavingsAmount = Math.round((numericIncome * savingsTargetPercent) / 100);
@@ -152,7 +166,7 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Alex Morgan"
-                className="w-full rounded-xl border border-theme-border bg-theme-input py-2.5 pl-10 pr-3 text-sm text-theme-primary placeholder:text-theme-muted focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/30 shadow-sm transition-colors"
+                className="w-full h-12 rounded-xl border border-theme-border bg-theme-input pl-10 pr-3 text-sm font-medium text-theme-primary placeholder:text-theme-muted focus:border-2 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm transition-all outline-none"
               />
             </div>
           </div>
@@ -166,7 +180,7 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
               <span className="text-[11px] text-theme-muted">After taxes</span>
             </div>
             <div className="relative">
-              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold text-theme-muted">
+              <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm font-semibold font-mono text-theme-muted">
                 ₹
               </span>
               <input
@@ -179,7 +193,7 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
                   setMonthlyIncomeInput(val);
                 }}
                 placeholder="85000"
-                className="w-full rounded-xl border border-theme-border bg-theme-input py-2.5 pl-8 pr-3 text-sm font-semibold tabular-nums text-theme-primary placeholder:text-theme-muted focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500/30 shadow-sm transition-colors"
+                className="w-full h-12 rounded-xl border border-theme-border bg-theme-input pl-8 pr-3 text-sm font-semibold font-mono tabular-nums text-theme-primary placeholder:text-theme-muted focus:border-2 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm transition-all outline-none"
               />
             </div>
             <p className="text-[11px] text-theme-muted">
@@ -240,21 +254,21 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
 
         {/* 3. Income Stability & Target Savings */}
         <div className="rounded-2xl border border-theme-border bg-theme-card p-4 shadow-sm space-y-4 transition-colors">
-          {/* Employment Type */}
+          {/* Employment Type / Income Consistency */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-theme-secondary">
               Income Consistency
             </label>
-            <div className="grid grid-cols-3 gap-1.5">
+            <div className="flex flex-wrap gap-2">
               {EMPLOYMENT_TYPES.map((type) => (
                 <button
                   key={type.id}
                   type="button"
                   onClick={() => setEmploymentType(type.id)}
                   className={cn(
-                    'rounded-xl py-2 px-1 text-center text-[11px] font-medium transition-all border shadow-sm',
+                    'flex-1 min-w-[85px] py-2 px-2 text-center text-xs font-medium rounded-xl border transition-all shadow-xs',
                     employmentType === type.id
-                      ? 'border-violet-500/40 bg-violet-600 text-white'
+                      ? 'border-violet-500/40 bg-violet-600 text-white shadow-sm font-semibold'
                       : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
                   )}
                 >
@@ -291,29 +305,81 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
             </div>
           </div>
 
-          {/* Budget Reset Date */}
-          <div className="flex items-center justify-between pt-1 border-t border-theme-border">
-            <div className="flex flex-col">
-              <span className="text-xs font-medium text-theme-secondary">Payday / Cycle Start</span>
-              <span className="text-[10px] text-theme-muted">Day budget resets each month</span>
-            </div>
-            <div className="flex items-center gap-1">
-              {[1, 5, 25].map((day) => (
-                <button
-                  key={day}
-                  type="button"
-                  onClick={() => setBudgetStartDay(day)}
+          {/* Payday / Cycle Start (Interactive Monthly Calendar) */}
+          <div className="pt-3 border-t border-theme-border space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-theme-secondary flex items-center gap-1.5">
+                  <Calendar className="size-3.5 text-violet-400" />
+                  <span>Payday / Cycle Start</span>
+                </span>
+                <span className="text-[10px] text-theme-muted mt-0.5">
+                  Resets on the <strong className="text-violet-400 font-mono font-semibold">{getOrdinalDay(budgetStartDay)}</strong> of every month
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCalendarExpanded((prev) => !prev)}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-theme-border bg-theme-card-subtle hover:bg-theme-card-hover text-theme-primary text-xs font-mono font-semibold transition-all shadow-xs active:scale-[0.97]"
+              >
+                <span>{getOrdinalDay(budgetStartDay)}</span>
+                <ChevronDown
                   className={cn(
-                    'size-8 rounded-lg text-xs font-semibold transition-all border shadow-sm',
-                    budgetStartDay === day
-                      ? 'border-violet-500/40 bg-violet-600 text-white'
-                      : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
+                    'size-3.5 text-theme-muted transition-transform duration-200',
+                    isCalendarExpanded && 'rotate-180'
                   )}
-                >
-                  {day}
-                </button>
-              ))}
+                />
+              </button>
             </div>
+
+            {/* Interactive Calendar Grid */}
+            {isCalendarExpanded && (
+              <div className="rounded-xl border border-theme-border bg-theme-card-subtle/40 p-3 space-y-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="flex items-center justify-between text-[11px] font-medium text-theme-secondary">
+                  <span>Monthly Reset Calendar</span>
+                  <span className="text-[10px] text-theme-muted font-mono">
+                    Day {budgetStartDay} of 31
+                  </span>
+                </div>
+
+                {/* Weekday headers */}
+                <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-theme-muted">
+                  <span>Mo</span>
+                  <span>Tu</span>
+                  <span>We</span>
+                  <span>Th</span>
+                  <span>Fr</span>
+                  <span>Sa</span>
+                  <span>Su</span>
+                </div>
+
+                {/* 31 Calendar Days */}
+                <div className="grid grid-cols-7 gap-1">
+                  {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
+                    const isSelected = budgetStartDay === day;
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => setBudgetStartDay(day)}
+                        className={cn(
+                          'h-8 w-full flex items-center justify-center rounded-lg text-xs font-mono transition-all',
+                          isSelected
+                            ? 'bg-violet-600 text-white font-bold shadow-sm ring-2 ring-violet-500/30 scale-105'
+                            : 'text-theme-primary bg-theme-card/70 hover:bg-theme-card-hover border border-theme-border/50 active:scale-95'
+                        )}
+                      >
+                        {day}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <p className="text-[10px] text-center text-theme-muted pt-1 border-t border-theme-border/40">
+                  Select your salary / reset date (Day 1 to 31)
+                </p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -321,7 +387,7 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
         <div className="mt-2 flex flex-col gap-2.5">
           <button
             type="submit"
-            className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-semibold text-white shadow-xl shadow-violet-900/30 transition-transform active:scale-[0.98] hover:brightness-110"
+            className="flex w-full h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 text-sm font-semibold text-white shadow-xl shadow-violet-900/30 transition-transform active:scale-[0.97] hover:brightness-110"
           >
             <span>Complete Setup & Launch</span>
             <ArrowRight className="size-4" />
@@ -330,7 +396,7 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
           <button
             type="button"
             onClick={onSkip}
-            className="w-full py-2.5 text-center text-xs font-medium text-theme-muted hover:text-theme-primary transition-colors"
+            className="w-full min-h-[44px] flex items-center justify-center text-center text-xs font-medium text-theme-muted hover:text-theme-primary transition-colors"
           >
             Skip for now (use smart defaults)
           </button>
