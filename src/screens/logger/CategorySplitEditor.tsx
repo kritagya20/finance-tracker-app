@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
 import {
   Plus,
-  Trash2,
-  CheckCircle2,
-  AlertTriangle,
-  AlertCircle,
-  Equal,
-  ChevronDown,
   X,
+  CheckCircle2,
+  ChevronDown,
+  Equal,
 } from 'lucide-react';
 import { Category, SplitItem } from '../../domain/models/types';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
@@ -27,14 +24,12 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
   categories,
   onChange,
 }) => {
-  // Modal for selecting a category for a specific row
   const [activePickerRowIndex, setActivePickerRowIndex] = useState<number | null>(null);
 
   const allocatedPaise = splits.reduce((sum, s) => sum + (s.amount || 0), 0);
   const remainingPaise = totalAmountPaise - allocatedPaise;
 
   const handleAmountChange = (index: number, rupeeStr: string) => {
-    // Only allow valid decimal numbers
     const cleanStr = rupeeStr.replace(/[^0-9.]/g, '');
     const parts = cleanStr.split('.');
     if (parts.length > 2) return;
@@ -57,11 +52,8 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
   };
 
   const handleAddSplit = () => {
-    // Pick the first category not already selected, or fallback to first
     const usedCategoryIds = new Set(splits.map((s) => s.categoryId));
     const nextCat = categories.find((c) => !usedCategoryIds.has(c.id)) || categories[0];
-    
-    // Automatically allocate any remaining balance to the new split!
     const initialAmount = Math.max(0, remainingPaise);
 
     const newSplit: SplitItem = {
@@ -74,7 +66,7 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
   };
 
   const handleRemoveSplit = (index: number) => {
-    if (splits.length <= 2) return; // Keep at least 2 items for a split
+    if (splits.length <= 2) return;
     const updated = splits.filter((_, i) => i !== index);
     onChange(updated);
   };
@@ -92,148 +84,107 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
     onChange(updated);
   };
 
-  const handleAssignRemaining = (index: number) => {
-    if (remainingPaise === 0) return;
-    const current = splits[index]?.amount || 0;
-    const newAmount = Math.max(0, current + remainingPaise);
-    const updated = splits.map((s, i) => (i === index ? { ...s, amount: newAmount } : s));
-    onChange(updated);
-  };
-
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-theme-border bg-theme-card p-3.5 shadow-xs transition-colors">
-      {/* Allocation Header & Visual Bar */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <span className="text-xs font-bold text-theme-primary">Category Breakdown</span>
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={handleDistributeEvenly}
-              className="flex items-center gap-1 rounded-lg border border-theme-border bg-theme-card-subtle px-2 py-0.5 text-[10px] font-semibold text-theme-secondary hover:text-theme-primary active:scale-95 transition-all shadow-xs"
-              title="Divide total bill equally between categories"
-            >
-              <Equal className="size-2.5" />
-              <span>Even Split</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Multi-segment Progress Bar */}
-        <div className="h-2 w-full overflow-hidden rounded-full bg-theme-border flex">
-          {splits.map((split, i) => {
-            const cat = categories.find((c) => c.id === split.categoryId);
-            const pct = totalAmountPaise > 0 ? (split.amount / totalAmountPaise) * 100 : 0;
-            if (pct <= 0) return null;
-            return (
-              <div
-                key={split.id || i}
-                style={{ width: `${pct}%` }}
-                className={cn('h-full transition-all duration-300', cat?.bgClass || 'bg-violet-500')}
-              />
-            );
-          })}
-        </div>
-
-        {/* Live Allocation Metrics */}
-        <div className="flex items-center justify-between text-[11px]">
-          <span className="font-medium text-theme-secondary">
-            Allocated: <strong className="font-bold text-theme-primary">₹{paiseToRupees(allocatedPaise).toLocaleString('en-IN')}</strong> of ₹{paiseToRupees(totalAmountPaise).toLocaleString('en-IN')}
-          </span>
-
+    <div className="flex flex-col gap-3 py-1">
+      {/* Subtle Sub-header: Title + Status + Even Split action */}
+      <div className="flex items-center justify-between px-1">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold text-theme-secondary">Split breakdown</span>
           {remainingPaise === 0 ? (
-            <span className="inline-flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-500">
               <CheckCircle2 className="size-3" />
-              Balanced (100%)
+              Balanced
             </span>
           ) : remainingPaise > 0 ? (
-            <span className="inline-flex items-center gap-1 font-semibold text-amber-600 dark:text-amber-400">
-              <AlertTriangle className="size-3" />
-              ₹{paiseToRupees(remainingPaise).toLocaleString('en-IN')} left
+            <span className="text-[11px] font-medium text-amber-500">
+              ₹{paiseToRupees(remainingPaise).toLocaleString('en-IN')} unallocated
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1 font-semibold text-rose-500">
-              <AlertCircle className="size-3" />
-              ₹{paiseToRupees(Math.abs(remainingPaise)).toLocaleString('en-IN')} over!
+            <span className="text-[11px] font-medium text-rose-500">
+              ₹{paiseToRupees(Math.abs(remainingPaise)).toLocaleString('en-IN')} over
             </span>
           )}
         </div>
+
+        <button
+          type="button"
+          onClick={handleDistributeEvenly}
+          className="flex items-center gap-1 text-[11px] font-medium text-violet-500 hover:text-violet-400 active:opacity-75 transition-opacity"
+        >
+          <Equal className="size-3" />
+          <span>Split evenly</span>
+        </button>
       </div>
 
-      {/* Split Rows */}
-      <div className="flex flex-col gap-2 pt-1">
+      {/* Flat, Borderless List Rows (Matching GPay style) */}
+      <div className="flex flex-col divide-y divide-theme-border/40">
         {splits.map((split, index) => {
           const cat = categories.find((c) => c.id === split.categoryId) || categories[0];
           const rupeeVal = (split.amount / 100).toString();
-          const pct = totalAmountPaise > 0 ? Math.round((split.amount / totalAmountPaise) * 100) : 0;
 
           return (
             <div
               key={split.id || index}
-              className="flex flex-col gap-1.5 rounded-xl border border-theme-border bg-theme-elevated p-2.5 shadow-xs transition-colors"
+              className="flex items-center justify-between py-2.5 px-1 gap-3 group"
             >
-              {/* Top Row: Category Picker + Amount + Actions */}
-              <div className="flex items-center justify-between gap-2">
-                {/* Category Button */}
+              {/* Left: Circular Category Avatar + Name & Note */}
+              <div className="flex items-center gap-3 min-w-0 flex-1">
                 <button
                   type="button"
                   onClick={() => setActivePickerRowIndex(index)}
-                  className="flex items-center gap-1.5 rounded-lg border border-theme-border bg-theme-card px-2 py-1 text-xs font-semibold text-theme-primary hover:bg-theme-card-hover active:scale-95 transition-all shrink-0 shadow-xs"
+                  className="relative shrink-0 active:scale-95 transition-transform"
                 >
-                  <div className={cn('size-2 rounded-full', cat?.bgClass || 'bg-violet-500')} />
-                  <span className="max-w-[100px] truncate">{cat?.name || 'Category'}</span>
-                  <ChevronDown className="size-3 text-theme-muted" />
+                  <div
+                    className={cn(
+                      'flex size-9 items-center justify-center rounded-full text-white shadow-xs',
+                      cat?.bgClass || 'bg-violet-600'
+                    )}
+                  >
+                    <CategoryIcon name={cat?.iconName || 'CircleDollarSign'} size={16} />
+                  </div>
                 </button>
 
-                {/* Amount Input with Currency Symbol */}
-                <div className="flex items-center gap-1 flex-1 justify-end">
-                  <div className="relative flex items-center">
-                    <span className="absolute left-2 text-xs font-bold text-theme-muted">₹</span>
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={rupeeVal === '0' ? '' : rupeeVal}
-                      placeholder="0"
-                      onChange={(e) => handleAmountChange(index, e.target.value)}
-                      className="w-24 rounded-lg border border-theme-border bg-theme-input py-1 pl-5 pr-2 text-right text-xs font-bold text-theme-primary focus:border-violet-500/60 focus:outline-none tabular-nums shadow-xs"
-                    />
-                  </div>
-
-                  <span className="min-w-[34px] text-right text-[10px] font-semibold text-theme-muted">
-                    {pct}%
-                  </span>
-
-                  {/* Remove Row Button (if > 2 rows) */}
-                  {splits.length > 2 && (
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveSplit(index)}
-                      className="flex size-7 items-center justify-center rounded-lg text-theme-muted hover:bg-rose-500/10 hover:text-rose-500 transition-colors"
-                      title="Remove category split"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
-                  )}
+                <div className="flex flex-col min-w-0 flex-1">
+                  <button
+                    type="button"
+                    onClick={() => setActivePickerRowIndex(index)}
+                    className="flex items-center gap-1 text-left text-xs font-semibold text-theme-primary hover:text-violet-400 transition-colors"
+                  >
+                    <span className="truncate">{cat?.name || 'Category'}</span>
+                    <ChevronDown className="size-3 text-theme-muted shrink-0" />
+                  </button>
+                  <input
+                    type="text"
+                    placeholder="Add a note..."
+                    value={split.note || ''}
+                    onChange={(e) => handleNoteChange(index, e.target.value)}
+                    className="bg-transparent text-[11px] text-theme-muted placeholder:text-theme-muted/50 focus:text-theme-primary focus:outline-none truncate"
+                  />
                 </div>
               </div>
 
-              {/* Bottom Row: Note & Quick Balance Helper */}
-              <div className="flex items-center justify-between gap-2">
-                <input
-                  type="text"
-                  placeholder="Optional item note (e.g. Veggies)..."
-                  value={split.note || ''}
-                  onChange={(e) => handleNoteChange(index, e.target.value)}
-                  className="w-full bg-transparent px-1 text-[11px] text-theme-primary placeholder:text-theme-muted focus:outline-none"
-                />
+              {/* Right: Amount Input + Remove Button */}
+              <div className="flex items-center gap-2 shrink-0">
+                <div className="flex items-center gap-0.5 text-sm font-semibold text-theme-primary tabular-nums">
+                  <span className="text-xs text-theme-muted">₹</span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={rupeeVal === '0' ? '' : rupeeVal}
+                    placeholder="0"
+                    onChange={(e) => handleAmountChange(index, e.target.value)}
+                    className="w-20 bg-transparent text-right text-sm font-semibold text-theme-primary placeholder:text-theme-muted/50 focus:outline-none border-b border-transparent focus:border-violet-500 tabular-nums py-0.5"
+                  />
+                </div>
 
-                {remainingPaise !== 0 && (
+                {splits.length > 2 && (
                   <button
                     type="button"
-                    onClick={() => handleAssignRemaining(index)}
-                    className="shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold text-violet-600 dark:text-violet-400 bg-violet-500/10 hover:bg-violet-500/20 active:scale-95 transition-all"
+                    onClick={() => handleRemoveSplit(index)}
+                    className="p-1 rounded-full text-theme-muted hover:text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all"
+                    title="Remove split"
                   >
-                    {remainingPaise > 0 ? `+₹${paiseToRupees(remainingPaise)} remainder` : 'Reduce overage'}
+                    <X className="size-3.5" />
                   </button>
                 )}
               </div>
@@ -242,22 +193,22 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
         })}
       </div>
 
-      {/* Add Split Row Button */}
+      {/* Subtle Add Button */}
       <button
         type="button"
         onClick={handleAddSplit}
-        className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-dashed border-violet-500/40 bg-violet-500/5 py-2 text-xs font-semibold text-violet-600 dark:text-violet-400 hover:bg-violet-500/10 active:scale-[0.99] transition-all shadow-xs"
+        className="flex items-center justify-center gap-1.5 py-2 text-xs font-semibold text-violet-500 hover:text-violet-400 active:opacity-75 transition-opacity"
       >
         <Plus className="size-3.5" />
-        <span>Add Another Category Split</span>
+        <span>Add another category</span>
       </button>
 
-      {/* Row Category Picker Modal */}
+      {/* Category Picker Sub-Sheet */}
       {activePickerRowIndex !== null && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-[360px] rounded-2xl border border-theme-border bg-theme-elevated p-4 shadow-2xl animate-in slide-in-from-bottom-3 duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-theme-border">
-              <span className="text-sm font-bold text-theme-primary">Select Split Category</span>
+          <div className="w-full max-w-[360px] rounded-3xl border border-theme-border bg-theme-elevated p-4 shadow-2xl animate-in slide-in-from-bottom-3 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-theme-border/60">
+              <span className="text-sm font-bold text-theme-primary">Select Category</span>
               <button
                 type="button"
                 onClick={() => setActivePickerRowIndex(null)}
@@ -275,17 +226,16 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
                     key={cat.id}
                     type="button"
                     onClick={() => handleCategorySelect(activePickerRowIndex, cat.id)}
-                    className="flex flex-col items-center gap-1.5 p-1.5 rounded-xl hover:bg-theme-card-hover active:scale-95 transition-all"
+                    className="flex flex-col items-center gap-1.5 p-1.5 rounded-2xl hover:bg-theme-card-hover active:scale-95 transition-all"
                   >
                     <div
                       className={cn(
-                        'flex size-10 items-center justify-center rounded-xl border transition-all',
+                        'flex size-11 items-center justify-center rounded-full text-white transition-all',
                         cat.bgClass,
-                        cat.textClass,
-                        isSelected ? 'border-violet-500 ring-2 ring-violet-500/40 scale-105' : 'border-theme-border'
+                        isSelected ? 'ring-2 ring-violet-500 ring-offset-2 ring-offset-theme-elevated scale-105' : ''
                       )}
                     >
-                      <CategoryIcon name={cat.iconName} size={16} />
+                      <CategoryIcon name={cat.iconName} size={18} />
                     </div>
                     <span
                       className={cn(

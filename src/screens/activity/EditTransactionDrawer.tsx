@@ -3,15 +3,14 @@ import {
   X,
   Trash2,
   Delete,
-  ArrowRight,
   Calendar,
   CreditCard,
-  MessageSquare,
   ChevronDown,
   Check,
   AlertCircle,
-  Split,
   Pencil,
+  Tag,
+  Split,
 } from 'lucide-react';
 import {
   Category,
@@ -67,8 +66,8 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [selectedDate, setSelectedDate] = useState<string>('');
   
-  // Multi-Category Splits
-  const [isSplit, setIsSplit] = useState(false);
+  // Categorization mode: 'single' | 'split'
+  const [categoryMode, setCategoryMode] = useState<'single' | 'split'>('single');
   const [splits, setSplits] = useState<SplitItem[]>([]);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -104,7 +103,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       setSelectedDate(tx.date.slice(0, 10));
       
       const hasSplits = Boolean(tx.isSplit && tx.splits && tx.splits.length > 0);
-      setIsSplit(hasSplits);
+      setCategoryMode(hasSplits ? 'split' : 'single');
       setSplits(tx.splits || []);
 
       setErrors({});
@@ -187,7 +186,6 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
         if (prev.includes('.')) return prev;
         return prev + '.';
       }
-      // Numeric 0-9
       if (prev === '0') return key;
       const parts = prev.split('.');
       if (parts.length > 1 && parts[1].length >= 2) return prev;
@@ -208,28 +206,26 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
     });
   };
 
-  const handleToggleSplit = (enable: boolean) => {
-    setIsSplit(enable);
-    if (enable) {
+  const handleSwitchCategoryMode = (mode: 'single' | 'split') => {
+    setCategoryMode(mode);
+    if (mode === 'split' && splits.length < 2) {
       const paiseAmount = parseKeypadToPaise(amountStr);
-      if (splits.length < 2) {
-        const half1 = Math.floor(paiseAmount / 2);
-        const half2 = paiseAmount - half1;
-        setSplits([
-          {
-            id: `split_1_${Date.now()}`,
-            categoryId: selectedCategoryId || 'cat_dining',
-            amount: half1,
-            note: '',
-          },
-          {
-            id: `split_2_${Date.now()}`,
-            categoryId: categories.find((c) => c.id !== (selectedCategoryId || 'cat_dining'))?.id || 'cat_groceries',
-            amount: half2,
-            note: '',
-          },
-        ]);
-      }
+      const half1 = Math.floor(paiseAmount / 2);
+      const half2 = paiseAmount - half1;
+      setSplits([
+        {
+          id: `split_1_${Date.now()}`,
+          categoryId: selectedCategoryId || 'cat_dining',
+          amount: half1,
+          note: '',
+        },
+        {
+          id: `split_2_${Date.now()}`,
+          categoryId: categories.find((c) => c.id !== (selectedCategoryId || 'cat_dining'))?.id || 'cat_groceries',
+          amount: half2,
+          note: '',
+        },
+      ]);
     }
   };
 
@@ -250,12 +246,14 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
     }
     if (!selectedAccountId) {
       newErrors.account = true;
-      missing.push('payment account');
+      missing.push('account');
     }
     if (!selectedDate) {
       newErrors.date = true;
       missing.push('date');
     }
+
+    const isSplit = categoryMode === 'split' && type === 'EXPENSE';
 
     if (isSplit) {
       const allocatedPaise = splits.reduce((sum, s) => sum + (s.amount || 0), 0);
@@ -277,7 +275,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
 
     if (missing.length > 0) {
       setErrors(newErrors);
-      setErrorMessage(`Please resolve: ${missing.join(', ')}`);
+      setErrorMessage(`Please select: ${missing.join(', ')}`);
       return;
     }
 
@@ -335,12 +333,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
     maximumFractionDigits: 2,
   });
 
-  const activeColorGradient =
-    type === 'INCOME'
-      ? 'from-emerald-600 to-emerald-500 shadow-emerald-950/40 hover:from-emerald-500 hover:to-emerald-400'
-      : type === 'TRANSFER'
-      ? 'from-blue-600 to-blue-500 shadow-blue-950/40 hover:from-blue-500 hover:to-blue-400'
-      : 'from-rose-600 to-rose-500 shadow-rose-950/40 hover:from-rose-500 hover:to-rose-400';
+  const isSplit = categoryMode === 'split' && type === 'EXPENSE';
 
   return (
     <div className="fixed inset-0 z-50 mx-auto max-w-[390px] flex items-end justify-center">
@@ -363,27 +356,27 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
             : 'translateY(100%)',
           transition: isDragging ? 'none' : 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
         }}
-        className="relative z-10 flex w-full max-h-[94dvh] flex-col rounded-t-3xl border-t border-theme-border bg-theme-elevated shadow-2xl transition-colors overflow-hidden"
+        className="relative z-10 flex w-full max-h-[94dvh] flex-col rounded-t-3xl border-t border-theme-border/50 bg-theme-elevated shadow-2xl transition-colors overflow-hidden"
       >
-        {/* Drag Handle */}
+        {/* Subtle Drag Handle */}
         <div
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerCancel={handlePointerUp}
-          className="relative shrink-0 px-4 pt-2.5 pb-1 cursor-grab active:cursor-grabbing touch-none select-none"
+          className="relative shrink-0 px-4 pt-3 pb-1 cursor-grab active:cursor-grabbing touch-none select-none"
         >
-          <div className="mx-auto h-1 w-9 rounded-full bg-theme-muted opacity-40 mb-2" />
+          <div className="mx-auto h-1 w-8 rounded-full bg-theme-muted/40" />
         </div>
 
         {/* ------------------------------------------------------------------ */}
-        {/* STEP 1: EDIT AMOUNT KEYPAD                                         */}
+        {/* STEP 1: AMOUNT KEYPAD                                              */}
         {/* ------------------------------------------------------------------ */}
         {step === 1 && (
-          <div className="flex flex-col flex-1 pb-4 animate-in fade-in slide-in-from-left-2 duration-200">
-            <div className="px-4 pb-2 flex items-center justify-between">
-              {/* Segmented Type Switcher */}
-              <div className="flex items-center rounded-xl bg-theme-card-subtle p-0.5 border border-theme-border">
+          <div className="flex flex-col flex-1 pb-5 px-4 animate-in fade-in duration-200">
+            {/* Top Bar */}
+            <div className="flex items-center justify-between pb-1">
+              <div className="flex items-center rounded-full bg-theme-card-subtle p-0.5 border border-theme-border/60">
                 {(['EXPENSE', 'INCOME', 'TRANSFER'] as TransactionType[]).map((t) => {
                   const isSelected = type === t;
                   const label = t === 'EXPENSE' ? 'Expense' : t === 'INCOME' ? 'Income' : 'Transfer';
@@ -393,14 +386,10 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
                       type="button"
                       onClick={() => setType(t)}
                       className={cn(
-                        'px-3 py-1 text-xs font-semibold rounded-lg transition-all',
+                        'px-3 py-1 text-xs font-semibold rounded-full transition-all',
                         isSelected
-                          ? t === 'EXPENSE'
-                            ? 'bg-rose-500 text-white shadow-xs'
-                            : t === 'INCOME'
-                            ? 'bg-emerald-500 text-white shadow-xs'
-                            : 'bg-blue-500 text-white shadow-xs'
-                          : 'text-theme-secondary hover:text-theme-primary'
+                          ? 'bg-theme-card text-theme-primary shadow-xs'
+                          : 'text-theme-muted hover:text-theme-primary'
                       )}
                     >
                       {label}
@@ -409,34 +398,46 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
                 })}
               </div>
 
-              {/* Close Button */}
               <button
                 type="button"
                 onClick={onClose}
-                aria-label="Close edit drawer"
-                className="flex size-7 items-center justify-center rounded-full bg-theme-card-subtle text-theme-secondary hover:text-theme-primary transition-colors"
+                aria-label="Close"
+                className="flex size-8 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
               >
-                <X className="size-3.5" />
+                <X className="size-4" />
               </button>
             </div>
 
-            {/* Hero Amount */}
-            <div className="flex flex-col items-center justify-center py-4 px-4">
-              <div className="flex items-baseline gap-1 select-none">
-                <span className={cn('text-3xl font-bold transition-colors', errors.amount ? 'text-rose-500' : 'text-theme-muted')}>₹</span>
-                <span className={cn('text-5xl font-extrabold tracking-tight tabular-nums transition-colors', errors.amount ? 'text-rose-500' : 'text-theme-primary')}>
+            {/* Error Message */}
+            {errorMessage && (
+              <div className="my-1.5 flex items-center justify-center gap-1.5 text-xs text-rose-500 transition-all">
+                <AlertCircle className="size-3.5" />
+                <span>{errorMessage}</span>
+              </div>
+            )}
+
+            {/* Centered Hero: Amount */}
+            <div className="flex flex-col items-center justify-center pt-4 pb-2">
+              <span className="text-xs font-medium text-theme-muted tracking-wide mb-1">
+                Edit amount
+              </span>
+
+              <div className="flex items-baseline justify-center gap-1 select-none">
+                <span className="text-2xl font-semibold text-theme-muted">₹</span>
+                <span className="text-5xl font-light tracking-tight tabular-nums text-theme-primary">
                   {amountStr}
                 </span>
-                <span className={cn('ml-0.5 h-9 w-0.5 animate-pulse rounded-full', errors.amount ? 'bg-rose-500' : 'bg-violet-500')} />
+                <span className="ml-0.5 h-8 w-0.5 animate-pulse rounded-full bg-violet-500" />
               </div>
 
+              {/* Quick Increment Chips */}
               <div className="mt-3 flex items-center gap-1.5">
                 {QUICK_AMOUNTS.map((amt) => (
                   <button
                     key={amt}
                     type="button"
                     onClick={() => handleQuickAdd(amt)}
-                    className="rounded-full border border-theme-border bg-theme-card px-2.5 py-1 text-xs font-medium text-theme-secondary hover:border-violet-500/40 hover:text-theme-primary active:scale-95 transition-all shadow-xs"
+                    className="rounded-full bg-theme-card-subtle px-2.5 py-1 text-[11px] font-medium text-theme-secondary hover:text-theme-primary hover:bg-theme-card-hover active:scale-95 transition-all"
                   >
                     +₹{amt.toLocaleString('en-IN')}
                   </button>
@@ -444,18 +445,18 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
               </div>
             </div>
 
-            {/* Keypad */}
-            <div className="px-4 py-2 flex-1">
-              <div className="grid grid-cols-3 gap-2">
+            {/* Flat Keypad */}
+            <div className="pt-2 pb-3 flex-1 flex flex-col justify-center">
+              <div className="grid grid-cols-3 gap-2 max-w-[340px] mx-auto w-full">
                 {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'BACKSPACE'].map((key) => (
                   <button
                     key={key}
                     type="button"
                     onClick={() => handleKeypadPress(key)}
-                    className="flex h-12 items-center justify-center rounded-2xl bg-theme-card hover:bg-theme-card-hover active:bg-theme-card-subtle text-theme-primary text-lg font-semibold active:scale-95 transition-all shadow-xs"
+                    className="flex h-11 items-center justify-center rounded-2xl bg-theme-card/60 hover:bg-theme-card text-theme-primary text-lg font-medium active:scale-95 transition-all"
                   >
                     {key === 'BACKSPACE' ? (
-                      <Delete className="size-5 text-theme-secondary" />
+                      <Delete className="size-4 text-theme-secondary" />
                     ) : (
                       key
                     )}
@@ -464,270 +465,223 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
               </div>
             </div>
 
-            {/* Done Editing Amount CTA */}
-            <div className="px-4 pt-2">
+            {/* Pill CTA */}
+            <div className="pt-1">
               <button
                 type="button"
                 onClick={() => setStep(2)}
                 disabled={activeAmount <= 0}
-                className={cn(
-                  'flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r py-3.5 text-sm font-bold text-white shadow-lg transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed',
-                  activeColorGradient
-                )}
+                className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed shadow-md active:scale-[0.99] transition-all"
               >
-                <span>Done Editing Amount (₹{formattedRupees})</span>
-                <ArrowRight className="size-4" />
+                <span>Done editing amount (₹{formattedRupees})</span>
               </button>
             </div>
           </div>
         )}
 
         {/* ------------------------------------------------------------------ */}
-        {/* STEP 2: DETAILS CANVAS & MULTI-CATEGORY SPLIT                      */}
+        {/* STEP 2: DETAILS CANVAS                                             */}
         {/* ------------------------------------------------------------------ */}
         {step === 2 && (
-          <div className="flex flex-col flex-1 pb-4 animate-in fade-in slide-in-from-right-2 duration-200 overflow-y-auto no-scrollbar">
-            {/* Header: Title + Delete + Close */}
-            <div className="px-4 pb-2 flex items-center justify-between border-b border-theme-border shrink-0">
-              <span className="text-xs font-bold uppercase tracking-wider text-theme-muted">
-                Edit Transaction
+          <div className="flex flex-col flex-1 pb-5 px-4 animate-in fade-in duration-200 overflow-y-auto no-scrollbar">
+            {/* Top Bar: Title + Delete + Close */}
+            <div className="flex items-center justify-between pb-2 border-b border-theme-border/40 shrink-0">
+              <span className="text-xs font-semibold text-theme-secondary">
+                Edit transaction
               </span>
 
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => onDelete(tx.id)}
-                  aria-label="Delete transaction"
-                  className="flex size-7 items-center justify-center rounded-full bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 active:scale-95 transition-all"
+                  aria-label="Delete"
+                  className="flex size-8 items-center justify-center rounded-full text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all"
                 >
-                  <Trash2 className="size-3.5" />
+                  <Trash2 className="size-4" />
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  aria-label="Close edit drawer"
-                  className="flex size-7 items-center justify-center rounded-full bg-theme-card-subtle text-theme-secondary hover:text-theme-primary transition-colors"
+                  aria-label="Close"
+                  className="flex size-8 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary transition-colors"
                 >
-                  <X className="size-3.5" />
+                  <X className="size-4" />
                 </button>
               </div>
             </div>
 
-            {/* Validation Error Banner */}
+            {/* Error Message */}
             {errorMessage && (
-              <div className="mx-4 mt-2 mb-1 flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-500 dark:text-rose-400 transition-all">
-                <AlertCircle className="size-4 shrink-0 text-rose-500" />
-                <span className="font-medium text-xs leading-tight">{errorMessage}</span>
+              <div className="my-2 flex items-center justify-center gap-1.5 text-xs text-rose-500 transition-all">
+                <AlertCircle className="size-3.5" />
+                <span>{errorMessage}</span>
               </div>
             )}
 
-            <div className="px-4 py-3 flex flex-col gap-3">
-              {/* Amount Banner with Tap-to-Edit */}
-              <div className="flex items-center justify-between rounded-2xl border border-theme-border bg-theme-card p-3 shadow-xs">
-                <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-theme-muted">
-                    {type} Amount
-                  </span>
-                  <div className="text-xl font-extrabold text-theme-primary tabular-nums">
-                    ₹{formattedRupees}
-                  </div>
-                </div>
+            {/* Centered Hero: Amount + Note */}
+            <div className="flex flex-col items-center justify-center py-3">
+              <span className="text-xs font-medium text-theme-muted mb-0.5">
+                {isSplit ? 'Amount to split' : `${type.toLowerCase()} amount`}
+              </span>
+
+              <div className="flex items-baseline justify-center gap-1">
+                <span className="text-xl font-semibold text-theme-muted">₹</span>
+                <span className="text-4xl font-light tracking-tight text-theme-primary tabular-nums">
+                  {formattedRupees}
+                </span>
                 <button
                   type="button"
                   onClick={() => setStep(1)}
-                  className="flex items-center gap-1 rounded-lg border border-theme-border bg-theme-card-subtle px-2.5 py-1 text-xs font-semibold text-violet-600 dark:text-violet-400 hover:bg-theme-card-hover transition-all shadow-xs"
+                  className="ml-2 p-1 text-theme-muted hover:text-violet-400 transition-colors"
+                  title="Change amount"
                 >
-                  <Pencil className="size-3" />
-                  <span>Edit Amount</span>
+                  <Pencil className="size-3.5" />
                 </button>
               </div>
 
-              {/* Merchant / Note Input */}
-              <div className="flex items-center gap-2 rounded-xl border border-theme-border bg-theme-input px-3 py-2.5 shadow-xs transition-colors focus-within:border-violet-500/50">
-                <MessageSquare className="size-4 text-theme-muted shrink-0" />
+              {/* Note pill (editable) */}
+              <div className="mt-2.5">
                 <input
                   type="text"
-                  placeholder="What's this for? (Merchant / Note)..."
+                  placeholder="What's this for?"
                   value={merchantNote}
                   onChange={(e) => setMerchantNote(e.target.value)}
-                  className="w-full bg-transparent text-xs text-theme-primary placeholder:text-theme-muted focus:outline-none"
+                  className="rounded-full bg-theme-card-subtle px-4 py-1.5 text-xs text-center text-theme-primary placeholder:text-theme-muted focus:outline-none border border-theme-border/60 focus:border-violet-500/60 max-w-[220px] transition-colors"
                 />
               </div>
-
-              {/* Account & Date Chips */}
-              <div className="grid grid-cols-2 gap-2">
-                {/* Account Chip */}
-                <button
-                  type="button"
-                  onClick={() => setActivePicker('account')}
-                  className={cn(
-                    'flex items-center justify-between rounded-xl p-2.5 text-left border shadow-xs transition-all',
-                    errors.account
-                      ? 'border-rose-500 ring-1 ring-rose-500/40 bg-rose-500/10'
-                      : 'border-theme-border bg-theme-card hover:bg-theme-card-hover'
-                  )}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <CreditCard className={cn('size-4 shrink-0', errors.account ? 'text-rose-500' : 'text-theme-muted')} />
-                    <div className="min-w-0">
-                      <div className="text-[10px] font-medium text-theme-muted">Account</div>
-                      <div className={cn('text-xs font-bold truncate', errors.account ? 'text-rose-500' : 'text-theme-primary')}>
-                        {currentAccount.name}
-                      </div>
-                    </div>
-                  </div>
-                  <ChevronDown className={cn('size-3.5 shrink-0', errors.account ? 'text-rose-500' : 'text-theme-muted')} />
-                </button>
-
-                {/* Date Chip */}
-                <button
-                  type="button"
-                  onClick={() => setActivePicker('date')}
-                  className={cn(
-                    'flex items-center justify-between rounded-xl p-2.5 text-left border shadow-xs transition-all',
-                    errors.date
-                      ? 'border-rose-500 ring-1 ring-rose-500/40 bg-rose-500/10'
-                      : 'border-theme-border bg-theme-card hover:bg-theme-card-hover'
-                  )}
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Calendar className={cn('size-4 shrink-0', errors.date ? 'text-rose-500' : 'text-theme-muted')} />
-                    <div className="min-w-0">
-                      <div className="text-[10px] font-medium text-theme-muted">Date</div>
-                      <div className={cn('text-xs font-bold truncate', errors.date ? 'text-rose-500' : 'text-theme-primary')}>
-                        {dateDisplayLabel}
-                      </div>
-                    </div>
-                  </div>
-                  <ChevronDown className={cn('size-3.5 shrink-0', errors.date ? 'text-rose-500' : 'text-theme-muted')} />
-                </button>
-              </div>
-
-              {/* Categorization & Multi-Category Split */}
-              {type === 'EXPENSE' && (
-                <div className="flex flex-col gap-2 pt-1">
-                  {/* Multi-Category Split Toggle */}
-                  <label className="flex items-center justify-between rounded-xl border border-theme-border bg-theme-card px-3 py-2.5 shadow-xs cursor-pointer select-none transition-colors hover:bg-theme-card-hover">
-                    <div className="flex items-center gap-2">
-                      <div className="flex size-6 items-center justify-center rounded-lg bg-violet-500/15 text-violet-600 dark:text-violet-400">
-                        <Split className="size-3.5" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-theme-primary">
-                          Split into multiple categories
-                        </div>
-                        <div className="text-[10px] text-theme-muted">
-                          Divide this single bill across multiple categories
-                        </div>
-                      </div>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={isSplit}
-                      onChange={(e) => handleToggleSplit(e.target.checked)}
-                      className="size-4.5 rounded accent-violet-600 cursor-pointer"
-                    />
-                  </label>
-
-                  {isSplit ? (
-                    <CategorySplitEditor
-                      totalAmountPaise={activeAmount}
-                      splits={splits}
-                      categories={categories}
-                      onChange={setSplits}
-                    />
-                  ) : (
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-theme-primary">Category</span>
-                        {errors.category && (
-                          <span className="text-[10px] font-bold text-rose-500">Required</span>
-                        )}
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => setActivePicker('category')}
-                        className={cn(
-                          'flex items-center justify-between rounded-xl p-3 text-left border shadow-xs transition-all',
-                          errors.category
-                            ? 'border-rose-500 ring-1 ring-rose-500/40 bg-rose-500/10'
-                            : 'border-theme-border bg-theme-card hover:bg-theme-card-hover'
-                        )}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <div className={cn('flex size-8 items-center justify-center rounded-lg', currentCategory.bgClass, currentCategory.textClass)}>
-                            <CategoryIcon name={currentCategory.iconName} size={16} />
-                          </div>
-                          <div>
-                            <div className={cn('text-xs font-bold', errors.category ? 'text-rose-500' : 'text-theme-primary')}>
-                              {currentCategory.name}
-                            </div>
-                            <div className="text-[10px] text-theme-muted">Primary Category</div>
-                          </div>
-                        </div>
-                        <ChevronDown className={cn('size-4', errors.category ? 'text-rose-500' : 'text-theme-muted')} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {type !== 'EXPENSE' && (
-                <div className="flex flex-col gap-1.5 pt-1">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-theme-primary">Category</span>
-                    {errors.category && (
-                      <span className="text-[10px] font-bold text-rose-500">Required</span>
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setActivePicker('category')}
-                    className={cn(
-                      'flex items-center justify-between rounded-xl p-3 text-left border shadow-xs transition-all',
-                      errors.category
-                        ? 'border-rose-500 ring-1 ring-rose-500/40 bg-rose-500/10'
-                        : 'border-theme-border bg-theme-card hover:bg-theme-card-hover'
-                    )}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className={cn('flex size-8 items-center justify-center rounded-lg', currentCategory.bgClass, currentCategory.textClass)}>
-                        <CategoryIcon name={currentCategory.iconName} size={16} />
-                      </div>
-                      <div>
-                        <div className={cn('text-xs font-bold', errors.category ? 'text-rose-500' : 'text-theme-primary')}>
-                          {currentCategory.name}
-                        </div>
-                        <div className="text-[10px] text-theme-muted">Category</div>
-                      </div>
-                    </div>
-                    <ChevronDown className={cn('size-4', errors.category ? 'text-rose-500' : 'text-theme-muted')} />
-                  </button>
-                </div>
-              )}
             </div>
 
-            {/* Update Primary CTA */}
-            <div className="px-4 pt-2 pb-2 mt-auto">
+            {/* Context Pills: Account & Date */}
+            <div className="flex items-center justify-center gap-2 py-2">
+              <button
+                type="button"
+                onClick={() => setActivePicker('account')}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all shadow-xs',
+                  errors.account
+                    ? 'border border-rose-500 bg-rose-500/10 text-rose-500'
+                    : 'bg-theme-card-subtle hover:bg-theme-card text-theme-primary border border-theme-border/60'
+                )}
+              >
+                <CreditCard className="size-3.5 text-theme-muted" />
+                <span className="truncate max-w-[110px]">
+                  {currentAccount.name}
+                </span>
+                <ChevronDown className="size-3 text-theme-muted" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActivePicker('date')}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all shadow-xs',
+                  errors.date
+                    ? 'border border-rose-500 bg-rose-500/10 text-rose-500'
+                    : 'bg-theme-card-subtle hover:bg-theme-card text-theme-primary border border-theme-border/60'
+                )}
+              >
+                <Calendar className="size-3.5 text-theme-muted" />
+                <span>{dateDisplayLabel}</span>
+                <ChevronDown className="size-3 text-theme-muted" />
+              </button>
+            </div>
+
+            {/* Mode Switcher Tabs */}
+            {type === 'EXPENSE' && (
+              <div className="mt-3 mb-2 flex items-center justify-center border-b border-theme-border/40">
+                <button
+                  type="button"
+                  onClick={() => handleSwitchCategoryMode('single')}
+                  className={cn(
+                    'flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border-b-2 transition-all',
+                    categoryMode === 'single'
+                      ? 'border-violet-500 text-violet-500'
+                      : 'border-transparent text-theme-muted hover:text-theme-primary'
+                  )}
+                >
+                  <Tag className="size-3.5" />
+                  <span>Single category</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleSwitchCategoryMode('split')}
+                  className={cn(
+                    'flex items-center gap-1.5 px-4 py-2 text-xs font-semibold border-b-2 transition-all',
+                    categoryMode === 'split'
+                      ? 'border-violet-500 text-violet-500'
+                      : 'border-transparent text-theme-muted hover:text-theme-primary'
+                  )}
+                >
+                  <Split className="size-3.5" />
+                  <span>Split categories</span>
+                </button>
+              </div>
+            )}
+
+            {/* Mode 1: Single Category */}
+            {(!isSplit || type !== 'EXPENSE') && (
+              <div className="py-3 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActivePicker('category')}
+                  className={cn(
+                    'flex items-center justify-between py-2.5 px-2 rounded-2xl transition-all',
+                    errors.category
+                      ? 'bg-rose-500/10 text-rose-500 border border-rose-500/40'
+                      : 'hover:bg-theme-card-subtle text-theme-primary'
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        'flex size-10 items-center justify-center rounded-full text-white shadow-xs',
+                        currentCategory.bgClass
+                      )}
+                    >
+                      <CategoryIcon name={currentCategory.iconName} size={18} />
+                    </div>
+                    <div className="text-left">
+                      <div className="text-xs font-semibold text-theme-primary">
+                        {currentCategory.name}
+                      </div>
+                      <div className="text-[11px] text-theme-muted">
+                        Category
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronDown className="size-4 text-theme-muted" />
+                </button>
+              </div>
+            )}
+
+            {/* Mode 2: Multi-Category Bill Splitting */}
+            {isSplit && type === 'EXPENSE' && (
+              <div className="py-1">
+                <CategorySplitEditor
+                  totalAmountPaise={activeAmount}
+                  splits={splits}
+                  categories={categories}
+                  onChange={setSplits}
+                />
+              </div>
+            )}
+
+            {/* GPay Rounded-Full Pill CTA */}
+            <div className="pt-4 mt-auto">
               <button
                 type="button"
                 disabled={isSubmitting}
                 onClick={handleSave}
-                className={cn(
-                  'flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r py-3.5 text-sm font-bold text-white shadow-lg transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed',
-                  activeColorGradient
-                )}
+                className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed shadow-md active:scale-[0.99] transition-all"
               >
                 <span>
                   {isSubmitting
                     ? 'Updating...'
                     : isSplit
-                    ? `Update Split Expense ₹${formattedRupees} (${splits.length} Categories)`
+                    ? `Update Split Expense ₹${formattedRupees}`
                     : `Update Transaction ₹${formattedRupees}`}
                 </span>
-                <ArrowRight className="size-4" />
               </button>
             </div>
           </div>
@@ -736,7 +690,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
         {/* Quick Picker Sub-Sheet: Category */}
         {activePicker === 'category' && (
           <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated p-4 animate-in fade-in duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-theme-border">
+            <div className="flex items-center justify-between pb-3 border-b border-theme-border/60">
               <span className="text-sm font-bold text-theme-primary">Select Category</span>
               <button
                 type="button"
@@ -764,14 +718,13 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
                       });
                       setActivePicker(null);
                     }}
-                    className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-theme-card-hover active:scale-95 transition-all"
+                    className="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-theme-card-hover active:scale-95 transition-all"
                   >
                     <div
                       className={cn(
-                        'flex size-11 items-center justify-center rounded-xl border transition-all',
+                        'flex size-11 items-center justify-center rounded-full text-white transition-all',
                         cat.bgClass,
-                        cat.textClass,
-                        isSelected ? 'border-violet-500 ring-2 ring-violet-500/40 scale-105' : 'border-theme-border'
+                        isSelected ? 'ring-2 ring-violet-500 ring-offset-2 ring-offset-theme-elevated scale-105' : ''
                       )}
                     >
                       <CategoryIcon name={cat.iconName} size={18} />
@@ -794,7 +747,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
         {/* Quick Picker Sub-Sheet: Account */}
         {activePicker === 'account' && (
           <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated p-4 animate-in fade-in duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-theme-border">
+            <div className="flex items-center justify-between pb-3 border-b border-theme-border/60">
               <span className="text-sm font-bold text-theme-primary">Select Payment Account</span>
               <button
                 type="button"
@@ -824,14 +777,14 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
                       setActivePicker(null);
                     }}
                     className={cn(
-                      'flex items-center justify-between p-3 rounded-xl border transition-all text-left',
+                      'flex items-center justify-between p-3 rounded-2xl border transition-all text-left',
                       isSelected
                         ? 'border-violet-500/60 bg-violet-500/10 text-theme-primary'
-                        : 'border-theme-border bg-theme-card hover:bg-theme-card-hover text-theme-secondary'
+                        : 'border-theme-border/60 bg-theme-card-subtle hover:bg-theme-card text-theme-secondary'
                     )}
                   >
                     <div className="flex items-center gap-2.5">
-                      <div className="flex size-8 items-center justify-center rounded-lg bg-theme-card-subtle text-theme-primary">
+                      <div className="flex size-8 items-center justify-center rounded-full bg-theme-card text-theme-primary">
                         <CreditCard className="size-4" />
                       </div>
                       <div>
@@ -850,7 +803,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
         {/* Quick Picker Sub-Sheet: Date */}
         {activePicker === 'date' && (
           <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated p-4 animate-in fade-in duration-150 overflow-y-auto no-scrollbar">
-            <div className="flex items-center justify-between pb-3 border-b border-theme-border mb-3">
+            <div className="flex items-center justify-between pb-3 border-b border-theme-border/60 mb-3">
               <span className="text-sm font-bold text-theme-primary">Select Date</span>
               <button
                 type="button"
@@ -861,7 +814,6 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
               </button>
             </div>
             
-            {/* Quick Date Shortcuts */}
             <div className="flex gap-2 mb-3">
               <button
                 type="button"
@@ -877,10 +829,10 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
                   setActivePicker(null);
                 }}
                 className={cn(
-                  'flex-1 py-2 text-xs font-semibold rounded-xl border transition-all',
+                  'flex-1 py-2 text-xs font-semibold rounded-full border transition-all',
                   selectedDate === todayStr
-                    ? 'border-violet-500 bg-violet-500/15 text-violet-600 dark:text-violet-300'
-                    : 'border-theme-border bg-theme-card text-theme-secondary hover:bg-theme-card-hover'
+                    ? 'border-violet-500 bg-violet-500/15 text-violet-500'
+                    : 'border-theme-border/60 bg-theme-card-subtle text-theme-secondary hover:bg-theme-card'
                 )}
               >
                 Today
@@ -899,10 +851,10 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
                   setActivePicker(null);
                 }}
                 className={cn(
-                  'flex-1 py-2 text-xs font-semibold rounded-xl border transition-all',
+                  'flex-1 py-2 text-xs font-semibold rounded-full border transition-all',
                   selectedDate === yesterdayStr
-                    ? 'border-violet-500 bg-violet-500/15 text-violet-600 dark:text-violet-300'
-                    : 'border-theme-border bg-theme-card text-theme-secondary hover:bg-theme-card-hover'
+                    ? 'border-violet-500 bg-violet-500/15 text-violet-500'
+                    : 'border-theme-border/60 bg-theme-card-subtle text-theme-secondary hover:bg-theme-card'
                 )}
               >
                 Yesterday
