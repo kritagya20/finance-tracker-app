@@ -128,7 +128,7 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
       </div>
 
       {/* Flat, Borderless List Rows (Matching GPay style) */}
-      <div className="flex flex-col divide-y divide-theme-border/40">
+      <div className="flex flex-col divide-y divide-theme-divider">
         {splits.map((split, index) => {
           const cat = categories.find((c) => c.id === split.categoryId) || categories[0];
           const rupeeVal = (split.amount / 100).toString();
@@ -217,8 +217,8 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
       {/* Category Picker Sub-Sheet */}
       {activePickerRowIndex !== null && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-[360px] rounded-3xl border border-theme-border bg-theme-elevated p-4 shadow-2xl animate-in slide-in-from-bottom-3 duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-theme-border/60">
+          <div className="w-full max-w-[360px] rounded-3xl bg-theme-elevated p-4 shadow-2xl animate-in slide-in-from-bottom-3 duration-200">
+            <div className="flex items-center justify-between pb-3 border-b border-theme-divider">
               <span className="text-sm font-bold text-theme-primary">Select Category</span>
               <button
                 type="button"
@@ -243,7 +243,7 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
                       className={cn(
                         'flex size-11 items-center justify-center rounded-full text-white transition-all',
                         cat.bgClass,
-                        isSelected ? 'ring-2 ring-violet-500 ring-offset-2 ring-offset-theme-elevated scale-105' : ''
+                        isSelected ? 'ring-2 ring-violet-500 scale-105 shadow-md' : ''
                       )}
                     >
                       <CategoryIcon name={cat.iconName} size={18} />

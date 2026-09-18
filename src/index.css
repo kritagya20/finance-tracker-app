@@ -125,8 +125,18 @@ body {
   .border-theme-border {
     border-color: var(--border-subtle);
   }
-  .border-theme-divider {
-    border-color: var(--border-divider);
+  .border-theme-divider,
+  .border-theme-border\/20,
+  .border-theme-border\/30,
+  .border-theme-border\/40,
+  .border-theme-border\/50,
+  .border-theme-border\/60 {
+    border-color: var(--border-divider) !important;
+  }
+
+  .divide-theme-divider > :not([hidden]) ~ :not([hidden]),
+  .divide-theme-border\/20 > :not([hidden]) ~ :not([hidden]) {
+    border-color: var(--border-divider) !important;
   }
 
   .ring-theme-app {

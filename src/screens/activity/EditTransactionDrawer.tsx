@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
+  ArrowLeft,
   Trash2,
   Delete,
   Calendar,
@@ -83,11 +84,6 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
   // Active Sub-Sheet Picker ('category' | 'account' | 'date' | null)
   const [activePicker, setActivePicker] = useState<'category' | 'account' | 'date' | null>(null);
 
-  // Drag-to-dismiss gesture state
-  const [dragOffsetY, setDragOffsetY] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const startYRef = useRef(0);
-
   // Initialize values when transaction changes
   useEffect(() => {
     if (tx) {
@@ -126,7 +122,6 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       setIsAnimatingIn(false);
       const timer = setTimeout(() => {
         setIsRendered(false);
-        setDragOffsetY(0);
         setActivePicker(null);
         setErrors({});
         setErrorMessage(null);
@@ -136,41 +131,6 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
   }, [isOpen]);
 
   if (!isRendered || !tx) return null;
-
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (activePicker) return;
-    startYRef.current = e.clientY;
-    setIsDragging(true);
-    try {
-      e.currentTarget.setPointerCapture(e.pointerId);
-    } catch {
-      // ignore
-    }
-  };
-
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
-    const deltaY = e.clientY - startYRef.current;
-    if (deltaY > 0) {
-      setDragOffsetY(deltaY);
-    }
-  };
-
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging) return;
-    setIsDragging(false);
-    try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
-    } catch {
-      // ignore
-    }
-
-    if (dragOffsetY > 90) {
-      onClose();
-    } else {
-      setDragOffsetY(0);
-    }
-  };
 
   const handleKeypadPress = (key: string) => {
     if (errors.amount) {
@@ -380,611 +340,597 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
   const isSplit = splits.length > 1 && type === 'EXPENSE';
 
   return (
-    <div className="fixed inset-0 z-50 mx-auto max-w-[390px] flex items-end justify-center">
-      {/* Backdrop */}
-      <div
-        onClick={onClose}
-        className={cn(
-          'fixed inset-0 bg-black/75 backdrop-blur-xs transition-opacity duration-300',
-          isAnimatingIn ? 'opacity-100' : 'opacity-0'
-        )}
-      />
+    <div
+      role="dialog"
+      aria-modal="true"
+      className={cn(
+        'fixed inset-0 z-50 flex flex-col bg-theme-elevated transition-all duration-300 mx-auto max-w-[430px] overflow-hidden select-none',
+        isAnimatingIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6 pointer-events-none'
+      )}
+    >
+      {/* ------------------------------------------------------------------ */}
+      {/* STEP 1: AMOUNT KEYPAD (Full-Screen GPay-Inspired Minimal Flow)     */}
+      {/* ------------------------------------------------------------------ */}
+      {step === 1 && (
+        <div className="flex flex-col flex-1 min-h-0 justify-between px-5 pt-4 pb-8 animate-in fade-in duration-200">
+          {/* Top Bar */}
+          <div className="flex items-center justify-between pb-2 shrink-0">
+            <div className="flex items-center rounded-full bg-theme-card-subtle p-0.5">
+              {(['EXPENSE', 'INCOME', 'TRANSFER'] as TransactionType[]).map((t) => {
+                const isSelected = type === t;
+                const label = t === 'EXPENSE' ? 'Expense' : t === 'INCOME' ? 'Income' : 'Transfer';
+                return (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setType(t)}
+                    className={cn(
+                      'px-3.5 py-1.5 text-xs font-semibold rounded-full transition-all',
+                      isSelected
+                        ? 'bg-theme-card text-theme-primary shadow-xs'
+                        : 'text-theme-muted hover:text-theme-primary'
+                    )}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
 
-      {/* Main Bottom Sheet */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        style={{
-          transform: isAnimatingIn
-            ? `translateY(${dragOffsetY}px)`
-            : 'translateY(100%)',
-          transition: isDragging ? 'none' : 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
-        }}
-        className="relative z-10 flex w-full h-[88vh] h-[88dvh] max-h-[88dvh] min-h-[88dvh] flex-col rounded-t-3xl border-t border-theme-border/50 bg-theme-elevated shadow-2xl transition-colors overflow-hidden"
-      >
-        {/* Subtle Drag Handle */}
-        <div
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerCancel={handlePointerUp}
-          className="relative shrink-0 px-4 pt-3 pb-1 cursor-grab active:cursor-grabbing touch-none select-none"
-        >
-          <div className="mx-auto h-1 w-8 rounded-full bg-theme-muted/40" />
+            <button
+              type="button"
+              onClick={() => setStep(2)}
+              aria-label="Back to details"
+              className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+            >
+              <X className="size-5" />
+            </button>
+          </div>
+
+          {/* Error Message */}
+          {errorMessage && (
+            <div className="my-1 shrink-0 flex items-center justify-center gap-1.5 text-xs text-rose-500 transition-all">
+              <AlertCircle className="size-3.5" />
+              <span>{errorMessage}</span>
+            </div>
+          )}
+
+          {/* Centered Hero: "Edit amount" + Large Amount */}
+          <div className="flex flex-col items-center justify-center py-4 shrink-0">
+            <span className="text-xs font-medium text-theme-muted tracking-wider uppercase mb-1">
+              Edit amount
+            </span>
+
+            <div className="flex items-baseline justify-center gap-1.5 select-none">
+              <span className="text-2xl font-semibold text-theme-muted">₹</span>
+              <span className="text-5xl font-light tracking-tight tabular-nums text-theme-primary">
+                {amountStr}
+              </span>
+              <span className="ml-0.5 h-8 w-0.5 animate-pulse rounded-full bg-violet-500" />
+            </div>
+
+            {/* Quick Increment Chips (Border-free) */}
+            <div className="mt-4 flex items-center gap-2">
+              {QUICK_AMOUNTS.map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => handleQuickAdd(amt)}
+                  className="rounded-full bg-theme-card-subtle px-3 py-1.5 text-xs font-medium text-theme-secondary hover:text-theme-primary hover:bg-theme-card active:scale-95 transition-all shadow-xs"
+                >
+                  +₹{amt.toLocaleString('en-IN')}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Flat, Spacious Keypad (Border-free) */}
+          <div className="py-3 flex-1 flex flex-col justify-center min-h-0">
+            <div className="grid grid-cols-3 gap-2.5 max-w-[340px] mx-auto w-full">
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'BACKSPACE'].map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => handleKeypadPress(key)}
+                  className="flex h-13 items-center justify-center rounded-2xl bg-theme-card/60 hover:bg-theme-card text-theme-primary text-xl font-normal active:scale-95 transition-all shadow-xs"
+                >
+                  {key === 'BACKSPACE' ? (
+                    <Delete className="size-5 text-theme-secondary" />
+                  ) : (
+                    key
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Pill CTA */}
+          <div className="shrink-0 pt-3">
+            <button
+              type="button"
+              onClick={() => setStep(2)}
+              disabled={activeAmount <= 0}
+              className="flex w-full items-center justify-center gap-2 rounded-full py-4 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg active:scale-[0.99] transition-all"
+            >
+              <span>Done editing amount (₹{formattedRupees})</span>
+            </button>
+          </div>
         </div>
+      )}
 
-        {/* ------------------------------------------------------------------ */}
-        {/* STEP 1: AMOUNT KEYPAD                                              */}
-        {/* ------------------------------------------------------------------ */}
-        {step === 1 && (
-          <div className="flex flex-col flex-1 min-h-0 justify-between pb-5 px-4 animate-in fade-in duration-200">
-            {/* Top Bar */}
-            <div className="flex items-center justify-between pb-1 shrink-0">
-              <div className="flex items-center rounded-full bg-theme-card-subtle p-0.5 border border-theme-border/60">
-                {(['EXPENSE', 'INCOME', 'TRANSFER'] as TransactionType[]).map((t) => {
-                  const isSelected = type === t;
-                  const label = t === 'EXPENSE' ? 'Expense' : t === 'INCOME' ? 'Income' : 'Transfer';
-                  return (
-                    <button
-                      key={t}
-                      type="button"
-                      onClick={() => setType(t)}
-                      className={cn(
-                        'px-3 py-1 text-xs font-semibold rounded-full transition-all',
-                        isSelected
-                          ? 'bg-theme-card text-theme-primary shadow-xs'
-                          : 'text-theme-muted hover:text-theme-primary'
-                      )}
-                    >
-                      {label}
-                    </button>
-                  );
-                })}
-              </div>
+      {/* ------------------------------------------------------------------ */}
+      {/* STEP 2: DETAILS CANVAS (Full-Screen Dedicated Edit Screen)         */}
+      {/* ------------------------------------------------------------------ */}
+      {step === 2 && (
+        <div className="flex flex-col flex-1 min-h-0 animate-in fade-in duration-200">
+          {/* Top Bar: Title + Delete + Close */}
+          <div className="flex items-center justify-between px-5 pt-4 pb-3 shrink-0">
+            <span className="text-sm font-bold text-theme-primary">
+              Edit Transaction
+            </span>
 
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onDelete(tx.id)}
+                aria-label="Delete"
+                className="flex size-9 items-center justify-center rounded-full text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all"
+              >
+                <Trash2 className="size-4" />
+              </button>
               <button
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="flex size-8 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+                className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
               >
-                <X className="size-4" />
+                <X className="size-5" />
               </button>
             </div>
+          </div>
 
+          {/* Scrollable Content Body */}
+          <div className="flex-1 overflow-y-auto no-scrollbar min-h-0 px-5 py-4 space-y-4">
             {/* Error Message */}
             {errorMessage && (
-              <div className="my-1 shrink-0 flex items-center justify-center gap-1.5 text-xs text-rose-500 transition-all">
+              <div className="flex items-center justify-center gap-1.5 text-xs text-rose-500 transition-all">
                 <AlertCircle className="size-3.5" />
                 <span>{errorMessage}</span>
               </div>
             )}
 
-            {/* Centered Hero: Amount */}
-            <div className="flex flex-col items-center justify-center py-2 shrink-0">
-              <span className="text-xs font-medium text-theme-muted tracking-wide mb-1">
-                Edit amount
+            {/* Centered Hero: Amount + Note */}
+            <div className="flex flex-col items-center justify-center py-2">
+              <span className="text-xs font-medium text-theme-muted mb-1">
+                {isSplit ? 'Amount to split' : `${type.toLowerCase()} amount`}
               </span>
 
-              <div className="flex items-baseline justify-center gap-1 select-none">
-                <span className="text-2xl font-semibold text-theme-muted">₹</span>
-                <span className="text-5xl font-light tracking-tight tabular-nums text-theme-primary">
-                  {amountStr}
+              <div className="flex items-baseline justify-center gap-1">
+                <span className="text-xl font-semibold text-theme-muted">₹</span>
+                <span className="text-4xl font-light tracking-tight text-theme-primary tabular-nums">
+                  {formattedRupees}
                 </span>
-                <span className="ml-0.5 h-8 w-0.5 animate-pulse rounded-full bg-violet-500" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErrorMessage(null);
+                    setStep(1);
+                  }}
+                  className="ml-2.5 p-1.5 rounded-full text-theme-muted hover:text-violet-400 hover:bg-theme-card-subtle transition-colors"
+                  title="Change amount"
+                >
+                  <Pencil className="size-4" />
+                </button>
               </div>
 
-              {/* Quick Increment Chips */}
-              <div className="mt-3 flex items-center gap-1.5">
-                {QUICK_AMOUNTS.map((amt) => (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => handleQuickAdd(amt)}
-                    className="rounded-full bg-theme-card-subtle px-2.5 py-1 text-[11px] font-medium text-theme-secondary hover:text-theme-primary hover:bg-theme-card-hover active:scale-95 transition-all"
-                  >
-                    +₹{amt.toLocaleString('en-IN')}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Flat Keypad */}
-            <div className="py-2 flex-1 flex flex-col justify-center min-h-0">
-              <div className="grid grid-cols-3 gap-2 max-w-[340px] mx-auto w-full">
-                {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'BACKSPACE'].map((key) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => handleKeypadPress(key)}
-                    className="flex h-11 items-center justify-center rounded-2xl bg-theme-card/60 hover:bg-theme-card text-theme-primary text-lg font-medium active:scale-95 transition-all"
-                  >
-                    {key === 'BACKSPACE' ? (
-                      <Delete className="size-4 text-theme-secondary" />
-                    ) : (
-                      key
-                    )}
-                  </button>
-                ))}
+              {/* Note pill (editable) */}
+              <div className="mt-3">
+                <input
+                  type="text"
+                  placeholder="What's this for?"
+                  value={merchantNote}
+                  onChange={(e) => setMerchantNote(e.target.value)}
+                  className="rounded-full bg-theme-card-subtle px-4 py-2 text-xs text-center text-theme-primary placeholder:text-theme-muted focus:outline-none max-w-[240px] transition-colors shadow-xs"
+                />
               </div>
             </div>
 
-            {/* Pill CTA */}
-            <div className="pt-2 shrink-0">
+            {/* Context Pills: Account & Date */}
+            <div className="flex items-center justify-center gap-2.5 py-1">
               <button
                 type="button"
-                onClick={() => setStep(2)}
-                disabled={activeAmount <= 0}
-                className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed shadow-md active:scale-[0.99] transition-all"
+                onClick={() => setActivePicker('account')}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium transition-all shadow-xs',
+                  errors.account
+                    ? 'border border-rose-500 bg-rose-500/10 text-rose-500'
+                    : 'bg-theme-card-subtle hover:bg-theme-card text-theme-primary border border-transparent'
+                )}
               >
-                <span>Done editing amount (₹{formattedRupees})</span>
+                <CreditCard className="size-3.5 text-theme-muted" />
+                <span className="truncate max-w-[120px]">
+                  {currentAccount.name}
+                </span>
+                <ChevronDown className="size-3 text-theme-muted" />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActivePicker('date')}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium transition-all shadow-xs',
+                  errors.date
+                    ? 'border border-rose-500 bg-rose-500/10 text-rose-500'
+                    : 'bg-theme-card-subtle hover:bg-theme-card text-theme-primary border border-transparent'
+                )}
+              >
+                <Calendar className="size-3.5 text-theme-muted" />
+                <span>{dateDisplayLabel}</span>
+                <ChevronDown className="size-3 text-theme-muted" />
               </button>
             </div>
-          </div>
-        )}
 
-        {/* ------------------------------------------------------------------ */}
-        {/* STEP 2: DETAILS CANVAS                                             */}
-        {/* ------------------------------------------------------------------ */}
-        {step === 2 && (
-          <div className="flex flex-col flex-1 min-h-0 animate-in fade-in duration-200">
-            {/* Top Bar: Title + Delete + Close (Fixed Header) */}
-            <div className="flex items-center justify-between px-4 pb-2 border-b border-theme-border/40 shrink-0">
-              <span className="text-xs font-semibold text-theme-secondary">
-                Edit transaction
-              </span>
-
-              <div className="flex items-center gap-1">
-                <button
-                  type="button"
-                  onClick={() => onDelete(tx.id)}
-                  aria-label="Delete"
-                  className="flex size-8 items-center justify-center rounded-full text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all"
-                >
-                  <Trash2 className="size-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={onClose}
-                  aria-label="Close"
-                  className="flex size-8 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary transition-colors"
-                >
-                  <X className="size-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Scrollable Content Body */}
-            <div className="flex-1 overflow-y-auto no-scrollbar min-h-0 px-4 py-3 space-y-3">
-              {/* Error Message */}
-              {errorMessage && (
-                <div className="flex items-center justify-center gap-1.5 text-xs text-rose-500 transition-all">
-                  <AlertCircle className="size-3.5" />
-                  <span>{errorMessage}</span>
-                </div>
-              )}
-
-              {/* Centered Hero: Amount + Note */}
-              <div className="flex flex-col items-center justify-center py-1">
-                <span className="text-xs font-medium text-theme-muted mb-0.5">
-                  {isSplit ? 'Amount to split' : `${type.toLowerCase()} amount`}
-                </span>
-
-                <div className="flex items-baseline justify-center gap-1">
-                  <span className="text-xl font-semibold text-theme-muted">₹</span>
-                  <span className="text-4xl font-light tracking-tight text-theme-primary tabular-nums">
-                    {formattedRupees}
+            {/* Unified Category Section (NO ARTIFICIAL TABS!) */}
+            {isSplit ? (
+              <div className="py-2">
+                <div className="flex items-center justify-between pb-2">
+                  <span className="text-xs font-semibold text-theme-secondary">
+                    Split into {splits.length} categories
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setStep(1)}
-                    className="ml-2 p-1 text-theme-muted hover:text-violet-400 transition-colors"
-                    title="Change amount"
-                  >
-                    <Pencil className="size-3.5" />
-                  </button>
-                </div>
-
-                {/* Note pill (editable) */}
-                <div className="mt-2">
-                  <input
-                    type="text"
-                    placeholder="What's this for?"
-                    value={merchantNote}
-                    onChange={(e) => setMerchantNote(e.target.value)}
-                    className="rounded-full bg-theme-card-subtle px-4 py-1.5 text-xs text-center text-theme-primary placeholder:text-theme-muted focus:outline-none border border-theme-border/60 focus:border-violet-500/60 max-w-[220px] transition-colors"
-                  />
-                </div>
-              </div>
-
-              {/* Context Pills: Account & Date */}
-              <div className="flex items-center justify-center gap-2 py-1">
-                <button
-                  type="button"
-                  onClick={() => setActivePicker('account')}
-                  className={cn(
-                    'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all shadow-xs',
-                    errors.account
-                      ? 'border border-rose-500 bg-rose-500/10 text-rose-500'
-                      : 'bg-theme-card-subtle hover:bg-theme-card text-theme-primary border border-theme-border/60'
-                  )}
-                >
-                  <CreditCard className="size-3.5 text-theme-muted" />
-                  <span className="truncate max-w-[110px]">
-                    {currentAccount.name}
-                  </span>
-                  <ChevronDown className="size-3 text-theme-muted" />
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setActivePicker('date')}
-                  className={cn(
-                    'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-all shadow-xs',
-                    errors.date
-                      ? 'border border-rose-500 bg-rose-500/10 text-rose-500'
-                      : 'bg-theme-card-subtle hover:bg-theme-card text-theme-primary border border-theme-border/60'
-                  )}
-                >
-                  <Calendar className="size-3.5 text-theme-muted" />
-                  <span>{dateDisplayLabel}</span>
-                  <ChevronDown className="size-3 text-theme-muted" />
-                </button>
-              </div>
-
-              {/* Unified Category Section (NO ARTIFICIAL TABS!) */}
-              {isSplit ? (
-                <div className="py-2">
-                  <div className="flex items-center justify-between pb-2">
-                    <span className="text-xs font-semibold text-theme-secondary">
-                      Split into {splits.length} categories
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setActivePicker('category')}
-                      className="text-xs font-semibold text-violet-500 hover:text-violet-400 transition-colors"
-                    >
-                      Edit categories
-                    </button>
-                  </div>
-
-                  <CategorySplitEditor
-                    totalAmountPaise={activeAmount}
-                    splits={splits}
-                    categories={categories}
-                    onChange={(updated) => {
-                      if (updated.length === 1) {
-                        setSelectedCategoryId(updated[0].categoryId);
-                        setSplits([]);
-                      } else {
-                        setSplits(updated);
-                      }
-                    }}
-                    onAddCategoryClick={() => setActivePicker('category')}
-                    allowRemoveToSingle={true}
-                  />
-                </div>
-              ) : (
-                <div className="py-2 flex flex-col gap-2">
                   <button
                     type="button"
                     onClick={() => setActivePicker('category')}
-                    className={cn(
-                      'flex items-center justify-between py-2.5 px-3 rounded-2xl transition-all',
-                      errors.category
-                        ? 'bg-rose-500/10 text-rose-500 border border-rose-500/40'
-                        : 'bg-theme-card-subtle hover:bg-theme-card text-theme-primary border border-theme-border/60'
-                    )}
+                    className="text-xs font-semibold text-violet-500 hover:text-violet-400 transition-colors"
                   >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          'flex size-10 items-center justify-center rounded-full text-white shadow-xs',
-                          currentCategory.bgClass
-                        )}
-                      >
-                        <CategoryIcon name={currentCategory.iconName} size={18} />
-                      </div>
-                      <div className="text-left">
-                        <div className={cn('text-xs font-semibold', errors.category ? 'text-rose-500' : 'text-theme-primary')}>
-                          {currentCategory.name}
-                        </div>
-                        <div className="text-[11px] text-theme-muted">
-                          Tap to change or split
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-theme-muted">
-                      <span>Change / Split</span>
-                      <ChevronDown className="size-3.5" />
-                    </div>
+                    Edit categories
                   </button>
-
-                  {/* Subtle "+ Split with another category" button for direct discoverability */}
-                  {type === 'EXPENSE' && (
-                    <button
-                      type="button"
-                      onClick={() => setActivePicker('category')}
-                      className="flex items-center gap-1.5 self-start px-2 py-1 text-xs font-semibold text-violet-500 hover:text-violet-400 transition-colors"
-                    >
-                      <Split className="size-3.5" />
-                      <span>Split into multiple categories</span>
-                    </button>
-                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Pinned Sticky Bottom CTA Footer */}
-            <div className="shrink-0 px-4 pt-2 pb-5 border-t border-theme-border/40 bg-theme-elevated">
+                <CategorySplitEditor
+                  totalAmountPaise={activeAmount}
+                  splits={splits}
+                  categories={categories}
+                  onChange={(updated) => {
+                    if (updated.length === 1) {
+                      setSelectedCategoryId(updated[0].categoryId);
+                      setSplits([]);
+                    } else {
+                      setSplits(updated);
+                    }
+                  }}
+                  onAddCategoryClick={() => setActivePicker('category')}
+                  allowRemoveToSingle={true}
+                />
+              </div>
+            ) : (
+              <div className="py-2 flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActivePicker('category')}
+                  className={cn(
+                    'flex items-center justify-between py-3 px-4 rounded-2xl transition-all shadow-xs',
+                    errors.category
+                      ? 'bg-rose-500/10 text-rose-500 border border-rose-500/40'
+                      : 'bg-theme-card-subtle hover:bg-theme-card text-theme-primary border border-transparent'
+                  )}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={cn(
+                        'flex size-10 items-center justify-center rounded-xl text-white shadow-xs',
+                        currentCategory.bgClass
+                      )}
+                    >
+                      <CategoryIcon name={currentCategory.iconName} size={18} />
+                    </div>
+                    <div className="text-left">
+                      <div className={cn('text-xs font-semibold', errors.category ? 'text-rose-500' : 'text-theme-primary')}>
+                        {currentCategory.name}
+                      </div>
+                      <div className="text-[11px] text-theme-muted">
+                        Tap to change or split
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-theme-muted">
+                    <span>Change / Split</span>
+                    <ChevronDown className="size-3.5" />
+                  </div>
+                </button>
+
+                {/* Subtle "+ Split with another category" button for direct discoverability */}
+                {type === 'EXPENSE' && (
+                  <button
+                    type="button"
+                    onClick={() => setActivePicker('category')}
+                    className="flex items-center gap-1.5 self-start px-2 py-1 text-xs font-semibold text-violet-500 hover:text-violet-400 transition-colors"
+                  >
+                    <Split className="size-3.5" />
+                    <span>Split into multiple categories</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Pinned Sticky Bottom CTA Footer */}
+          <div className="shrink-0 px-5 pt-3 pb-8 bg-theme-elevated/95 backdrop-blur-xs">
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleSave}
+              className="flex w-full items-center justify-center gap-2 rounded-full py-4 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg active:scale-[0.99] transition-all"
+            >
+              <span>
+                {isSubmitting
+                  ? 'Updating...'
+                  : isSplit
+                  ? `Update Split Expense ₹${formattedRupees}`
+                  : `Update Transaction ₹${formattedRupees}`}
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Picker Sub-Sheet: Category (Uncluttered, Border-free, Multi-Category Splitting Built-In!) */}
+      {activePicker === 'category' && (
+        <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated animate-in fade-in duration-150">
+          {/* Top Bar */}
+          <div className="flex items-center justify-between px-5 pt-4 pb-3 shrink-0">
+            <div className="flex items-center gap-3">
               <button
                 type="button"
-                disabled={isSubmitting}
-                onClick={handleSave}
-                className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed shadow-md active:scale-[0.99] transition-all"
+                onClick={() => setActivePicker(null)}
+                className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
               >
-                <span>
-                  {isSubmitting
-                    ? 'Updating...'
-                    : isSplit
-                    ? `Update Split Expense ₹${formattedRupees}`
-                    : `Update Transaction ₹${formattedRupees}`}
-                </span>
+                <ArrowLeft className="size-5" />
               </button>
-            </div>
-          </div>
-        )}
-
-        {/* Quick Picker Sub-Sheet: Category (Multi-Category Splitting Built-In!) */}
-        {activePicker === 'category' && (
-          <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated p-4 animate-in fade-in duration-150">
-            {/* Fixed Header */}
-            <div className="flex items-center justify-between pb-3 border-b border-theme-border/60 shrink-0">
               <div>
                 <span className="text-sm font-bold text-theme-primary">Select Category</span>
                 <p className="text-[11px] text-theme-muted">
                   {splits.length > 1
                     ? `${splits.length} categories selected • Split bill below`
-                    : 'Select 1 category, or tap multiple to split'}
+                    : 'Choose 1 category or tap multiple to split'}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setActivePicker(null)}
-                className="rounded-full p-1 text-theme-secondary hover:text-theme-primary"
-              >
-                <X className="size-4" />
-              </button>
             </div>
-
-            {/* Scrollable Canvas: Category Grid + Categorization Breakdown */}
-            <div className="flex-1 overflow-y-auto no-scrollbar min-h-0 py-3 space-y-4">
-              {/* Category Grid */}
-              <div className="grid grid-cols-4 gap-3">
-                {categories.map((cat) => {
-                  const isSelectedInSplit = splits.some((s) => s.categoryId === cat.id);
-                  const isSingleSelected = !splits.length && selectedCategoryId === cat.id;
-                  const isSelected = isSelectedInSplit || isSingleSelected;
-
-                  return (
-                    <button
-                      key={cat.id}
-                      type="button"
-                      onClick={() => handleToggleCategoryInPicker(cat.id)}
-                      className="flex flex-col items-center gap-1.5 p-2 rounded-2xl hover:bg-theme-card-hover active:scale-95 transition-all relative"
-                    >
-                      <div
-                        className={cn(
-                          'flex size-11 items-center justify-center rounded-full text-white transition-all relative',
-                          cat.bgClass,
-                          isSelected ? 'ring-2 ring-violet-500 ring-offset-2 ring-offset-theme-elevated scale-105' : ''
-                        )}
-                      >
-                        <CategoryIcon name={cat.iconName} size={18} />
-                        {isSelected && (
-                          <div className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-violet-600 text-white ring-1 ring-white">
-                            <Check className="size-2.5 stroke-[3]" />
-                          </div>
-                        )}
-                      </div>
-                      <span
-                        className={cn(
-                          'text-center text-[10px] truncate w-full',
-                          isSelected ? 'font-bold text-theme-primary' : 'text-theme-secondary'
-                        )}
-                      >
-                        {cat.name}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Whenever user clicks more than single category: Show Categorization Breakdown Right Here! */}
-              {splits.length > 1 && (
-                <div className="pt-3 border-t border-theme-border/40 animate-in fade-in duration-150">
-                  <CategorySplitEditor
-                    totalAmountPaise={activeAmount}
-                    splits={splits}
-                    categories={categories}
-                    onChange={(updated) => {
-                      if (updated.length === 1) {
-                        setSelectedCategoryId(updated[0].categoryId);
-                        setSplits([]);
-                      } else {
-                        setSplits(updated);
-                      }
-                    }}
-                    allowRemoveToSingle={true}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Pinned Bottom Apply Button */}
-            <div className="shrink-0 pt-2 pb-2 border-t border-theme-border/40 bg-theme-elevated">
-              <button
-                type="button"
-                onClick={() => {
-                  if (selectedCategoryId || splits.length > 0) {
-                    setErrors((prev) => ({ ...prev, category: false }));
-                    setErrorMessage(null);
-                  }
-                  setActivePicker(null);
-                }}
-                className="flex w-full items-center justify-center gap-2 rounded-full py-3.5 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 shadow-md active:scale-[0.99] transition-all"
-              >
-                <span>
-                  {splits.length > 1
-                    ? `Apply Split (${splits.length} Categories)`
-                    : currentCategory
-                    ? `Apply ${currentCategory.name}`
-                    : 'Done'}
-                </span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setActivePicker(null)}
+              className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+            >
+              <X className="size-5" />
+            </button>
           </div>
-        )}
 
-        {/* Quick Picker Sub-Sheet: Account */}
-        {activePicker === 'account' && (
-          <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated p-4 animate-in fade-in duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-theme-border/60">
-              <span className="text-sm font-bold text-theme-primary">Select Payment Account</span>
-              <button
-                type="button"
-                onClick={() => setActivePicker(null)}
-                className="rounded-full p-1 text-theme-secondary hover:text-theme-primary"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-            <div className="flex flex-col gap-2 py-4 overflow-y-auto no-scrollbar">
-              {accountOptions.map((acc) => {
-                const isSelected = selectedAccountId === acc.id;
-                const mask = 'maskNumber' in acc ? acc.maskNumber : ('mask' in acc ? acc.mask : '');
+          {/* Scrollable Canvas: Category Grid + Categorization Breakdown */}
+          <div className="flex-1 overflow-y-auto no-scrollbar min-h-0 px-5 py-4 space-y-4">
+            {/* Category Grid with Generous Spacing and No Harsh White Borders */}
+            <div className="grid grid-cols-4 gap-y-4 gap-x-2">
+              {categories.map((cat) => {
+                const isSelectedInSplit = splits.some((s) => s.categoryId === cat.id);
+                const isSingleSelected = !splits.length && selectedCategoryId === cat.id;
+                const isSelected = isSelectedInSplit || isSingleSelected;
+
                 return (
                   <button
-                    key={acc.id}
+                    key={cat.id}
                     type="button"
-                    onClick={() => {
-                      setSelectedAccountId(acc.id);
-                      setErrors((prev) => {
-                        const next = { ...prev, account: false };
-                        if (!next.amount && !next.category && !next.date) {
-                          setErrorMessage(null);
-                        }
-                        return next;
-                      });
-                      setActivePicker(null);
-                    }}
-                    className={cn(
-                      'flex items-center justify-between p-3 rounded-2xl border transition-all text-left',
-                      isSelected
-                        ? 'border-violet-500/60 bg-violet-500/10 text-theme-primary'
-                        : 'border-theme-border/60 bg-theme-card-subtle hover:bg-theme-card text-theme-secondary'
-                    )}
+                    onClick={() => handleToggleCategoryInPicker(cat.id)}
+                    className="flex flex-col items-center gap-1.5 p-1 rounded-2xl hover:bg-theme-card-hover active:scale-95 transition-all relative"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex size-8 items-center justify-center rounded-full bg-theme-card text-theme-primary">
-                        <CreditCard className="size-4" />
-                      </div>
-                      <div>
-                        <div className="text-xs font-semibold text-theme-primary">{acc.name}</div>
-                        <div className="text-[10px] text-theme-muted">···· {mask}</div>
-                      </div>
+                    <div
+                      className={cn(
+                        'flex size-12 items-center justify-center rounded-2xl text-white transition-all relative shadow-xs',
+                        cat.bgClass,
+                        isSelected ? 'ring-2 ring-violet-500 scale-105 shadow-md' : ''
+                      )}
+                    >
+                      <CategoryIcon name={cat.iconName} size={20} />
+                      {isSelected && (
+                        <div className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-violet-600 text-white shadow-xs">
+                          <Check className="size-2.5 stroke-[3]" />
+                        </div>
+                      )}
                     </div>
-                    {isSelected && <Check className="size-4 text-violet-500" />}
+                    <span
+                      className={cn(
+                        'text-center text-[11px] truncate w-full mt-1',
+                        isSelected ? 'font-bold text-theme-primary' : 'text-theme-secondary'
+                      )}
+                    >
+                      {cat.name}
+                    </span>
                   </button>
                 );
               })}
             </div>
-          </div>
-        )}
 
-        {/* Quick Picker Sub-Sheet: Date */}
-        {activePicker === 'date' && (
-          <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated p-4 animate-in fade-in duration-150 overflow-y-auto no-scrollbar">
-            <div className="flex items-center justify-between pb-3 border-b border-theme-border/60 mb-3">
-              <span className="text-sm font-bold text-theme-primary">Select Date</span>
-              <button
-                type="button"
-                onClick={() => setActivePicker(null)}
-                className="rounded-full p-1 text-theme-secondary hover:text-theme-primary"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-            
-            <div className="flex gap-2 mb-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedDate(todayStr);
-                  setErrors((prev) => {
-                    const next = { ...prev, date: false };
-                    if (!next.amount && !next.category && !next.account) {
-                      setErrorMessage(null);
+            {/* Whenever user clicks more than single category: Show Categorization Breakdown Right Here! */}
+            {splits.length > 1 && (
+              <div className="pt-4 border-t border-theme-divider animate-in fade-in duration-150">
+                <CategorySplitEditor
+                  totalAmountPaise={activeAmount}
+                  splits={splits}
+                  categories={categories}
+                  onChange={(updated) => {
+                    if (updated.length === 1) {
+                      setSelectedCategoryId(updated[0].categoryId);
+                      setSplits([]);
+                    } else {
+                      setSplits(updated);
                     }
-                    return next;
-                  });
-                  setActivePicker(null);
-                }}
-                className={cn(
-                  'flex-1 py-2 text-xs font-semibold rounded-full border transition-all',
-                  selectedDate === todayStr
-                    ? 'border-violet-500 bg-violet-500/15 text-violet-500'
-                    : 'border-theme-border/60 bg-theme-card-subtle text-theme-secondary hover:bg-theme-card'
-                )}
-              >
-                Today
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedDate(yesterdayStr);
-                  setErrors((prev) => {
-                    const next = { ...prev, date: false };
-                    if (!next.amount && !next.category && !next.account) {
-                      setErrorMessage(null);
-                    }
-                    return next;
-                  });
-                  setActivePicker(null);
-                }}
-                className={cn(
-                  'flex-1 py-2 text-xs font-semibold rounded-full border transition-all',
-                  selectedDate === yesterdayStr
-                    ? 'border-violet-500 bg-violet-500/15 text-violet-500'
-                    : 'border-theme-border/60 bg-theme-card-subtle text-theme-secondary hover:bg-theme-card'
-                )}
-              >
-                Yesterday
-              </button>
-            </div>
-
-            <div className="flex items-center justify-center">
-              <CalendarPicker
-                mode="single"
-                selectedDate={selectedDate}
-                onSelectDate={(d) => {
-                  setSelectedDate(d);
-                  setErrors((prev) => {
-                    const next = { ...prev, date: false };
-                    if (!next.amount && !next.category && !next.account) {
-                      setErrorMessage(null);
-                    }
-                    return next;
-                  });
-                  setActivePicker(null);
-                }}
-                showPresets={false}
-                onClose={() => setActivePicker(null)}
-              />
-            </div>
+                  }}
+                  allowRemoveToSingle={true}
+                />
+              </div>
+            )}
           </div>
-        )}
-      </div>
+
+          {/* Pinned Bottom Apply Button */}
+          <div className="shrink-0 px-5 pt-3 pb-8 bg-theme-elevated/95 backdrop-blur-xs">
+            <button
+              type="button"
+              onClick={() => {
+                if (selectedCategoryId || splits.length > 0) {
+                  setErrors((prev) => ({ ...prev, category: false }));
+                  setErrorMessage(null);
+                }
+                setActivePicker(null);
+              }}
+              className="flex w-full items-center justify-center gap-2 rounded-full py-4 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 shadow-lg active:scale-[0.99] transition-all"
+            >
+              <span>
+                {splits.length > 1
+                  ? `Apply Split (${splits.length} Categories)`
+                  : currentCategory
+                  ? `Apply ${currentCategory.name}`
+                  : 'Done'}
+              </span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Quick Picker Sub-Sheet: Account */}
+      {activePicker === 'account' && (
+        <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated p-5 animate-in fade-in duration-150">
+          <div className="flex items-center justify-between pb-3 border-b border-theme-divider">
+            <span className="text-sm font-bold text-theme-primary">Select Payment Account</span>
+            <button
+              type="button"
+              onClick={() => setActivePicker(null)}
+              className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+            >
+              <X className="size-5" />
+            </button>
+          </div>
+          <div className="flex flex-col gap-2 py-4 overflow-y-auto no-scrollbar">
+            {accountOptions.map((acc) => {
+              const isSelected = selectedAccountId === acc.id;
+              const mask = 'maskNumber' in acc ? acc.maskNumber : ('mask' in acc ? acc.mask : '');
+              return (
+                <button
+                  key={acc.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedAccountId(acc.id);
+                    setErrors((prev) => {
+                      const next = { ...prev, account: false };
+                      if (!next.amount && !next.category && !next.date) {
+                        setErrorMessage(null);
+                      }
+                      return next;
+                    });
+                    setActivePicker(null);
+                  }}
+                  className={cn(
+                    'flex items-center justify-between p-3.5 rounded-2xl border transition-all text-left',
+                    isSelected
+                      ? 'border-violet-500/60 bg-violet-500/10 text-theme-primary shadow-xs'
+                      : 'border-theme-divider bg-theme-card-subtle hover:bg-theme-card text-theme-secondary'
+                  )}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex size-8 items-center justify-center rounded-full bg-theme-card text-theme-primary">
+                      <CreditCard className="size-4" />
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-theme-primary">{acc.name}</div>
+                      <div className="text-[10px] text-theme-muted">···· {mask}</div>
+                    </div>
+                  </div>
+                  {isSelected && <Check className="size-4 text-violet-500" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Quick Picker Sub-Sheet: Date */}
+      {activePicker === 'date' && (
+        <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated p-5 animate-in fade-in duration-150 overflow-y-auto no-scrollbar">
+          <div className="flex items-center justify-between pb-3 border-b border-theme-divider mb-3">
+            <span className="text-sm font-bold text-theme-primary">Select Date</span>
+            <button
+              type="button"
+              onClick={() => setActivePicker(null)}
+              className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+            >
+              <X className="size-5" />
+            </button>
+          </div>
+          
+          <div className="flex gap-2 mb-3">
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDate(todayStr);
+                setErrors((prev) => {
+                  const next = { ...prev, date: false };
+                  if (!next.amount && !next.category && !next.account) {
+                    setErrorMessage(null);
+                  }
+                  return next;
+                });
+                setActivePicker(null);
+              }}
+              className={cn(
+                'flex-1 py-2 text-xs font-semibold rounded-full border transition-all',
+                selectedDate === todayStr
+                  ? 'border-violet-500 bg-violet-500/15 text-violet-500'
+                  : 'border-theme-divider bg-theme-card-subtle text-theme-secondary hover:bg-theme-card'
+              )}
+            >
+              Today
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDate(yesterdayStr);
+                setErrors((prev) => {
+                  const next = { ...prev, date: false };
+                  if (!next.amount && !next.category && !next.account) {
+                    setErrorMessage(null);
+                  }
+                  return next;
+                });
+                setActivePicker(null);
+              }}
+              className={cn(
+                'flex-1 py-2 text-xs font-semibold rounded-full border transition-all',
+                selectedDate === yesterdayStr
+                  ? 'border-violet-500 bg-violet-500/15 text-violet-500'
+                  : 'border-theme-divider bg-theme-card-subtle text-theme-secondary hover:bg-theme-card'
+              )}
+            >
+              Yesterday
+            </button>
+          </div>
+
+          <div className="flex items-center justify-center">
+            <CalendarPicker
+              mode="single"
+              selectedDate={selectedDate}
+              onSelectDate={(d) => {
+                setSelectedDate(d);
+                setErrors((prev) => {
+                  const next = { ...prev, date: false };
+                  if (!next.amount && !next.category && !next.account) {
+                    setErrorMessage(null);
+                  }
+                  return next;
+                });
+                setActivePicker(null);
+              }}
+              showPresets={false}
+              onClose={() => setActivePicker(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
