@@ -1,8 +1,8 @@
 import React from 'react';
-import { House, Activity, Plus, ChartColumn, Settings } from 'lucide-react';
+import { House, Activity, Plus, ChartColumn, User } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
-export type NavTab = 'home' | 'activity' | 'analytics' | 'settings';
+export type NavTab = 'home' | 'activity' | 'analytics' | 'profile';
 
 interface BottomNavProps {
   activeTab: NavTab;
@@ -29,28 +29,28 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           type="button"
           onClick={() => handleTabClick('home')}
           className={cn(
-            'flex flex-col items-center gap-1 px-3 py-1 transition-colors',
+            'flex flex-col items-center justify-center gap-1 min-h-[48px] px-3 py-1 transition-colors duration-150',
             activeTab === 'home'
               ? 'text-violet-600 dark:text-violet-400'
               : 'text-theme-muted hover:text-theme-primary'
           )}
         >
           <House className="size-5" />
-          <span className="text-[10px] font-medium">Home</span>
+          <span className={cn('text-[10px]', activeTab === 'home' ? 'font-semibold' : 'font-medium')}>Home</span>
         </button>
 
         <button
           type="button"
           onClick={() => handleTabClick('activity')}
           className={cn(
-            'flex flex-col items-center gap-1 px-3 py-1 transition-colors',
+            'flex flex-col items-center justify-center gap-1 min-h-[48px] px-3 py-1 transition-colors duration-150',
             activeTab === 'activity'
               ? 'text-violet-600 dark:text-violet-400'
               : 'text-theme-muted hover:text-theme-primary'
           )}
         >
           <Activity className="size-5" />
-          <span className="text-[10px] font-medium">Activity</span>
+          <span className={cn('text-[10px]', activeTab === 'activity' ? 'font-semibold' : 'font-medium')}>Activity</span>
         </button>
 
         {/* Floating Raised Add Button */}
@@ -59,7 +59,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
             type="button"
             onClick={onOpenAddModal}
             aria-label="Add transaction"
-            className="flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-violet-500 text-white shadow-xl shadow-violet-900/50 ring-4 ring-theme-app transition-transform active:scale-95"
+            className="flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-violet-600 to-violet-500 text-white shadow-xl shadow-violet-900/50 ring-4 ring-theme-app transition-transform duration-150 active:scale-[0.93]"
           >
             <Plus className="size-7" />
           </button>
@@ -69,28 +69,28 @@ export const BottomNav: React.FC<BottomNavProps> = ({
           type="button"
           onClick={() => handleTabClick('analytics')}
           className={cn(
-            'flex flex-col items-center gap-1 px-3 py-1 transition-colors',
+            'flex flex-col items-center justify-center gap-1 min-h-[48px] px-3 py-1 transition-colors duration-150',
             activeTab === 'analytics'
               ? 'text-violet-600 dark:text-violet-400'
               : 'text-theme-muted hover:text-theme-primary'
           )}
         >
           <ChartColumn className="size-5" />
-          <span className="text-[10px] font-medium">Analytics</span>
+          <span className={cn('text-[10px]', activeTab === 'analytics' ? 'font-semibold' : 'font-medium')}>Analytics</span>
         </button>
 
         <button
           type="button"
-          onClick={() => handleTabClick('settings')}
+          onClick={() => handleTabClick('profile')}
           className={cn(
-            'flex flex-col items-center gap-1 px-3 py-1 transition-colors',
-            activeTab === 'settings'
+            'flex flex-col items-center justify-center gap-1 min-h-[48px] px-3 py-1 transition-colors duration-150',
+            activeTab === 'profile'
               ? 'text-violet-600 dark:text-violet-400'
               : 'text-theme-muted hover:text-theme-primary'
           )}
         >
-          <Settings className="size-5" />
-          <span className="text-[10px] font-medium">Settings</span>
+          <User className="size-5" />
+          <span className={cn('text-[10px]', activeTab === 'profile' ? 'font-semibold' : 'font-medium')}>Profile</span>
         </button>
       </div>
       <div className="h-1" />

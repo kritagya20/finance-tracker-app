@@ -6,14 +6,17 @@ import { BottomNav, NavTab } from './components/layout/BottomNav';
 import { DashboardScreen } from './screens/dashboard/DashboardScreen';
 import { ActivityScreen } from './screens/activity/ActivityScreen';
 import { AnalyticsScreen } from './screens/analytics/AnalyticsScreen';
-import { VaultScreen } from './screens/vault/VaultScreen';
 import { NotificationScreen } from './screens/notifications/NotificationScreen';
 import { AddTransactionDrawer } from './screens/logger/AddTransactionDrawer';
 import { LoginScreen } from './screens/auth/LoginScreen';
 import { SignupScreen } from './screens/auth/SignupScreen';
 import { ForgotPasswordScreen } from './screens/auth/ForgotPasswordScreen';
+import { ProfileScreen } from './screens/profile/ProfileScreen';
+import { CategoryListScreen } from './screens/profile/CategoryListScreen';
+import { PaymentAccountsScreen } from './screens/profile/PaymentAccountsScreen';
 import { ProfileSetupScreen } from './screens/profile/ProfileSetupScreen';
 import { resetMockDatabase } from './data/data';
+import { Transaction } from './domain/models/types';
 
 // Disable browser scroll restoration so page always starts at top
 if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
@@ -21,6 +24,7 @@ if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
 }
 
 type AuthView = 'login' | 'signup' | 'forgot_password' | 'profile_setup';
+type SubViewMode = 'none' | 'categories' | 'accounts' | 'setup';
 
 export function App() {
   const {
@@ -34,6 +38,10 @@ export function App() {
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    addAccount,
+    deleteAccount,
+    addCategory,
+    deleteCategory,
     updateProfile,
     refreshData,
   } = useFinance();
@@ -59,17 +67,23 @@ export function App() {
   const [authView, setAuthView] = useState<AuthView>('login');
 
   // Modal / In-App Subview State
-  const [isEditingProfile, setIsEditingProfile] = useState<boolean>(false);
+  const [subView, setSubView] = useState<SubViewMode>('none');
   const [isViewingNotifications, setIsViewingNotifications] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
+  const [selectedTxForEdit, setSelectedTxForEdit] = useState<Transaction | null>(null);
+
+  const handleSelectTransactionFromHome = (tx: Transaction) => {
+    setSelectedTxForEdit(tx);
+    setActiveTab('activity');
+  };
 
   // Ensure top of page is visible immediately on initial render and on every tab/view change
   useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     document.documentElement.scrollTop = 0;
     document.body.scrollTop = 0;
-  }, [activeTab, authView, isAuthenticated, isEditingProfile, isViewingNotifications]);
+  }, [activeTab, authView, isAuthenticated, subView, isViewingNotifications]);
 
   const handleLoginSuccess = (name = 'User') => {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
@@ -90,6 +104,7 @@ export function App() {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
     setIsAuthenticated(false);
     setIsViewingNotifications(false);
+    setSubView('none');
     localStorage.removeItem('is_authenticated');
     setAuthView('login');
   };
@@ -153,8 +168,14 @@ export function App() {
             onMarkAllAsRead={markAllAsRead}
             onDeleteNotification={deleteNotification}
             onClearAll={clearAll}
-            onNavigateToActivity={() => {
+            onNavigateToActivity={(transactionId) => {
               setIsViewingNotifications(false);
+              if (transactionId) {
+                const target = transactions.find((t) => t.id === transactionId);
+                if (target) {
+                  setSelectedTxForEdit(target);
+                }
+              }
               setActiveTab('activity');
             }}
             onSimulateSms={async (txData, rawSms) => {
@@ -162,7 +183,31 @@ export function App() {
               notifyTransactionCreated(created, rawSms);
             }}
           />
-        ) : isEditingProfile ? (
+        ) : subView === 'categories' ? (
+          /* Manage & Add Categories Screen */
+          <CategoryListScreen
+            categories={categories}
+            onBack={() => setSubView('none')}
+            onAddCategory={async (cat) => {
+              await addCategory(cat);
+            }}
+            onDeleteCategory={async (id) => {
+              await deleteCategory(id);
+            }}
+          />
+        ) : subView === 'accounts' ? (
+          /* Manage & Add Payment Accounts Screen */
+          <PaymentAccountsScreen
+            accounts={accounts}
+            onBack={() => setSubView('none')}
+            onAddAccount={async (acc) => {
+              await addAccount(acc);
+            }}
+            onDeleteAccount={async (id) => {
+              await deleteAccount(id);
+            }}
+          />
+        ) : subView === 'setup' ? (
           /* Full Profile Settings Editor */
           <ProfileSetupScreen
             initialName={profile?.name || userName}
@@ -172,9 +217,9 @@ export function App() {
                 setUserName(profileData.name);
                 localStorage.setItem('user_name', profileData.name);
               }
-              setIsEditingProfile(false);
+              setSubView('none');
             }}
-            onSkip={() => setIsEditingProfile(false)}
+            onSkip={() => setSubView('none')}
           />
         ) : (
           /* Authenticated Application Views */
@@ -186,7 +231,7 @@ export function App() {
                   userName={profile?.name || userName}
                   hideBalances={hideBalances}
                   onToggleHideBalances={toggleHideBalances}
-                  onProfileClick={() => setIsEditingProfile(true)}
+                  onProfileClick={() => setActiveTab('profile')}
                   onNotificationsClick={() => setIsViewingNotifications(true)}
                   unreadCount={unreadCount}
                 />
@@ -196,6 +241,7 @@ export function App() {
                   hideBalances={hideBalances}
                   onOpenAddModal={() => setIsAddDrawerOpen(true)}
                   onNavigate={setActiveTab}
+                  onSelectTransaction={handleSelectTransactionFromHome}
                 />
               </>
             )}
@@ -208,6 +254,8 @@ export function App() {
                 hideBalances={hideBalances}
                 onDeleteTransaction={deleteTransaction}
                 onUpdateTransaction={updateTransaction}
+                initialEditingTransaction={selectedTxForEdit}
+                onClearInitialEditing={() => setSelectedTxForEdit(null)}
               />
             )}
 
@@ -220,12 +268,26 @@ export function App() {
               />
             )}
 
-            {activeTab === 'settings' && (
-              <VaultScreen
+            {activeTab === 'profile' && (
+              <ProfileScreen
                 profile={profile}
-                onEditProfile={() => setIsEditingProfile(true)}
+                accounts={accounts}
+                categories={categories}
+                hideBalances={hideBalances}
+                onToggleHideBalances={toggleHideBalances}
+                onUpdateProfile={async (updates) => {
+                  const updated = await updateProfile(updates);
+                  if (updates.name) {
+                    setUserName(updates.name);
+                    localStorage.setItem('user_name', updates.name);
+                  }
+                  return updated;
+                }}
                 onResetData={handleResetData}
                 onLogout={handleLogout}
+                onNavigateToCategories={() => setSubView('categories')}
+                onNavigateToAccounts={() => setSubView('accounts')}
+                onNavigateToSetup={() => setSubView('setup')}
               />
             )}
           </div>
@@ -233,11 +295,12 @@ export function App() {
       </main>
 
       {/* Fixed Bottom Navigation (Only visible when authenticated and not inside subviews) */}
-      {isAuthenticated && !isViewingNotifications && !isEditingProfile && (
+      {isAuthenticated && !isViewingNotifications && subView === 'none' && (
         <BottomNav
           activeTab={activeTab}
           onTabChange={(tab) => {
             setIsViewingNotifications(false);
+            setSubView('none');
             setActiveTab(tab);
           }}
           onOpenAddModal={() => setIsAddDrawerOpen(true)}
