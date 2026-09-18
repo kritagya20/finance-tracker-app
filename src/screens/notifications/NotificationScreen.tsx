@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import {
   ArrowLeft,
   CheckCheck,
@@ -10,8 +10,6 @@ import {
   ChevronDown,
   ChevronUp,
   Sparkles,
-  ArrowRight,
-  X,
   BellOff,
   MessageSquareCode,
 } from 'lucide-react';
@@ -51,6 +49,220 @@ function formatRelativeTime(isoString: string): string {
   }
 }
 
+function getNotificationIcon(type: NotificationType) {
+  switch (type) {
+    case 'SMS_CAPTURED':
+      return <Receipt className="size-4 text-violet-400" />;
+    case 'SALARY_CREDITED':
+      return <ArrowDownLeft className="size-4 text-emerald-400" />;
+    case 'BUDGET_ALERT':
+      return <AlertTriangle className="size-4 text-amber-400" />;
+    case 'INSIGHT':
+      return <Sparkles className="size-4 text-sky-400" />;
+    case 'SYSTEM':
+    default:
+      return <ShieldCheck className="size-4 text-blue-400" />;
+  }
+}
+
+function getBadgeClass(type: NotificationType) {
+  switch (type) {
+    case 'SMS_CAPTURED':
+      return 'bg-violet-500/15 border-violet-500/20 text-violet-400';
+    case 'SALARY_CREDITED':
+      return 'bg-emerald-500/15 border-emerald-500/20 text-emerald-400';
+    case 'BUDGET_ALERT':
+      return 'bg-amber-500/15 border-amber-500/20 text-amber-400';
+    case 'INSIGHT':
+      return 'bg-sky-500/15 border-sky-500/20 text-sky-400';
+    case 'SYSTEM':
+    default:
+      return 'bg-blue-500/15 border-blue-500/20 text-blue-400';
+  }
+}
+
+interface SwipeableNotificationItemProps {
+  item: AppNotification;
+  onClear: (id: string) => void;
+  onTap: (item: AppNotification) => void;
+}
+
+const SwipeableNotificationItem: React.FC<SwipeableNotificationItemProps> = ({
+  item,
+  onClear,
+  onTap,
+}) => {
+  const [offsetX, setOffsetX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isDismissed, setIsDismissed] = useState(false);
+  const [dismissDir, setDismissDir] = useState<'left' | 'right'>('left');
+
+  const startXRef = useRef(0);
+  const startYRef = useRef(0);
+  const initialOffsetRef = useRef(0);
+  const isHorizontalDragRef = useRef<boolean | null>(null);
+  const hasDraggedRef = useRef(false);
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (isDismissed) return;
+    if (e.button !== 0) return;
+
+    startXRef.current = e.clientX;
+    startYRef.current = e.clientY;
+    initialOffsetRef.current = offsetX;
+    isHorizontalDragRef.current = null;
+    hasDraggedRef.current = false;
+    setIsDragging(true);
+
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging || isDismissed) return;
+
+    const deltaX = e.clientX - startXRef.current;
+    const deltaY = e.clientY - startYRef.current;
+
+    if (isHorizontalDragRef.current === null) {
+      if (Math.abs(deltaX) > 6 || Math.abs(deltaY) > 6) {
+        if (Math.abs(deltaX) > Math.abs(deltaY)) {
+          isHorizontalDragRef.current = true;
+        } else {
+          isHorizontalDragRef.current = false;
+          setIsDragging(false);
+          return;
+        }
+      } else {
+        return;
+      }
+    }
+
+    if (!isHorizontalDragRef.current) return;
+    e.preventDefault();
+
+    hasDraggedRef.current = true;
+    setOffsetX(initialOffsetRef.current + deltaX);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!isDragging || isDismissed) return;
+    setIsDragging(false);
+
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      // ignore
+    }
+
+    // Dismiss threshold: 75px slide
+    if (Math.abs(offsetX) > 75) {
+      const dir = offsetX > 0 ? 'right' : 'left';
+      setDismissDir(dir);
+      setIsDismissed(true);
+      setTimeout(() => {
+        onClear(item.id);
+      }, 250);
+    } else {
+      setOffsetX(0);
+    }
+  };
+
+  const handleClick = () => {
+    if (hasDraggedRef.current || Math.abs(offsetX) > 6 || isDismissed) return;
+    onTap(item);
+  };
+
+  const isSlidingLeft = offsetX < -10;
+  const isSlidingRight = offsetX > 10;
+
+  return (
+    <div
+      className={cn(
+        'relative overflow-hidden rounded-2xl select-none transition-all duration-200',
+        isDismissed ? 'max-h-0 opacity-0 -translate-y-2 scale-95 duration-250 ease-out mb-0' : 'max-h-24 mb-2'
+      )}
+    >
+      {/* Background slide reveal layer (Red/Rose Dismiss Accent) */}
+      <div
+        className={cn(
+          'absolute inset-0 flex items-center px-4 rounded-2xl bg-rose-500/15 border border-rose-500/30 transition-opacity duration-150',
+          Math.abs(offsetX) > 10 ? 'opacity-100' : 'opacity-0'
+        )}
+      >
+        {isSlidingLeft && (
+          <div className="ml-auto flex items-center gap-1.5 text-xs font-semibold text-rose-500">
+            <span>Cleared</span>
+            <Trash2 className="size-4" />
+          </div>
+        )}
+        {isSlidingRight && (
+          <div className="mr-auto flex items-center gap-1.5 text-xs font-semibold text-rose-500">
+            <Trash2 className="size-4" />
+            <span>Cleared</span>
+          </div>
+        )}
+      </div>
+
+      {/* Foreground Interactive Card */}
+      <div
+        style={{
+          transform: isDismissed
+            ? dismissDir === 'left'
+              ? 'translateX(-115%)'
+              : 'translateX(115%)'
+            : `translateX(${offsetX}px)`,
+          transition: isDragging
+            ? 'none'
+            : 'transform 200ms cubic-bezier(0.16, 1, 0.3, 1), opacity 200ms ease',
+        }}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
+        onClick={handleClick}
+        className={cn(
+          'relative z-10 flex items-center gap-3 w-full p-3 rounded-2xl border transition-colors cursor-pointer bg-theme-card active:scale-[0.99] touch-pan-y',
+          item.isRead
+            ? 'border-theme-border opacity-85'
+            : 'border-violet-500/35 ring-1 ring-violet-500/25 shadow-xs shadow-violet-950/20',
+          isDragging ? 'cursor-grabbing' : 'cursor-grab'
+        )}
+      >
+        {/* Leading Type Icon Badge */}
+        <div
+          className={cn(
+            'flex size-9 shrink-0 items-center justify-center rounded-xl border pointer-events-none',
+            getBadgeClass(item.type)
+          )}
+        >
+          {getNotificationIcon(item.type)}
+        </div>
+
+        {/* 2-line Max Heading (NO description) */}
+        <div className="flex-1 min-w-0 pointer-events-none">
+          <h4 className="text-xs font-semibold text-theme-primary leading-snug line-clamp-2">
+            {item.title}
+          </h4>
+        </div>
+
+        {/* Trailing Timestamp & Unread Dot */}
+        <div className="flex flex-col items-end gap-1.5 shrink-0 ml-1.5 pointer-events-none">
+          <span className="text-[10px] text-theme-muted font-mono tabular-nums">
+            {formatRelativeTime(item.timestamp)}
+          </span>
+          {!item.isRead && (
+            <span className="size-2 rounded-full bg-violet-500 ring-2 ring-theme-card" />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export const NotificationScreen: React.FC<NotificationScreenProps> = ({
   notifications,
   unreadCount,
@@ -63,7 +275,6 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
   onSimulateSms,
 }) => {
   const [activeTab, setActiveTab] = useState<FilterTab>('ALL');
-  const [expandedSmsId, setExpandedSmsId] = useState<string | null>(null);
   const [isSimulateOpen, setIsSimulateOpen] = useState(false);
   const [isSimulating, setIsSimulating] = useState(false);
 
@@ -113,38 +324,6 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
     }
   };
 
-  const getNotificationIcon = (type: NotificationType) => {
-    switch (type) {
-      case 'SMS_CAPTURED':
-        return <Receipt className="size-4 text-violet-400" />;
-      case 'SALARY_CREDITED':
-        return <ArrowDownLeft className="size-4 text-emerald-400" />;
-      case 'BUDGET_ALERT':
-        return <AlertTriangle className="size-4 text-amber-400" />;
-      case 'INSIGHT':
-        return <Sparkles className="size-4 text-sky-400" />;
-      case 'SYSTEM':
-      default:
-        return <ShieldCheck className="size-4 text-blue-400" />;
-    }
-  };
-
-  const getBadgeClass = (type: NotificationType) => {
-    switch (type) {
-      case 'SMS_CAPTURED':
-        return 'bg-violet-500/15 border-violet-500/20 text-violet-400';
-      case 'SALARY_CREDITED':
-        return 'bg-emerald-500/15 border-emerald-500/20 text-emerald-400';
-      case 'BUDGET_ALERT':
-        return 'bg-amber-500/15 border-amber-500/20 text-amber-400';
-      case 'INSIGHT':
-        return 'bg-sky-500/15 border-sky-500/20 text-sky-400';
-      case 'SYSTEM':
-      default:
-        return 'bg-blue-500/15 border-blue-500/20 text-blue-400';
-    }
-  };
-
   return (
     <div className="flex flex-col gap-4 pb-12">
       {/* 1. Screen Header */}
@@ -154,7 +333,7 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
             type="button"
             onClick={onBack}
             aria-label="Go back"
-            className="flex size-10 items-center justify-center rounded-full border border-theme-border bg-theme-card text-theme-secondary hover:bg-theme-card-hover hover:text-theme-primary transition-colors active:scale-95 shadow-sm"
+            className="flex size-10 items-center justify-center rounded-full border border-theme-border bg-theme-card text-theme-secondary hover:bg-theme-card-hover hover:text-theme-primary transition-all active:scale-[0.92] duration-100 shadow-sm"
           >
             <ArrowLeft className="size-5" />
           </button>
@@ -327,126 +506,17 @@ export const NotificationScreen: React.FC<NotificationScreenProps> = ({
             </p>
           </div>
         ) : (
-          filteredNotifications.map((item) => {
-            const isExpanded = expandedSmsId === item.id;
-            return (
-              <div
-                key={item.id}
-                onClick={() => {
-                  if (!item.isRead) onMarkAsRead(item.id);
-                }}
-                className={cn(
-                  'group relative rounded-2xl border transition-all p-3.5',
-                  item.isRead
-                    ? 'border-theme-border bg-theme-card opacity-85'
-                    : 'border-violet-500/40 bg-theme-card ring-1 ring-violet-500/30 shadow-sm shadow-violet-950/20'
-                )}
-              >
-                <div className="flex items-start gap-3">
-                  {/* Type Icon Badge */}
-                  <div
-                    className={cn(
-                      'flex size-9 shrink-0 items-center justify-center rounded-xl border',
-                      getBadgeClass(item.type)
-                    )}
-                  >
-                    {getNotificationIcon(item.type)}
-                  </div>
-
-                  {/* Body Content */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-1">
-                      <h4 className="text-xs font-bold text-theme-primary truncate">
-                        {item.title}
-                      </h4>
-                      <span className="text-[10px] text-theme-muted shrink-0 tabular-nums">
-                        {formatRelativeTime(item.timestamp)}
-                      </span>
-                    </div>
-
-                    <p className="mt-0.5 text-xs text-theme-secondary leading-snug">
-                      {item.message}
-                    </p>
-
-                    {/* Metadata tags */}
-                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                      {item.accountMask && (
-                        <span className="rounded-md bg-theme-card-subtle px-1.5 py-0.5 text-[10px] font-medium text-theme-secondary">
-                          A/C ····{item.accountMask}
-                        </span>
-                      )}
-                      {item.categoryName && (
-                        <span className="rounded-md bg-theme-card-subtle px-1.5 py-0.5 text-[10px] font-medium text-theme-secondary">
-                          {item.categoryName}
-                        </span>
-                      )}
-                      {item.rawSmsText && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setExpandedSmsId(isExpanded ? null : item.id);
-                          }}
-                          className="flex items-center gap-1 text-[10px] font-semibold text-violet-600 dark:text-violet-400 hover:underline"
-                        >
-                          <span>{isExpanded ? 'Hide SMS' : 'View Bank SMS'}</span>
-                          {isExpanded ? (
-                            <ChevronUp className="size-3" />
-                          ) : (
-                            <ChevronDown className="size-3" />
-                          )}
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Collapsible raw SMS snippet */}
-                    {isExpanded && item.rawSmsText && (
-                      <div className="mt-2.5 rounded-xl border border-theme-border bg-theme-card-subtle p-2 text-[11px] font-mono text-theme-secondary break-words leading-relaxed select-text">
-                        {item.rawSmsText}
-                      </div>
-                    )}
-
-                    {/* Action buttons */}
-                    <div className="mt-2.5 flex items-center justify-between pt-1 border-t border-theme-divider">
-                      {onNavigateToActivity ? (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (!item.isRead) onMarkAsRead(item.id);
-                            onNavigateToActivity(item.transactionId);
-                          }}
-                          className="flex items-center gap-1 text-[11px] font-semibold text-violet-600 dark:text-violet-400 hover:text-violet-500 transition-colors"
-                        >
-                          <span>View in Activity</span>
-                          <ArrowRight className="size-3" />
-                        </button>
-                      ) : (
-                        <div />
-                      )}
-
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteNotification(item.id);
-                        }}
-                        title="Dismiss"
-                        className="rounded-lg p-1 text-theme-muted hover:text-rose-500 transition-colors"
-                      >
-                        <X className="size-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Unread dot */}
-                {!item.isRead && (
-                  <span className="absolute top-3 right-3 size-2 rounded-full bg-violet-500 ring-2 ring-theme-card" />
-                )}
-              </div>
-            );
-          })
+          filteredNotifications.map((item) => (
+            <SwipeableNotificationItem
+              key={item.id}
+              item={item}
+              onClear={onDeleteNotification}
+              onTap={(clickedItem) => {
+                if (!clickedItem.isRead) onMarkAsRead(clickedItem.id);
+                onNavigateToActivity?.(clickedItem.transactionId);
+              }}
+            />
+          ))
         )}
       </div>
     </div>

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import {
   Plus,
-  X,
+  ArrowLeft,
+  Trash2,
   CheckCircle2,
   ChevronDown,
   Equal,
@@ -107,11 +108,11 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
               Balanced
             </span>
           ) : remainingPaise > 0 ? (
-            <span className="text-[11px] font-medium text-amber-500">
+            <span className="text-[11px] font-medium font-mono text-amber-500">
               ₹{paiseToRupees(remainingPaise).toLocaleString('en-IN')} unallocated
             </span>
           ) : (
-            <span className="text-[11px] font-medium text-rose-500">
+            <span className="text-[11px] font-medium font-mono text-rose-500">
               ₹{paiseToRupees(Math.abs(remainingPaise)).toLocaleString('en-IN')} over
             </span>
           )}
@@ -176,15 +177,15 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
 
               {/* Right: Amount Input + Remove Button */}
               <div className="flex items-center gap-2 shrink-0">
-                <div className="flex items-center gap-0.5 text-sm font-semibold text-theme-primary tabular-nums">
-                  <span className="text-xs text-theme-muted">₹</span>
+                <div className="flex items-center gap-0.5 text-sm font-semibold font-mono text-theme-primary tabular-nums">
+                  <span className="text-xs text-theme-muted font-mono">₹</span>
                   <input
                     type="text"
                     inputMode="decimal"
                     value={rupeeVal === '0' ? '' : rupeeVal}
                     placeholder="0"
                     onChange={(e) => handleAmountChange(index, e.target.value)}
-                    className="w-20 bg-transparent text-right text-sm font-semibold text-theme-primary placeholder:text-theme-muted/50 focus:outline-none border-b border-transparent focus:border-violet-500 tabular-nums py-0.5"
+                    className="w-20 bg-transparent text-right text-sm font-semibold font-mono text-theme-primary placeholder:text-theme-muted/50 focus:outline-none border-b border-transparent focus:border-violet-500 tabular-nums py-0.5"
                   />
                 </div>
 
@@ -195,7 +196,7 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
                     className="p-1 rounded-full text-theme-muted hover:text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all"
                     title="Remove split"
                   >
-                    <X className="size-3.5" />
+                    <Trash2 className="size-3.5" />
                   </button>
                 )}
               </div>
@@ -218,15 +219,16 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
       {activePickerRowIndex !== null && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
           <div className="w-full max-w-[360px] rounded-3xl bg-theme-elevated p-4 shadow-2xl animate-in slide-in-from-bottom-3 duration-200">
-            <div className="flex items-center justify-between pb-3 border-b border-theme-divider">
-              <span className="text-sm font-bold text-theme-primary">Select Category</span>
+            <div className="flex items-center gap-2.5 pb-3 border-b border-theme-divider">
               <button
                 type="button"
                 onClick={() => setActivePickerRowIndex(null)}
-                className="rounded-full p-1 text-theme-secondary hover:text-theme-primary"
+                aria-label="Back"
+                className="rounded-full p-1 text-theme-secondary hover:text-theme-primary transition-colors"
               >
-                <X className="size-4" />
+                <ArrowLeft className="size-5" />
               </button>
+              <span className="text-sm font-bold text-theme-primary">Select Category</span>
             </div>
 
             <div className="grid grid-cols-4 gap-3 py-4 max-h-[300px] overflow-y-auto no-scrollbar">

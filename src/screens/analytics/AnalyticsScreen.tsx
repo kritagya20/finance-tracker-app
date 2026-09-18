@@ -321,9 +321,9 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
       </div>
 
       {/* Spending Velocity Card */}
-      <div className="rounded-3xl border border-theme-border bg-theme-card p-5 shadow-sm transition-colors">
-        <p className="text-xs font-medium text-theme-muted">Total Outflow</p>
-        <p className="mt-1 text-3xl font-bold text-theme-primary tabular-nums">
+      <div className="rounded-2xl border border-theme-border bg-theme-card p-5 shadow-sm transition-colors">
+        <p className="text-xs font-medium uppercase tracking-wider text-theme-muted">Total Outflow</p>
+        <p className="mt-1 text-3xl font-bold font-mono text-theme-primary tabular-nums">
           {hideBalances ? '••••••' : formatCurrency(totalExpense)}
         </p>
         <p className={cn('mt-1 text-xs font-medium', comparison.className)}>
@@ -372,7 +372,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
       {/* Category Breakdown */}
       <section className="space-y-3">
         <div className="flex items-center justify-between px-1">
-          <h2 className="text-sm font-semibold text-theme-primary">
+          <h2 className="text-lg font-semibold text-theme-primary">
             Category Envelopes
           </h2>
           <span className="text-xs text-theme-muted">
@@ -387,7 +387,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
               return (
                 <div
                   key={cat.id}
-                  className="flex items-center justify-between rounded-2xl border border-theme-border bg-theme-card p-3.5 shadow-sm transition-colors"
+                  className="flex items-center justify-between rounded-xl border border-theme-border bg-theme-card p-3.5 shadow-sm transition-colors"
                 >
                   <div className="flex items-center gap-3">
                     <span
@@ -405,7 +405,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                     </div>
                   </div>
 
-                  <p className="text-sm font-semibold text-theme-primary tabular-nums">
+                  <p className="text-sm font-semibold font-mono text-theme-primary tabular-nums">
                     {hideBalances ? '••••••' : formatCurrency(cat.total)}
                   </p>
                 </div>

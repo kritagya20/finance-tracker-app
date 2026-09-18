@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   Download,
@@ -23,6 +23,8 @@ interface ActivityScreenProps {
   hideBalances: boolean;
   onDeleteTransaction: (id: string) => void;
   onUpdateTransaction?: (id: string, updates: Partial<Transaction>) => Promise<unknown>;
+  initialEditingTransaction?: Transaction | null;
+  onClearInitialEditing?: () => void;
 }
 
 type TypeFilter = 'ALL' | 'EXPENSE' | 'INCOME' | 'TRANSFER';
@@ -36,9 +38,18 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
   hideBalances,
   onDeleteTransaction,
   onUpdateTransaction,
+  initialEditingTransaction,
+  onClearInitialEditing,
 }) => {
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [deletingTransaction, setDeletingTransaction] = useState<Transaction | null>(null);
+
+  useEffect(() => {
+    if (initialEditingTransaction) {
+      setEditingTransaction(initialEditingTransaction);
+      onClearInitialEditing?.();
+    }
+  }, [initialEditingTransaction, onClearInitialEditing]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('ALL');
@@ -292,7 +303,7 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
           type="button"
           onClick={handleExportCSV}
           aria-label="Export as CSV"
-          className="flex size-10 items-center justify-center rounded-full border border-theme-border bg-theme-card text-theme-secondary transition-colors hover:bg-theme-card-hover hover:text-theme-primary shadow-sm"
+          className="flex size-10 items-center justify-center rounded-full border border-theme-border bg-theme-card text-theme-secondary transition-all hover:bg-theme-card-hover hover:text-theme-primary active:scale-[0.92] duration-100 shadow-sm"
         >
           <Download className="size-5" />
         </button>
@@ -302,14 +313,14 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
       <div className="flex flex-col gap-3">
         {/* Search Input */}
         <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-theme-muted" />
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-theme-muted" />
           <input
             type="text"
             inputMode="search"
             placeholder="Search merchant, category, or note..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full rounded-xl border border-theme-border bg-theme-card py-2.5 pl-9 pr-3 text-sm text-theme-primary placeholder:text-theme-muted focus:border-violet-500/50 focus:outline-none focus:ring-1 focus:ring-violet-500/40 shadow-sm transition-colors"
+            className="w-full h-12 rounded-xl border border-theme-border bg-theme-input pl-10 pr-4 text-sm font-medium text-theme-primary placeholder:text-theme-muted focus:border-2 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm transition-all outline-none"
           />
         </div>
 
@@ -405,8 +416,8 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
               </span>
               <span
                 className={cn(
-                  'text-sm font-bold tabular-nums',
-                  isIncomeView ? 'text-emerald-600 dark:text-emerald-400' : 'text-theme-primary'
+                  'text-sm font-semibold font-mono tabular-nums',
+                  isIncomeView ? 'text-emerald-500 dark:text-emerald-400' : 'text-theme-primary'
                 )}
               >
                 {hideBalances ? '••••••' : formatCurrency(displayTotal)}

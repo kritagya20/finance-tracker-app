@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  X,
   ArrowLeft,
   Calendar,
   CreditCard,
@@ -342,8 +341,17 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
       {/* ------------------------------------------------------------------ */}
       {step === 1 && (
         <div className="flex flex-col flex-1 min-h-0 justify-between px-5 pt-4 pb-8 animate-in fade-in duration-200">
-          {/* Top Bar: Clean Minimal Switcher + Close */}
+          {/* Top Bar: Back Arrow + Clean Minimal Switcher */}
           <div className="flex items-center justify-between pb-2 shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Back"
+              className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+            >
+              <ArrowLeft className="size-5" />
+            </button>
+
             <div className="flex items-center rounded-full bg-theme-card-subtle p-0.5">
               {(['EXPENSE', 'INCOME', 'TRANSFER'] as TransactionType[]).map((t) => {
                 const isSelected = type === t;
@@ -366,14 +374,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
               })}
             </div>
 
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
-            >
-              <X className="size-5" />
-            </button>
+            <div className="size-9" />
           </div>
 
           {/* Error Message */}
@@ -391,8 +392,8 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
             </span>
 
             <div className="flex items-baseline justify-center gap-1.5 select-none">
-              <span className="text-2xl font-semibold text-theme-muted">₹</span>
-              <span className="text-5xl font-light tracking-tight tabular-nums text-theme-primary">
+              <span className="text-2xl font-semibold text-theme-muted font-mono">₹</span>
+              <span className="text-5xl font-light tracking-tight tabular-nums text-theme-primary font-mono">
                 {amountStr}
               </span>
               <span className="ml-0.5 h-8 w-0.5 animate-pulse rounded-full bg-violet-500" />
@@ -416,7 +417,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                   key={amt}
                   type="button"
                   onClick={() => handleQuickAdd(amt)}
-                  className="rounded-full bg-theme-card-subtle px-3 py-1.5 text-xs font-medium text-theme-secondary hover:text-theme-primary hover:bg-theme-card active:scale-95 transition-all shadow-xs"
+                  className="rounded-full bg-theme-card-subtle px-3 py-1.5 text-xs font-medium font-mono text-theme-secondary hover:text-theme-primary hover:bg-theme-card active:scale-[0.95] transition-all shadow-xs"
                 >
                   +₹{amt.toLocaleString('en-IN')}
                 </button>
@@ -432,7 +433,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                   key={key}
                   type="button"
                   onClick={() => handleKeypadPress(key)}
-                  className="flex h-12 items-center justify-center rounded-2xl bg-theme-card/50 hover:bg-theme-card text-theme-primary text-xl font-medium active:scale-95 transition-all"
+                  className="flex h-12 items-center justify-center rounded-2xl bg-theme-card/50 hover:bg-theme-card text-theme-primary text-xl font-medium font-mono active:scale-[0.92] transition-all"
                 >
                   {key === 'BACKSPACE' ? (
                     <Delete className="size-5 text-theme-secondary" />
@@ -444,13 +445,13 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
             </div>
           </div>
 
-          {/* GPay Pill CTA */}
+          {/* Primary CTA */}
           <div className="pt-2 shrink-0">
             <button
               type="button"
               onClick={handleProceedToDetails}
               disabled={activeAmount <= 0}
-              className="flex w-full items-center justify-center gap-2 rounded-full py-4 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg active:scale-[0.99] transition-all"
+              className="flex w-full h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-violet-500 hover:brightness-110 disabled:opacity-[0.38] disabled:cursor-not-allowed shadow-lg shadow-violet-900/30 active:scale-[0.97] transition-all"
             >
               <span>{activeAmount > 0 ? `Proceed with ₹${formattedRupees}` : 'Enter amount to proceed'}</span>
             </button>
@@ -480,14 +481,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
               Transaction details
             </span>
 
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close"
-              className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
-            >
-              <X className="size-5" />
-            </button>
+            <div className="size-9" />
           </div>
 
           {/* Scrollable Content Body */}
@@ -507,8 +501,8 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
               </span>
 
               <div className="flex items-baseline justify-center gap-1">
-                <span className="text-xl font-semibold text-theme-muted">₹</span>
-                <span className="text-4xl font-light tracking-tight text-theme-primary tabular-nums">
+                <span className="text-xl font-semibold text-theme-muted font-mono">₹</span>
+                <span className="text-3xl font-bold tracking-tight text-theme-primary font-mono tabular-nums">
                   {formattedRupees}
                 </span>
                 <button
@@ -660,7 +654,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
               type="button"
               disabled={isSubmitting}
               onClick={handleSave}
-              className="flex w-full items-center justify-center gap-2 rounded-full py-4 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg active:scale-[0.99] transition-all"
+              className="flex w-full h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-violet-500 hover:brightness-110 disabled:opacity-[0.38] disabled:cursor-not-allowed shadow-lg shadow-violet-900/30 active:scale-[0.97] transition-all"
             >
               <span>
                 {isSubmitting
@@ -678,31 +672,23 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
       {activePicker === 'category' && (
         <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated animate-in fade-in duration-150">
           {/* Top Bar */}
-          <div className="flex items-center justify-between px-5 pt-4 pb-3 shrink-0">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setActivePicker(null)}
-                className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
-              >
-                <ArrowLeft className="size-5" />
-              </button>
-              <div>
-                <span className="text-sm font-bold text-theme-primary">Select Category</span>
-                <p className="text-[11px] text-theme-muted">
-                  {splits.length > 1
-                    ? `${splits.length} categories selected • Split bill below`
-                    : 'Choose 1 category or tap multiple to split'}
-                </p>
-              </div>
-            </div>
+          <div className="flex items-center gap-3 px-5 pt-4 pb-3 shrink-0">
             <button
               type="button"
               onClick={() => setActivePicker(null)}
-              className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+              aria-label="Back"
+              className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
             >
-              <X className="size-5" />
+              <ArrowLeft className="size-5" />
             </button>
+            <div>
+              <span className="text-sm font-bold text-theme-primary">Select Category</span>
+              <p className="text-[11px] text-theme-muted">
+                {splits.length > 1
+                  ? `${splits.length} categories selected • Split bill below`
+                  : 'Choose 1 category or tap multiple to split'}
+              </p>
+            </div>
           </div>
 
           {/* Scrollable Canvas: Category Grid + Categorization Breakdown */}
@@ -797,15 +783,16 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
         {/* Quick Picker Sub-Sheet: Account */}
         {activePicker === 'account' && (
           <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated p-5 animate-in fade-in duration-150">
-            <div className="flex items-center justify-between pb-3 border-b border-theme-divider">
-              <span className="text-sm font-bold text-theme-primary">Select Payment Account</span>
+            <div className="flex items-center gap-3 pb-3 border-b border-theme-divider">
               <button
                 type="button"
                 onClick={() => setActivePicker(null)}
-                className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+                aria-label="Back"
+                className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
               >
-                <X className="size-5" />
+                <ArrowLeft className="size-5" />
               </button>
+              <span className="text-sm font-bold text-theme-primary">Select Payment Account</span>
             </div>
             <div className="flex flex-col gap-2 py-4 overflow-y-auto no-scrollbar">
               {accountOptions.map((acc) => {
@@ -853,15 +840,16 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
         {/* Quick Picker Sub-Sheet: Date */}
         {activePicker === 'date' && (
           <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated p-5 animate-in fade-in duration-150 overflow-y-auto no-scrollbar">
-            <div className="flex items-center justify-between pb-3 border-b border-theme-divider mb-3">
-              <span className="text-sm font-bold text-theme-primary">Select Date</span>
+            <div className="flex items-center gap-3 pb-3 border-b border-theme-divider mb-3">
               <button
                 type="button"
                 onClick={() => setActivePicker(null)}
-                className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+                aria-label="Back"
+                className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
               >
-                <X className="size-5" />
+                <ArrowLeft className="size-5" />
               </button>
+              <span className="text-sm font-bold text-theme-primary">Select Date</span>
             </div>
 
             <div className="flex items-center justify-center">

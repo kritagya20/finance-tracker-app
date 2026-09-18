@@ -12,6 +12,7 @@ interface DashboardScreenProps {
   hideBalances: boolean;
   onOpenAddModal: () => void;
   onNavigate: (tab: NavTab) => void;
+  onSelectTransaction?: (tx: Transaction) => void;
 }
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({
@@ -20,6 +21,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   hideBalances,
   onOpenAddModal,
   onNavigate,
+  onSelectTransaction,
 }) => {
   return (
     <div className="flex flex-col gap-5">
@@ -30,6 +32,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         transactions={transactions}
         hideBalances={hideBalances}
         onSeeAll={() => onNavigate('activity')}
+        onSelectTransaction={onSelectTransaction}
       />
     </div>
   );

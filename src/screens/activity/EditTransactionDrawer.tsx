@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  X,
   ArrowLeft,
   Trash2,
   Delete,
@@ -11,6 +10,8 @@ import {
   AlertCircle,
   Pencil,
   Split,
+  Store,
+  FileText,
 } from 'lucide-react';
 import {
   Category,
@@ -61,7 +62,8 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
   // Form State
   const [type, setType] = useState<TransactionType>('EXPENSE');
   const [amountStr, setAmountStr] = useState('0');
-  const [merchantNote, setMerchantNote] = useState('');
+  const [merchantName, setMerchantName] = useState('');
+  const [notes, setNotes] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [selectedDate, setSelectedDate] = useState<string>('');
@@ -91,7 +93,8 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       setType(tx.type);
       const rupees = (tx.amount / 100).toString();
       setAmountStr(rupees);
-      setMerchantNote(tx.merchantName || tx.notes || '');
+      setMerchantName(tx.merchantName || '');
+      setNotes(tx.notes || '');
       setSelectedCategoryId(tx.categoryId);
       setSelectedAccountId(tx.accountId || 'acc_hdfc');
       setSelectedDate(tx.date.slice(0, 10));
@@ -292,7 +295,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       const effectiveCategoryId = isSplit
         ? (splits[0]?.categoryId || tx.categoryId)
         : (selectedCategoryId || (splits.length === 1 ? splits[0].categoryId : '') || tx.categoryId);
-      const effectiveMerchant = merchantNote.trim() || tx.merchantName;
+      const effectiveMerchant = merchantName.trim() || tx.merchantName;
 
       await onSave({
         type,
@@ -300,7 +303,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
         merchantName: effectiveMerchant,
         categoryId: effectiveCategoryId,
         accountId: selectedAccountId,
-        notes: merchantNote.trim() || undefined,
+        notes: notes.trim() ? notes.trim() : undefined,
         date: updatedDate.toISOString(),
         isSplit,
         splits: isSplit ? splits : undefined,
@@ -344,7 +347,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       role="dialog"
       aria-modal="true"
       className={cn(
-        'fixed inset-0 z-50 flex flex-col bg-theme-elevated transition-all duration-300 mx-auto max-w-[430px] overflow-hidden select-none',
+        'fixed inset-0 z-50 flex flex-col bg-theme-elevated transition-all duration-300 mx-auto max-w-[390px] overflow-hidden select-none',
         isAnimatingIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6 pointer-events-none'
       )}
     >
@@ -353,8 +356,17 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       {/* ------------------------------------------------------------------ */}
       {step === 1 && (
         <div className="flex flex-col flex-1 min-h-0 justify-between px-5 pt-4 pb-8 animate-in fade-in duration-200">
-          {/* Top Bar */}
+          {/* Top Bar: Back Arrow + Type Switcher */}
           <div className="flex items-center justify-between pb-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setStep(2)}
+              aria-label="Back to details"
+              className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+            >
+              <ArrowLeft className="size-5" />
+            </button>
+
             <div className="flex items-center rounded-full bg-theme-card-subtle p-0.5">
               {(['EXPENSE', 'INCOME', 'TRANSFER'] as TransactionType[]).map((t) => {
                 const isSelected = type === t;
@@ -377,14 +389,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
               })}
             </div>
 
-            <button
-              type="button"
-              onClick={() => setStep(2)}
-              aria-label="Back to details"
-              className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
-            >
-              <X className="size-5" />
-            </button>
+            <div className="size-9" />
           </div>
 
           {/* Error Message */}
@@ -402,8 +407,8 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
             </span>
 
             <div className="flex items-baseline justify-center gap-1.5 select-none">
-              <span className="text-2xl font-semibold text-theme-muted">₹</span>
-              <span className="text-5xl font-light tracking-tight tabular-nums text-theme-primary">
+              <span className="text-2xl font-semibold text-theme-muted font-mono">₹</span>
+              <span className="text-5xl font-light tracking-tight tabular-nums text-theme-primary font-mono">
                 {amountStr}
               </span>
               <span className="ml-0.5 h-8 w-0.5 animate-pulse rounded-full bg-violet-500" />
@@ -416,7 +421,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
                   key={amt}
                   type="button"
                   onClick={() => handleQuickAdd(amt)}
-                  className="rounded-full bg-theme-card-subtle px-3 py-1.5 text-xs font-medium text-theme-secondary hover:text-theme-primary hover:bg-theme-card active:scale-95 transition-all shadow-xs"
+                  className="rounded-full bg-theme-card-subtle px-3 py-1.5 text-xs font-medium font-mono text-theme-secondary hover:text-theme-primary hover:bg-theme-card active:scale-[0.95] transition-all shadow-xs"
                 >
                   +₹{amt.toLocaleString('en-IN')}
                 </button>
@@ -427,15 +432,20 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
           {/* Flat, Spacious Keypad (Border-free) */}
           <div className="py-3 flex-1 flex flex-col justify-center min-h-0">
             <div className="grid grid-cols-3 gap-2.5 max-w-[340px] mx-auto w-full">
-              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'BACKSPACE'].map((key) => (
+              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'delete'].map((key) => (
                 <button
                   key={key}
                   type="button"
                   onClick={() => handleKeypadPress(key)}
-                  className="flex h-13 items-center justify-center rounded-2xl bg-theme-card/60 hover:bg-theme-card text-theme-primary text-xl font-normal active:scale-95 transition-all shadow-xs"
+                  className={cn(
+                    'flex h-14 items-center justify-center rounded-2xl text-xl font-medium font-mono text-theme-primary transition-all active:scale-[0.92] select-none',
+                    key === 'delete'
+                      ? 'text-theme-secondary hover:text-theme-primary'
+                      : 'hover:bg-theme-card-subtle/50'
+                  )}
                 >
-                  {key === 'BACKSPACE' ? (
-                    <Delete className="size-5 text-theme-secondary" />
+                  {key === 'delete' ? (
+                    <Delete className="size-6" />
                   ) : (
                     key
                   )}
@@ -444,13 +454,13 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
             </div>
           </div>
 
-          {/* Pill CTA */}
+          {/* Primary CTA */}
           <div className="shrink-0 pt-3">
             <button
               type="button"
               onClick={() => setStep(2)}
               disabled={activeAmount <= 0}
-              className="flex w-full items-center justify-center gap-2 rounded-full py-4 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg active:scale-[0.99] transition-all"
+              className="flex w-full h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-violet-500 hover:brightness-110 disabled:opacity-[0.38] disabled:cursor-not-allowed shadow-lg shadow-violet-900/30 active:scale-[0.97] transition-all"
             >
               <span>Done editing amount (₹{formattedRupees})</span>
             </button>
@@ -463,30 +473,29 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       {/* ------------------------------------------------------------------ */}
       {step === 2 && (
         <div className="flex flex-col flex-1 min-h-0 animate-in fade-in duration-200">
-          {/* Top Bar: Title + Delete + Close */}
+          {/* Top Bar: Back Arrow + Title + Delete */}
           <div className="flex items-center justify-between px-5 pt-4 pb-3 shrink-0">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Back"
+              className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+            >
+              <ArrowLeft className="size-5" />
+            </button>
+
             <span className="text-sm font-bold text-theme-primary">
               Edit Transaction
             </span>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => onDelete(tx.id)}
-                aria-label="Delete"
-                className="flex size-9 items-center justify-center rounded-full text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all"
-              >
-                <Trash2 className="size-4" />
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close"
-                className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
-              >
-                <X className="size-5" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => onDelete(tx.id)}
+              aria-label="Delete"
+              className="flex size-9 items-center justify-center rounded-full text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all"
+            >
+              <Trash2 className="size-4" />
+            </button>
           </div>
 
           {/* Scrollable Content Body */}
@@ -499,167 +508,222 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
               </div>
             )}
 
-            {/* Centered Hero: Amount + Note */}
-            <div className="flex flex-col items-center justify-center py-2">
-              <span className="text-xs font-medium text-theme-muted mb-1">
-                {isSplit ? 'Amount to split' : `${type.toLowerCase()} amount`}
-              </span>
+            {/* Centered Hero: Amount + Edit Button */}
+            <div className="flex flex-col items-center justify-center pt-2 pb-3">
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <span
+                  className={cn(
+                    'inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-wider uppercase border',
+                    type === 'EXPENSE'
+                      ? 'bg-rose-500/10 text-rose-500 border-rose-500/20'
+                      : type === 'INCOME'
+                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
+                      : 'bg-sky-500/10 text-sky-500 border-sky-500/20'
+                  )}
+                >
+                  {isSplit ? 'Split Expense' : type}
+                </span>
+              </div>
 
-              <div className="flex items-baseline justify-center gap-1">
-                <span className="text-xl font-semibold text-theme-muted">₹</span>
-                <span className="text-4xl font-light tracking-tight text-theme-primary tabular-nums">
+              <div className="flex items-baseline justify-center gap-1 select-none">
+                <span className="text-2xl font-semibold text-theme-muted font-mono">₹</span>
+                <span className="text-4xl font-bold tracking-tight text-theme-primary font-mono tabular-nums">
                   {formattedRupees}
                 </span>
+              </div>
+
+              <div className="mt-2.5 flex justify-center">
                 <button
                   type="button"
                   onClick={() => {
                     setErrorMessage(null);
                     setStep(1);
                   }}
-                  className="ml-2.5 p-1.5 rounded-full text-theme-muted hover:text-violet-400 hover:bg-theme-card-subtle transition-colors"
+                  className="inline-flex items-center gap-1.5 rounded-full bg-theme-card-subtle hover:bg-theme-card border border-theme-border px-3.5 py-1.5 text-xs font-medium text-theme-secondary hover:text-theme-primary active:scale-95 transition-all shadow-xs"
                   title="Change amount"
                 >
-                  <Pencil className="size-4" />
+                  <Pencil className="size-3 text-theme-muted" />
+                  <span>Edit amount</span>
                 </button>
               </div>
+            </div>
 
-              {/* Note pill (editable) */}
-              <div className="mt-3">
+            {/* Merchant / Payee Field */}
+            <div>
+              <label className="block text-xs font-medium text-theme-secondary mb-1.5">
+                Merchant / Payee
+              </label>
+              <div className="relative flex items-center">
+                <Store className="absolute left-3.5 size-4 text-theme-muted pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="What's this for?"
-                  value={merchantNote}
-                  onChange={(e) => setMerchantNote(e.target.value)}
-                  className="rounded-full bg-theme-card-subtle px-4 py-2 text-xs text-center text-theme-primary placeholder:text-theme-muted focus:outline-none max-w-[240px] transition-colors shadow-xs"
+                  placeholder="e.g. Starbucks, Amazon, Salary"
+                  value={merchantName}
+                  onChange={(e) => setMerchantName(e.target.value)}
+                  className="w-full h-12 rounded-xl border border-theme-border bg-theme-input pl-10 pr-3.5 text-sm font-medium text-theme-primary placeholder:text-theme-muted focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all shadow-xs"
                 />
               </div>
             </div>
 
-            {/* Context Pills: Account & Date */}
-            <div className="flex items-center justify-center gap-2.5 py-1">
-              <button
-                type="button"
-                onClick={() => setActivePicker('account')}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium transition-all shadow-xs',
-                  errors.account
-                    ? 'border border-rose-500 bg-rose-500/10 text-rose-500'
-                    : 'bg-theme-card-subtle hover:bg-theme-card text-theme-primary border border-transparent'
-                )}
-              >
-                <CreditCard className="size-3.5 text-theme-muted" />
-                <span className="truncate max-w-[120px]">
-                  {currentAccount.name}
-                </span>
-                <ChevronDown className="size-3 text-theme-muted" />
-              </button>
+            {/* Unified Category Section */}
+            <div>
+              <label className="block text-xs font-medium text-theme-secondary mb-1.5">
+                Category
+              </label>
+              {isSplit ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between pb-1">
+                    <span className="text-xs font-semibold text-theme-secondary">
+                      Split into {splits.length} categories
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setActivePicker('category')}
+                      className="text-xs font-semibold text-violet-500 hover:text-violet-400 transition-colors"
+                    >
+                      Edit categories
+                    </button>
+                  </div>
 
-              <button
-                type="button"
-                onClick={() => setActivePicker('date')}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium transition-all shadow-xs',
-                  errors.date
-                    ? 'border border-rose-500 bg-rose-500/10 text-rose-500'
-                    : 'bg-theme-card-subtle hover:bg-theme-card text-theme-primary border border-transparent'
-                )}
-              >
-                <Calendar className="size-3.5 text-theme-muted" />
-                <span>{dateDisplayLabel}</span>
-                <ChevronDown className="size-3 text-theme-muted" />
-              </button>
-            </div>
-
-            {/* Unified Category Section (NO ARTIFICIAL TABS!) */}
-            {isSplit ? (
-              <div className="py-2">
-                <div className="flex items-center justify-between pb-2">
-                  <span className="text-xs font-semibold text-theme-secondary">
-                    Split into {splits.length} categories
-                  </span>
+                  <CategorySplitEditor
+                    totalAmountPaise={activeAmount}
+                    splits={splits}
+                    categories={categories}
+                    onChange={(updated) => {
+                      if (updated.length === 1) {
+                        setSelectedCategoryId(updated[0].categoryId);
+                        setSplits([]);
+                      } else {
+                        setSplits(updated);
+                      }
+                    }}
+                    onAddCategoryClick={() => setActivePicker('category')}
+                    allowRemoveToSingle={true}
+                  />
+                </div>
+              ) : (
+                <div className="space-y-2">
                   <button
                     type="button"
                     onClick={() => setActivePicker('category')}
-                    className="text-xs font-semibold text-violet-500 hover:text-violet-400 transition-colors"
+                    className={cn(
+                      'flex w-full items-center justify-between py-3 px-3.5 rounded-xl transition-all shadow-xs border text-left',
+                      errors.category
+                        ? 'bg-rose-500/10 text-rose-500 border-rose-500/40'
+                        : 'bg-theme-input hover:bg-theme-card text-theme-primary border-theme-border'
+                    )}
                   >
-                    Edit categories
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={cn(
+                          'flex size-9 items-center justify-center rounded-lg text-white shadow-xs',
+                          currentCategory.bgClass
+                        )}
+                      >
+                        <CategoryIcon name={currentCategory.iconName} size={18} />
+                      </div>
+                      <div>
+                        <div className={cn('text-xs font-semibold', errors.category ? 'text-rose-500' : 'text-theme-primary')}>
+                          {currentCategory.name}
+                        </div>
+                        <div className="text-[11px] text-theme-muted">
+                          Tap to change or split
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 text-xs text-theme-muted">
+                      <span>Change</span>
+                      <ChevronDown className="size-3.5" />
+                    </div>
                   </button>
-                </div>
 
-                <CategorySplitEditor
-                  totalAmountPaise={activeAmount}
-                  splits={splits}
-                  categories={categories}
-                  onChange={(updated) => {
-                    if (updated.length === 1) {
-                      setSelectedCategoryId(updated[0].categoryId);
-                      setSplits([]);
-                    } else {
-                      setSplits(updated);
-                    }
-                  }}
-                  onAddCategoryClick={() => setActivePicker('category')}
-                  allowRemoveToSingle={true}
-                />
-              </div>
-            ) : (
-              <div className="py-2 flex flex-col gap-2">
+                  {/* Subtle "+ Split with another category" button */}
+                  {type === 'EXPENSE' && (
+                    <button
+                      type="button"
+                      onClick={() => setActivePicker('category')}
+                      className="flex items-center gap-1.5 px-1 py-0.5 text-xs font-semibold text-violet-500 hover:text-violet-400 transition-colors"
+                    >
+                      <Split className="size-3.5" />
+                      <span>Split into multiple categories</span>
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Account & Date Row */}
+            <div className="grid grid-cols-2 gap-2.5">
+              <div>
+                <label className="block text-xs font-medium text-theme-secondary mb-1.5">
+                  Account
+                </label>
                 <button
                   type="button"
-                  onClick={() => setActivePicker('category')}
+                  onClick={() => setActivePicker('account')}
                   className={cn(
-                    'flex items-center justify-between py-3 px-4 rounded-2xl transition-all shadow-xs',
-                    errors.category
-                      ? 'bg-rose-500/10 text-rose-500 border border-rose-500/40'
-                      : 'bg-theme-card-subtle hover:bg-theme-card text-theme-primary border border-transparent'
+                    'flex w-full h-12 items-center justify-between px-3 rounded-xl border transition-all text-left shadow-xs',
+                    errors.account
+                      ? 'border-rose-500 bg-rose-500/10 text-rose-500'
+                      : 'border-theme-border bg-theme-input hover:bg-theme-card text-theme-primary'
                   )}
                 >
-                  <div className="flex items-center gap-3">
-                    <div
-                      className={cn(
-                        'flex size-10 items-center justify-center rounded-xl text-white shadow-xs',
-                        currentCategory.bgClass
-                      )}
-                    >
-                      <CategoryIcon name={currentCategory.iconName} size={18} />
-                    </div>
-                    <div className="text-left">
-                      <div className={cn('text-xs font-semibold', errors.category ? 'text-rose-500' : 'text-theme-primary')}>
-                        {currentCategory.name}
-                      </div>
-                      <div className="text-[11px] text-theme-muted">
-                        Tap to change or split
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <CreditCard className="size-4 text-theme-muted shrink-0" />
+                    <span className="truncate text-xs font-medium">{currentAccount.name}</span>
                   </div>
-                  <div className="flex items-center gap-1 text-xs text-theme-muted">
-                    <span>Change / Split</span>
-                    <ChevronDown className="size-3.5" />
-                  </div>
+                  <ChevronDown className="size-3 text-theme-muted shrink-0 ml-1" />
                 </button>
-
-                {/* Subtle "+ Split with another category" button for direct discoverability */}
-                {type === 'EXPENSE' && (
-                  <button
-                    type="button"
-                    onClick={() => setActivePicker('category')}
-                    className="flex items-center gap-1.5 self-start px-2 py-1 text-xs font-semibold text-violet-500 hover:text-violet-400 transition-colors"
-                  >
-                    <Split className="size-3.5" />
-                    <span>Split into multiple categories</span>
-                  </button>
-                )}
               </div>
-            )}
+
+              <div>
+                <label className="block text-xs font-medium text-theme-secondary mb-1.5">
+                  Date
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setActivePicker('date')}
+                  className={cn(
+                    'flex w-full h-12 items-center justify-between px-3 rounded-xl border transition-all text-left shadow-xs',
+                    errors.date
+                      ? 'border-rose-500 bg-rose-500/10 text-rose-500'
+                      : 'border-theme-border bg-theme-input hover:bg-theme-card text-theme-primary'
+                  )}
+                >
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <Calendar className="size-4 text-theme-muted shrink-0" />
+                    <span className="truncate text-xs font-medium font-mono">{dateDisplayLabel}</span>
+                  </div>
+                  <ChevronDown className="size-3 text-theme-muted shrink-0 ml-1" />
+                </button>
+              </div>
+            </div>
+
+            {/* Notes Field (Visible in Edit Screen Only) */}
+            <div>
+              <label className="block text-xs font-medium text-theme-secondary mb-1.5">
+                Notes (Optional)
+              </label>
+              <div className="relative flex items-center">
+                <FileText className="absolute left-3.5 size-4 text-theme-muted pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="e.g. Home essentials, invoice number, etc."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full h-12 rounded-xl border border-theme-border bg-theme-input pl-10 pr-3.5 text-xs text-theme-primary placeholder:text-theme-muted focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all shadow-xs"
+                />
+              </div>
+            </div>
           </div>
 
           {/* Pinned Sticky Bottom CTA Footer */}
-          <div className="shrink-0 px-5 pt-3 pb-8 bg-theme-elevated/95 backdrop-blur-xs">
+          <div className="shrink-0 px-5 pt-3 pb-8 bg-theme-elevated/95 backdrop-blur-xs border-t border-theme-border/50">
             <button
               type="button"
               disabled={isSubmitting}
               onClick={handleSave}
-              className="flex w-full items-center justify-center gap-2 rounded-full py-4 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed shadow-lg active:scale-[0.99] transition-all"
+              className="flex w-full h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-violet-500 hover:brightness-110 disabled:opacity-[0.38] disabled:cursor-not-allowed shadow-lg shadow-violet-900/30 active:scale-[0.97] transition-all"
             >
               <span>
                 {isSubmitting
@@ -677,31 +741,23 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       {activePicker === 'category' && (
         <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated animate-in fade-in duration-150">
           {/* Top Bar */}
-          <div className="flex items-center justify-between px-5 pt-4 pb-3 shrink-0">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setActivePicker(null)}
-                className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
-              >
-                <ArrowLeft className="size-5" />
-              </button>
-              <div>
-                <span className="text-sm font-bold text-theme-primary">Select Category</span>
-                <p className="text-[11px] text-theme-muted">
-                  {splits.length > 1
-                    ? `${splits.length} categories selected • Split bill below`
-                    : 'Choose 1 category or tap multiple to split'}
-                </p>
-              </div>
-            </div>
+          <div className="flex items-center gap-3 px-5 pt-4 pb-3 shrink-0">
             <button
               type="button"
               onClick={() => setActivePicker(null)}
-              className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+              aria-label="Back"
+              className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
             >
-              <X className="size-5" />
+              <ArrowLeft className="size-5" />
             </button>
+            <div>
+              <span className="text-sm font-bold text-theme-primary">Select Category</span>
+              <p className="text-[11px] text-theme-muted">
+                {splits.length > 1
+                  ? `${splits.length} categories selected • Split bill below`
+                  : 'Choose 1 category or tap multiple to split'}
+              </p>
+            </div>
           </div>
 
           {/* Scrollable Canvas: Category Grid + Categorization Breakdown */}
@@ -796,15 +852,16 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       {/* Quick Picker Sub-Sheet: Account */}
       {activePicker === 'account' && (
         <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated p-5 animate-in fade-in duration-150">
-          <div className="flex items-center justify-between pb-3 border-b border-theme-divider">
-            <span className="text-sm font-bold text-theme-primary">Select Payment Account</span>
+          <div className="flex items-center gap-3 pb-3 border-b border-theme-divider">
             <button
               type="button"
               onClick={() => setActivePicker(null)}
-              className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+              aria-label="Back"
+              className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
             >
-              <X className="size-5" />
+              <ArrowLeft className="size-5" />
             </button>
+            <span className="text-sm font-bold text-theme-primary">Select Payment Account</span>
           </div>
           <div className="flex flex-col gap-2 py-4 overflow-y-auto no-scrollbar">
             {accountOptions.map((acc) => {
@@ -852,15 +909,16 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       {/* Quick Picker Sub-Sheet: Date */}
       {activePicker === 'date' && (
         <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated p-5 animate-in fade-in duration-150 overflow-y-auto no-scrollbar">
-          <div className="flex items-center justify-between pb-3 border-b border-theme-divider mb-3">
-            <span className="text-sm font-bold text-theme-primary">Select Date</span>
+          <div className="flex items-center gap-3 pb-3 border-b border-theme-divider mb-3">
             <button
               type="button"
               onClick={() => setActivePicker(null)}
-              className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+              aria-label="Back"
+              className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
             >
-              <X className="size-5" />
+              <ArrowLeft className="size-5" />
             </button>
+            <span className="text-sm font-bold text-theme-primary">Select Date</span>
           </div>
 
           <div className="flex items-center justify-center">

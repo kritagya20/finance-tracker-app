@@ -6,21 +6,23 @@ interface RecentActivityProps {
   transactions: Transaction[];
   hideBalances: boolean;
   onSeeAll: () => void;
+  onSelectTransaction?: (tx: Transaction) => void;
 }
 
 export const RecentActivity: React.FC<RecentActivityProps> = ({
   transactions,
   hideBalances,
   onSeeAll,
+  onSelectTransaction,
 }) => {
   return (
     <section>
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-base font-semibold text-theme-primary">Recent Activity</h2>
+        <h2 className="text-lg font-semibold text-theme-primary">Recent Activity</h2>
         <button
           type="button"
           onClick={onSeeAll}
-          className="text-xs font-medium text-violet-600 dark:text-violet-400 active:text-violet-500 hover:underline"
+          className="min-h-[44px] flex items-center text-xs font-semibold text-violet-600 dark:text-violet-400 active:text-violet-500 hover:underline"
         >
           See All
         </button>
@@ -33,7 +35,13 @@ export const RecentActivity: React.FC<RecentActivityProps> = ({
             transaction={tx}
             variant="home"
             hideBalances={hideBalances}
-            onClick={onSeeAll}
+            onClick={(clickedTx) => {
+              if (onSelectTransaction) {
+                onSelectTransaction(clickedTx);
+              } else {
+                onSeeAll();
+              }
+            }}
           />
         ))}
       </ul>

@@ -19,9 +19,9 @@ export const BudgetProgressBar: React.FC<BudgetProgressBarProps> = ({
       <div className="flex items-end justify-between">
         <div>
           <p className="text-xs text-theme-muted">Monthly Budget</p>
-          <p className="text-sm font-semibold text-theme-primary">{percent}% used</p>
+          <p className="text-sm font-semibold font-mono text-theme-primary">{percent}% used</p>
         </div>
-        <p className="text-xs font-medium text-theme-secondary tabular-nums">
+        <p className="text-xs font-medium font-mono text-theme-secondary tabular-nums">
           {hideBalances ? '•••• left' : `${formatCurrency(remaining, 'INR', false)} left`}
         </p>
       </div>

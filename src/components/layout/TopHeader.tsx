@@ -42,7 +42,7 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           type="button"
           onClick={onToggleHideBalances}
           aria-label={hideBalances ? 'Show balances' : 'Hide balances'}
-          className="flex size-10 items-center justify-center rounded-full border border-theme-border bg-theme-card text-theme-secondary transition-all hover:bg-theme-card-hover active:scale-95 shadow-sm"
+          className="flex size-10 items-center justify-center rounded-full border border-theme-border bg-theme-card text-theme-secondary transition-all hover:bg-theme-card-hover active:scale-[0.92] duration-100 shadow-sm"
         >
           {hideBalances ? (
             <EyeOff className="size-5 text-theme-muted" />
@@ -55,11 +55,11 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
           type="button"
           onClick={onNotificationsClick}
           aria-label={`Notifications ${unreadCount > 0 ? `(${unreadCount} unread)` : ''}`}
-          className="relative flex size-10 items-center justify-center rounded-full border border-theme-border bg-theme-card text-theme-secondary transition-all hover:bg-theme-card-hover active:scale-95 shadow-sm"
+          className="relative flex size-10 items-center justify-center rounded-full border border-theme-border bg-theme-card text-theme-secondary transition-all hover:bg-theme-card-hover active:scale-[0.92] duration-100 shadow-sm"
         >
           <Bell className="size-5 text-theme-secondary" />
           {unreadCount > 0 ? (
-            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-violet-600 px-1 text-[9px] font-bold text-white ring-2 ring-theme-app">
+            <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-bold text-white ring-2 ring-theme-app">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           ) : null}
