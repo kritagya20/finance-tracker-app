@@ -9,6 +9,8 @@ import {
   Split,
   ChevronDown,
   Check,
+  AlertCircle,
+  Tag,
 } from 'lucide-react';
 import {
   Category,
@@ -47,15 +49,24 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
   const [isRendered, setIsRendered] = useState(isOpen);
   const [isAnimatingIn, setIsAnimatingIn] = useState(false);
 
-  // Form State
+  // Form State - unselected by default
   const [type, setType] = useState<TransactionType>('EXPENSE');
   const [amountStr, setAmountStr] = useState('0');
-  const [selectedCategoryId, setSelectedCategoryId] = useState('cat_dining');
-  const [selectedAccountId, setSelectedAccountId] = useState('acc_hdfc');
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
   const [merchantNote, setMerchantNote] = useState('');
   const [isSplit, setIsSplit] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Validation error state
+  const [errors, setErrors] = useState<{
+    amount?: boolean;
+    category?: boolean;
+    account?: boolean;
+    date?: boolean;
+  }>({});
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Active Sub-Sheet Picker ('category' | 'account' | 'date' | null)
   const [activePicker, setActivePicker] = useState<'category' | 'account' | 'date' | null>(null);
@@ -65,9 +76,24 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const startYRef = useRef(0);
 
-  // Slide-in / slide-out animation lifecycle
+  // Comprehensive form reset
+  const resetForm = () => {
+    setType('EXPENSE');
+    setAmountStr('0');
+    setSelectedCategoryId('');
+    setSelectedAccountId('');
+    setSelectedDate('');
+    setMerchantNote('');
+    setIsSplit(false);
+    setActivePicker(null);
+    setErrors({});
+    setErrorMessage(null);
+  };
+
+  // Slide-in / slide-out animation lifecycle with auto-reset
   useEffect(() => {
     if (isOpen) {
+      resetForm();
       setIsRendered(true);
       const timer = requestAnimationFrame(() => {
         setIsAnimatingIn(true);
@@ -78,7 +104,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
       const timer = setTimeout(() => {
         setIsRendered(false);
         setDragOffsetY(0);
-        setActivePicker(null);
+        resetForm();
       }, 300);
       return () => clearTimeout(timer);
     }
@@ -124,6 +150,11 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
   };
 
   const handleKeypadPress = (key: string) => {
+    if (errors.amount) {
+      setErrors((prev) => ({ ...prev, amount: false }));
+      setErrorMessage(null);
+    }
+
     if (key === 'BACKSPACE') {
       setAmountStr((prev) => {
         if (prev.length <= 1) return '0';
@@ -148,6 +179,10 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
   };
 
   const handleQuickAdd = (rupeesToAdd: number) => {
+    if (errors.amount) {
+      setErrors((prev) => ({ ...prev, amount: false }));
+      setErrorMessage(null);
+    }
     const currentPaise = parseKeypadToPaise(amountStr);
     const currentRupees = paiseToRupees(currentPaise);
     const newRupees = currentRupees + rupeesToAdd;
@@ -156,7 +191,39 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
 
   const handleSave = async () => {
     const paiseAmount = parseKeypadToPaise(amountStr);
-    if (paiseAmount <= 0) return;
+    const newErrors: {
+      amount?: boolean;
+      category?: boolean;
+      account?: boolean;
+      date?: boolean;
+    } = {};
+    const missing: string[] = [];
+
+    if (paiseAmount <= 0) {
+      newErrors.amount = true;
+      missing.push('amount');
+    }
+    if (!selectedCategoryId) {
+      newErrors.category = true;
+      missing.push('category');
+    }
+    if (!selectedAccountId) {
+      newErrors.account = true;
+      missing.push('account');
+    }
+    if (!selectedDate) {
+      newErrors.date = true;
+      missing.push('date');
+    }
+
+    if (missing.length > 0) {
+      setErrors(newErrors);
+      setErrorMessage(`Please select: ${missing.join(', ')}`);
+      return;
+    }
+
+    setErrors({});
+    setErrorMessage(null);
 
     try {
       setIsSubmitting(true);
@@ -176,29 +243,34 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
         source: 'MANUAL',
         isSplit,
       });
+      resetForm();
       onClose();
     } catch (err) {
       console.error('Failed to save transaction:', err);
+      setErrorMessage('Failed to save transaction. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const accountList = accounts.length > 0 ? accounts : DEFAULT_ACCOUNTS;
-  const currentAccount =
-    accountList.find((a) => a.id === selectedAccountId) || accountList[0];
+  const currentAccount = selectedAccountId
+    ? accountList.find((a) => a.id === selectedAccountId)
+    : undefined;
 
-  const currentCategory =
-    categories.find((c) => c.id === selectedCategoryId) || categories[0];
+  const currentCategory = selectedCategoryId
+    ? categories.find((c) => c.id === selectedCategoryId)
+    : undefined;
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-  const dateDisplayLabel =
-    selectedDate === todayStr
-      ? 'Today'
-      : selectedDate === yesterdayStr
-      ? 'Yesterday'
-      : new Date(selectedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  const dateDisplayLabel = !selectedDate
+    ? 'Select Date'
+    : selectedDate === todayStr
+    ? 'Today'
+    : selectedDate === yesterdayStr
+    ? 'Yesterday'
+    : new Date(selectedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
 
   const activeAmount = parseKeypadToPaise(amountStr);
   const formattedRupees = (activeAmount / 100).toLocaleString('en-IN', {
@@ -290,48 +362,81 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
           <button
             type="button"
             onClick={() => setActivePicker('category')}
-            className="flex items-center gap-1.5 rounded-full border border-theme-border bg-theme-card px-2.5 py-1 text-xs font-medium text-theme-primary hover:bg-theme-card-hover transition-colors shrink-0 shadow-xs"
-          >
-            {currentCategory && (
-              <span className={cn('size-2 rounded-full', currentCategory.bgClass || 'bg-violet-500')} />
+            className={cn(
+              'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all shrink-0 shadow-xs',
+              errors.category
+                ? 'border border-rose-500 ring-1 ring-rose-500/40 bg-rose-500/10 text-rose-500 dark:text-rose-400 font-semibold'
+                : currentCategory
+                ? 'border border-theme-border bg-theme-card text-theme-primary hover:bg-theme-card-hover'
+                : 'border border-dashed border-theme-border bg-theme-card-subtle text-theme-secondary hover:text-theme-primary'
             )}
-            <span className="truncate max-w-[85px]">{currentCategory?.name || 'Category'}</span>
-            <ChevronDown className="size-3 text-theme-muted" />
+          >
+            {currentCategory ? (
+              <span className={cn('size-2 rounded-full', currentCategory.bgClass || 'bg-violet-500')} />
+            ) : (
+              <Tag className={cn('size-3', errors.category ? 'text-rose-500' : 'text-theme-muted')} />
+            )}
+            <span className="truncate max-w-[85px]">{currentCategory ? currentCategory.name : 'Select Category'}</span>
+            <ChevronDown className={cn('size-3', errors.category ? 'text-rose-500' : 'text-theme-muted')} />
           </button>
 
           {/* Account Chip */}
           <button
             type="button"
             onClick={() => setActivePicker('account')}
-            className="flex items-center gap-1.5 rounded-full border border-theme-border bg-theme-card px-2.5 py-1 text-xs font-medium text-theme-primary hover:bg-theme-card-hover transition-colors shrink-0 shadow-xs"
+            className={cn(
+              'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all shrink-0 shadow-xs',
+              errors.account
+                ? 'border border-rose-500 ring-1 ring-rose-500/40 bg-rose-500/10 text-rose-500 dark:text-rose-400 font-semibold'
+                : currentAccount
+                ? 'border border-theme-border bg-theme-card text-theme-primary hover:bg-theme-card-hover'
+                : 'border border-dashed border-theme-border bg-theme-card-subtle text-theme-secondary hover:text-theme-primary'
+            )}
           >
-            <CreditCard className="size-3 text-theme-muted" />
+            <CreditCard className={cn('size-3', errors.account ? 'text-rose-500' : 'text-theme-muted')} />
             <span className="truncate max-w-[95px]">
-              {currentAccount.name} ····{('maskNumber' in currentAccount ? currentAccount.maskNumber : '')}
+              {currentAccount
+                ? `${currentAccount.name} ····${'maskNumber' in currentAccount ? currentAccount.maskNumber : ''}`
+                : 'Select Account'}
             </span>
-            <ChevronDown className="size-3 text-theme-muted" />
+            <ChevronDown className={cn('size-3', errors.account ? 'text-rose-500' : 'text-theme-muted')} />
           </button>
 
           {/* Date Chip */}
           <button
             type="button"
             onClick={() => setActivePicker('date')}
-            className="flex items-center gap-1.5 rounded-full border border-theme-border bg-theme-card px-2.5 py-1 text-xs font-medium text-theme-primary hover:bg-theme-card-hover transition-colors shrink-0 shadow-xs"
+            className={cn(
+              'flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-all shrink-0 shadow-xs',
+              errors.date
+                ? 'border border-rose-500 ring-1 ring-rose-500/40 bg-rose-500/10 text-rose-500 dark:text-rose-400 font-semibold'
+                : selectedDate
+                ? 'border border-theme-border bg-theme-card text-theme-primary hover:bg-theme-card-hover'
+                : 'border border-dashed border-theme-border bg-theme-card-subtle text-theme-secondary hover:text-theme-primary'
+            )}
           >
-            <Calendar className="size-3 text-theme-muted" />
+            <Calendar className={cn('size-3', errors.date ? 'text-rose-500' : 'text-theme-muted')} />
             <span>{dateDisplayLabel}</span>
-            <ChevronDown className="size-3 text-theme-muted" />
+            <ChevronDown className={cn('size-3', errors.date ? 'text-rose-500' : 'text-theme-muted')} />
           </button>
         </div>
+
+        {/* Validation Error Banner */}
+        {errorMessage && (
+          <div className="mx-4 mt-1 mb-0 flex items-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-xs text-rose-500 dark:text-rose-400 transition-all animate-in fade-in slide-in-from-top-1">
+            <AlertCircle className="size-3.5 shrink-0 text-rose-500" />
+            <span className="font-medium text-[11px] leading-tight">{errorMessage}</span>
+          </div>
+        )}
 
         {/* Hero Amount Section with Blinking Cursor */}
         <div className="flex flex-col items-center justify-center pt-2 pb-1 px-4">
           <div className="flex items-baseline gap-1 select-none">
-            <span className="text-2xl font-bold text-theme-muted">₹</span>
-            <span className="text-4xl font-extrabold tracking-tight text-theme-primary tabular-nums">
+            <span className={cn('text-2xl font-bold transition-colors', errors.amount ? 'text-rose-500' : 'text-theme-muted')}>₹</span>
+            <span className={cn('text-4xl font-extrabold tracking-tight tabular-nums transition-colors', errors.amount ? 'text-rose-500' : 'text-theme-primary')}>
               {amountStr}
             </span>
-            <span className="ml-0.5 h-7 w-0.5 animate-pulse rounded-full bg-violet-500" />
+            <span className={cn('ml-0.5 h-7 w-0.5 animate-pulse rounded-full', errors.amount ? 'bg-rose-500' : 'bg-violet-500')} />
           </div>
 
           {/* Quick Increment Chips */}
@@ -400,7 +505,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
         <div className="px-4 pt-1.5 pb-5">
           <button
             type="button"
-            disabled={isSubmitting || activeAmount <= 0}
+            disabled={isSubmitting}
             onClick={handleSave}
             className={cn(
               'flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r py-3 text-sm font-bold text-white shadow-lg transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed',
@@ -412,7 +517,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                 ? 'Saving...'
                 : activeAmount > 0
                 ? `Save ${type === 'EXPENSE' ? 'Expense' : type === 'INCOME' ? 'Income' : 'Transfer'} ₹${formattedRupees}`
-                : 'Enter Amount'}
+                : 'Enter Amount & Save'}
             </span>
             <ArrowRight className="size-4" />
           </button>
@@ -440,6 +545,13 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                     type="button"
                     onClick={() => {
                       setSelectedCategoryId(cat.id);
+                      setErrors((prev) => {
+                        const next = { ...prev, category: false };
+                        if (!next.amount && !next.account && !next.date) {
+                          setErrorMessage(null);
+                        }
+                        return next;
+                      });
                       setActivePicker(null);
                     }}
                     className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-theme-card-hover active:scale-95 transition-all"
@@ -492,6 +604,13 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                     type="button"
                     onClick={() => {
                       setSelectedAccountId(acc.id);
+                      setErrors((prev) => {
+                        const next = { ...prev, account: false };
+                        if (!next.amount && !next.category && !next.date) {
+                          setErrorMessage(null);
+                        }
+                        return next;
+                      });
                       setActivePicker(null);
                     }}
                     className={cn(
@@ -538,6 +657,13 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                 type="button"
                 onClick={() => {
                   setSelectedDate(todayStr);
+                  setErrors((prev) => {
+                    const next = { ...prev, date: false };
+                    if (!next.amount && !next.category && !next.account) {
+                      setErrorMessage(null);
+                    }
+                    return next;
+                  });
                   setActivePicker(null);
                 }}
                 className={cn(
@@ -553,6 +679,13 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                 type="button"
                 onClick={() => {
                   setSelectedDate(yesterdayStr);
+                  setErrors((prev) => {
+                    const next = { ...prev, date: false };
+                    if (!next.amount && !next.category && !next.account) {
+                      setErrorMessage(null);
+                    }
+                    return next;
+                  });
                   setActivePicker(null);
                 }}
                 className={cn(
@@ -572,6 +705,13 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
                 selectedDate={selectedDate}
                 onSelectDate={(d) => {
                   setSelectedDate(d);
+                  setErrors((prev) => {
+                    const next = { ...prev, date: false };
+                    if (!next.amount && !next.category && !next.account) {
+                      setErrorMessage(null);
+                    }
+                    return next;
+                  });
                   setActivePicker(null);
                 }}
                 showPresets={false}

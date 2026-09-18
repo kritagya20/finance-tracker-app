@@ -414,10 +414,14 @@ export interface MockDatabaseState {
   insights: FinancialInsights;
 }
 
+import seedData from './seedData.json';
+
+export const SEED_DATA: MockDatabaseState = seedData as MockDatabaseState;
+
 const STORAGE_KEY = 'finance_tracker_mock_db_v1';
 
 /**
- * Load database state from localStorage or initialize with seed defaults
+ * Load database state from localStorage or initialize with seed defaults from seedData.json
  */
 export function getMockDatabase(): MockDatabaseState {
   try {
@@ -433,12 +437,12 @@ export function getMockDatabase(): MockDatabaseState {
   }
 
   const defaultState: MockDatabaseState = {
-    profile: INITIAL_USER_PROFILE,
-    accounts: INITIAL_ACCOUNTS,
-    categories: INITIAL_CATEGORIES,
-    transactions: INITIAL_TRANSACTIONS,
-    budgets: INITIAL_BUDGETS,
-    insights: INITIAL_INSIGHTS,
+    profile: SEED_DATA.profile,
+    accounts: SEED_DATA.accounts,
+    categories: SEED_DATA.categories,
+    transactions: SEED_DATA.transactions,
+    budgets: SEED_DATA.budgets,
+    insights: SEED_DATA.insights,
   };
 
   saveMockDatabase(defaultState);
@@ -457,16 +461,16 @@ export function saveMockDatabase(state: MockDatabaseState): void {
 }
 
 /**
- * Reset database state to pristine initial seed data
+ * Reset database state to pristine initial seed data from seedData.json
  */
 export function resetMockDatabase(): MockDatabaseState {
   const defaultState: MockDatabaseState = {
-    profile: INITIAL_USER_PROFILE,
-    accounts: INITIAL_ACCOUNTS,
-    categories: INITIAL_CATEGORIES,
-    transactions: INITIAL_TRANSACTIONS,
-    budgets: INITIAL_BUDGETS,
-    insights: INITIAL_INSIGHTS,
+    profile: { ...SEED_DATA.profile },
+    accounts: [...SEED_DATA.accounts],
+    categories: [...SEED_DATA.categories],
+    transactions: [...SEED_DATA.transactions],
+    budgets: [...SEED_DATA.budgets],
+    insights: { ...SEED_DATA.insights },
   };
   saveMockDatabase(defaultState);
   return defaultState;

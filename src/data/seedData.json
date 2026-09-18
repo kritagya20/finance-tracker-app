@@ -1,0 +1,390 @@
+{
+  "profile": {
+    "id": "usr_001",
+    "name": "Alex Morgan",
+    "email": "alex.morgan@domain.com",
+    "currency": "INR",
+    "currencySymbol": "₹",
+    "monthlyIncome": 8500000,
+    "primaryGoal": "SAVINGS_INVESTING",
+    "employmentType": "SALARIED",
+    "savingsTargetPercent": 20,
+    "budgetStartDay": 1,
+    "onboardingCompleted": true,
+    "createdAt": "2026-09-01T00:00:00.000Z",
+    "updatedAt": "2026-09-17T00:00:00.000Z"
+  },
+  "accounts": [
+    {
+      "id": "acc_hdfc",
+      "name": "HDFC Bank",
+      "type": "SAVINGS",
+      "currency": "INR",
+      "currentBalance": 9545000,
+      "maskNumber": "4102",
+      "institutionName": "HDFC Bank",
+      "isActive": true
+    },
+    {
+      "id": "acc_cash",
+      "name": "Cash Wallet",
+      "type": "CASH",
+      "currency": "INR",
+      "currentBalance": 1240000,
+      "maskNumber": "CASH",
+      "institutionName": "Physical Cash",
+      "isActive": true
+    },
+    {
+      "id": "acc_icici",
+      "name": "ICICI Amazon Pay Card",
+      "type": "CREDIT_CARD",
+      "currency": "INR",
+      "currentBalance": -1500000,
+      "maskNumber": "8819",
+      "institutionName": "ICICI Bank",
+      "isActive": true
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat_dining",
+      "name": "Dining",
+      "iconName": "UtensilsCrossed",
+      "colorHex": "#f59e0b",
+      "bgClass": "bg-amber-500/15",
+      "textClass": "text-amber-400"
+    },
+    {
+      "id": "cat_groceries",
+      "name": "Groceries",
+      "iconName": "ShoppingCart",
+      "colorHex": "#10b981",
+      "bgClass": "bg-emerald-500/15",
+      "textClass": "text-emerald-400"
+    },
+    {
+      "id": "cat_fuel",
+      "name": "Fuel/Travel",
+      "iconName": "Fuel",
+      "colorHex": "#38bdf8",
+      "bgClass": "bg-sky-500/15",
+      "textClass": "text-sky-400"
+    },
+    {
+      "id": "cat_bills",
+      "name": "Bills",
+      "iconName": "Receipt",
+      "colorHex": "#a855f7",
+      "bgClass": "bg-violet-500/15",
+      "textClass": "text-violet-400"
+    },
+    {
+      "id": "cat_entertainment",
+      "name": "Entertainment",
+      "iconName": "Film",
+      "colorHex": "#ec4899",
+      "bgClass": "bg-pink-500/15",
+      "textClass": "text-pink-400"
+    },
+    {
+      "id": "cat_shopping",
+      "name": "Shopping",
+      "iconName": "ShoppingBag",
+      "colorHex": "#f97316",
+      "bgClass": "bg-orange-500/15",
+      "textClass": "text-orange-400"
+    },
+    {
+      "id": "cat_salary",
+      "name": "Salary",
+      "iconName": "Briefcase",
+      "colorHex": "#10b981",
+      "bgClass": "bg-emerald-500/15",
+      "textClass": "text-emerald-400",
+      "isIncome": true
+    },
+    {
+      "id": "cat_freelance",
+      "name": "Freelance",
+      "iconName": "DollarSign",
+      "colorHex": "#06b6d4",
+      "bgClass": "bg-cyan-500/15",
+      "textClass": "text-cyan-400",
+      "isIncome": true
+    }
+  ],
+  "transactions": [
+    {
+      "id": "tx_starbucks_today",
+      "accountId": "acc_hdfc",
+      "categoryId": "cat_dining",
+      "type": "EXPENSE",
+      "amount": 28000,
+      "currency": "INR",
+      "merchantName": "Starbucks",
+      "date": "2026-09-18T01:10:47.491Z",
+      "source": "AUTO_SMS",
+      "rawSmsText": "Sent Rs.280.00 from HDFC Bank A/C **4102 to STARBUCKS",
+      "notes": "Coffee & snack",
+      "createdAt": 1789693847491,
+      "updatedAt": 1789693847491
+    },
+    {
+      "id": "tx_uber_today",
+      "accountId": "acc_hdfc",
+      "categoryId": "cat_fuel",
+      "type": "EXPENSE",
+      "amount": 45000,
+      "currency": "INR",
+      "merchantName": "Uber Ride",
+      "date": "2026-09-17T21:10:47.491Z",
+      "source": "AUTO_SMS",
+      "rawSmsText": "Debited Rs.450.00 at UBER TRIP",
+      "notes": "Morning commute",
+      "createdAt": 1789679447491,
+      "updatedAt": 1789679447491
+    },
+    {
+      "id": "tx_amazon_yesterday",
+      "accountId": "acc_hdfc",
+      "categoryId": "cat_shopping",
+      "type": "EXPENSE",
+      "amount": 120000,
+      "currency": "INR",
+      "merchantName": "Amazon India",
+      "date": "2026-09-17T04:10:47.491Z",
+      "source": "MANUAL",
+      "notes": "Home essentials (2 items)",
+      "createdAt": 1789618247491,
+      "updatedAt": 1789618247491
+    },
+    {
+      "id": "tx_freelance_12sep",
+      "accountId": "acc_hdfc",
+      "categoryId": "cat_freelance",
+      "type": "INCOME",
+      "amount": 1500000,
+      "currency": "INR",
+      "merchantName": "Freelance Payment",
+      "date": "2026-09-13T04:10:47.491Z",
+      "source": "MANUAL",
+      "notes": "UI/UX consulting project",
+      "createdAt": 1789272647491,
+      "updatedAt": 1789272647491
+    },
+    {
+      "id": "tx_swiggy_12sep",
+      "accountId": "acc_hdfc",
+      "categoryId": "cat_dining",
+      "type": "EXPENSE",
+      "amount": 68000,
+      "currency": "INR",
+      "merchantName": "Swiggy Gourmet",
+      "date": "2026-09-13T02:10:47.491Z",
+      "source": "AUTO_SMS",
+      "notes": "Dinner with friends",
+      "createdAt": 1789265447491,
+      "updatedAt": 1789265447491
+    },
+    {
+      "id": "tx_blinkit_12sep",
+      "accountId": "acc_hdfc",
+      "categoryId": "cat_groceries",
+      "type": "EXPENSE",
+      "amount": 84000,
+      "currency": "INR",
+      "merchantName": "Blinkit Instant",
+      "date": "2026-09-12T23:10:47.491Z",
+      "source": "AUTO_SMS",
+      "notes": "Weekly fresh groceries",
+      "createdAt": 1789254647491,
+      "updatedAt": 1789254647491
+    },
+    {
+      "id": "tx_netflix_10sep",
+      "accountId": "acc_icici",
+      "categoryId": "cat_entertainment",
+      "type": "EXPENSE",
+      "amount": 64900,
+      "currency": "INR",
+      "merchantName": "Netflix India",
+      "date": "2026-09-11T04:10:47.491Z",
+      "source": "AUTO_SMS",
+      "notes": "Premium 4K plan",
+      "createdAt": 1789099847491,
+      "updatedAt": 1789099847491
+    },
+    {
+      "id": "tx_shell_fuel_10sep",
+      "accountId": "acc_hdfc",
+      "categoryId": "cat_fuel",
+      "type": "EXPENSE",
+      "amount": 250000,
+      "currency": "INR",
+      "merchantName": "Shell Petrol Pump",
+      "date": "2026-09-11T01:10:47.491Z",
+      "source": "AUTO_SMS",
+      "notes": "Full tank petrol",
+      "createdAt": 1789089047491,
+      "updatedAt": 1789089047491
+    },
+    {
+      "id": "tx_electricity_08sep",
+      "accountId": "acc_hdfc",
+      "categoryId": "cat_bills",
+      "type": "EXPENSE",
+      "amount": 345000,
+      "currency": "INR",
+      "merchantName": "Bescom Electricity",
+      "date": "2026-09-09T04:10:47.491Z",
+      "source": "AUTO_SMS",
+      "notes": "Monthly electricity bill",
+      "createdAt": 1788927047491,
+      "updatedAt": 1788927047491
+    },
+    {
+      "id": "tx_cultfit_08sep",
+      "accountId": "acc_hdfc",
+      "categoryId": "cat_entertainment",
+      "type": "EXPENSE",
+      "amount": 180000,
+      "currency": "INR",
+      "merchantName": "Cult.fit Gym",
+      "date": "2026-09-09T00:10:47.491Z",
+      "source": "MANUAL",
+      "notes": "Gym subscription renewal",
+      "createdAt": 1788912647491,
+      "updatedAt": 1788912647491
+    },
+    {
+      "id": "tx_zara_05sep",
+      "accountId": "acc_icici",
+      "categoryId": "cat_shopping",
+      "type": "EXPENSE",
+      "amount": 499000,
+      "currency": "INR",
+      "merchantName": "Zara Apparel",
+      "date": "2026-09-06T04:10:47.491Z",
+      "source": "AUTO_SMS",
+      "notes": "Autumn wardrobe",
+      "createdAt": 1788667847491,
+      "updatedAt": 1788667847491
+    },
+    {
+      "id": "tx_blue_tokai_05sep",
+      "accountId": "acc_hdfc",
+      "categoryId": "cat_dining",
+      "type": "EXPENSE",
+      "amount": 32000,
+      "currency": "INR",
+      "merchantName": "Blue Tokai Coffee",
+      "date": "2026-09-06T02:10:47.491Z",
+      "source": "AUTO_SMS",
+      "notes": "Iced latte",
+      "createdAt": 1788660647491,
+      "updatedAt": 1788660647491
+    },
+    {
+      "id": "tx_salary_01sep",
+      "accountId": "acc_hdfc",
+      "categoryId": "cat_salary",
+      "type": "INCOME",
+      "amount": 7000000,
+      "currency": "INR",
+      "merchantName": "TechCorp Salary",
+      "date": "2026-09-02T04:10:47.491Z",
+      "source": "AUTO_SMS",
+      "notes": "Monthly salary credited",
+      "createdAt": 1788322247491,
+      "updatedAt": 1788322247491
+    },
+    {
+      "id": "tx_rent_01sep",
+      "accountId": "acc_hdfc",
+      "categoryId": "cat_bills",
+      "type": "EXPENSE",
+      "amount": 1500000,
+      "currency": "INR",
+      "merchantName": "Apartment House Rent",
+      "date": "2026-09-02T03:10:47.491Z",
+      "source": "MANUAL",
+      "notes": "Monthly flat rent transfer",
+      "createdAt": 1788318647491,
+      "updatedAt": 1788318647491
+    },
+    {
+      "id": "tx_wifi_01sep",
+      "accountId": "acc_hdfc",
+      "categoryId": "cat_bills",
+      "type": "EXPENSE",
+      "amount": 119900,
+      "currency": "INR",
+      "merchantName": "Airtel Fiber Broadband",
+      "date": "2026-09-02T01:10:47.491Z",
+      "source": "AUTO_SMS",
+      "notes": "High speed fiber bill",
+      "createdAt": 1788311447491,
+      "updatedAt": 1788311447491
+    }
+  ],
+  "budgets": [
+    {
+      "id": "bgt_overall",
+      "categoryId": "ALL",
+      "limitAmount": 5000000,
+      "period": "MONTHLY",
+      "alertThresholdPercent": 80
+    },
+    {
+      "id": "bgt_dining",
+      "categoryId": "cat_dining",
+      "limitAmount": 1000000,
+      "period": "MONTHLY",
+      "alertThresholdPercent": 80
+    },
+    {
+      "id": "bgt_fuel",
+      "categoryId": "cat_fuel",
+      "limitAmount": 600000,
+      "period": "MONTHLY",
+      "alertThresholdPercent": 80
+    }
+  ],
+  "insights": {
+    "savingsRate": 38.5,
+    "savingsTargetPercent": 20,
+    "emergencyFundMonths": 4.4,
+    "burnRatePerDay": 107166,
+    "runwayDays": 133,
+    "budgetAdherenceScore": 84,
+    "needsVsWantsRatio": {
+      "needsPercent": 48,
+      "wantsPercent": 24,
+      "savingsPercent": 28
+    },
+    "keyInsights": [
+      {
+        "id": "ins_01",
+        "type": "POSITIVE",
+        "title": "Strong Savings Cushion",
+        "description": "You saved 38.5% of your income this month, outperforming your 20% target.",
+        "metric": "+18.5%"
+      },
+      {
+        "id": "ins_02",
+        "type": "WARNING",
+        "title": "Dining Acceleration",
+        "description": "Dining out is currently trending at 26% of your monthly expenditure.",
+        "metric": "₹7,280"
+      },
+      {
+        "id": "ins_03",
+        "type": "NEUTRAL",
+        "title": "Emergency Fund Runway",
+        "description": "Your current liquid assets cover 4.4 months of living expenses.",
+        "metric": "4.4 mo"
+      }
+    ]
+  }
+}
