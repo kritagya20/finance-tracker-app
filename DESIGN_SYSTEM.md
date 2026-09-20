@@ -610,7 +610,8 @@ Empty states are **engagement opportunities**, not dead ends. Every empty state 
 ## 28.1 Settings & Appearance Standards
 - **Theme Selection**: Renamed to "Theme". Uses dedicated app-native dual-icon switcher (`<ThemeToggle />`).
   - Contains permanent Sun icon on the left (`#fbbf24`) and Moon icon on the right (`#818cf8`).
-  - Sliding thumb (`translate-x-0` in light mode vs `translate-x-8` in dark mode) with contextual glowing ring (amber for Sun, violet for Moon).
+  - Seamless borderless track (`bg-slate-200 dark:bg-slate-800`) strictly omitting harsh border outlines to prevent light-colored halos in dark mode.
+  - Sliding thumb (`translate-x-0` in light mode vs `translate-x-[34px]` in dark mode) with shadow elevation.
   - Provides instantaneous DOM class updates (`dark` class toggle) and `localStorage` persistence.
 - **Storage Metrics**: Transparent on-device statistics without exposing sensitive or intimidating technical jargon.
 
@@ -625,20 +626,17 @@ In accordance with production fintech standards (CRED, Google Pay, Paytm):
 
 ## 28.3 Currency & Numbering Architecture (`CurrencySettingsScreen`)
 - **Default Standards**: Default currency is Indian Rupee `INR (₹)` with Indian numbering format (`1,23,456.78`).
-- **Profile Listing Badge**: The "Currency & Numbering" row in Profile must display an interactive, styled badge `{currency} ({currencySymbol})` (e.g., `INR (₹)`) and a `ChevronRight` navigation arrow.
+- **Profile Listing Row**: The "Currency & Numbering" row in Profile renders as a clean, responsive button with leading `Globe` icon, title, and subtitle (`{name} ({symbol}) • {system}`). Right-hand badges and redundant arrows are omitted to guarantee zero multi-line breaking across compact viewports.
 - **Global Currency Propagation**: Changes to currency immediately reflect across all screens:
   - Top header net balance and privacy mask peek.
   - Dashboard Net Worth, Income (+), Expense (-) cards, and Budget progress bars.
   - Activity feed list items and transaction filter summary cards.
   - Outflow envelopes and spending velocity charts in Analytics.
   - Numeric touch keypads and quick chip increments in Add/Edit transaction flows (`AddTransactionDrawer.tsx`, `EditTransactionDrawer.tsx`).
-- **Grouping Systems**:
+- **Numbering & Grouping Formats**: Streamlined title-only selection options (`Indian System (Lakhs & Crores)` vs `International System (Millions & Billions)`) without cognitive clutter or redundant sample figures:
   - **Indian System**: Formatted via `en-IN` locale (`12,34,567.89`).
   - **International System**: Formatted via `en-US` locale (`1,234,567.89`).
-- **Decimal Precision**:
-  - **Smart Auto**: Clean whole integers omit `.00` (e.g. `₹500`), while fractional amounts display 2 decimal places (e.g. `₹500.50`).
-  - **Always 2 Decimals**: Enforces fixed 2 decimal places for strict tabular alignment.
-  - **Non-Decimal Currencies**: Currencies such as Japanese Yen (`JPY`) force 0 decimals regardless of user mode.
+- **Streamlined Catalog**: Currency picker items display country flag, ISO code, currency name, and active radio checkmark. Redundant country subtext, symbol overlays, count badges, and sample amount figures are omitted for crisp minimalism.
 - **Navigation Invariant**: Sub-screen uses a single `ArrowLeft` top back button and a Reset action. Conflicting `X` icons are strictly prohibited.
 
 

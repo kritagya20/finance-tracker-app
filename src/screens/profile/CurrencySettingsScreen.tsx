@@ -10,7 +10,7 @@ import {
   Hash,
   Coins,
 } from 'lucide-react';
-import { useCurrency, NumberingSystem, DecimalPrecisionMode } from '../../context/CurrencyContext';
+import { useCurrency, NumberingSystem } from '../../context/CurrencyContext';
 import { cn } from '../../lib/utils';
 
 interface CurrencySettingsScreenProps {
@@ -26,11 +26,9 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
     currency,
     currencyConfig,
     numberingSystem,
-    decimalMode,
     supportedCurrencies,
     setCurrency,
     setNumberingSystem,
-    setDecimalMode,
     formatMoney,
   } = useCurrency();
 
@@ -42,9 +40,7 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
     return supportedCurrencies.filter(
       (c) =>
         c.code.toLowerCase().includes(q) ||
-        c.name.toLowerCase().includes(q) ||
-        c.country.toLowerCase().includes(q) ||
-        c.symbol.toLowerCase().includes(q)
+        c.name.toLowerCase().includes(q)
     );
   }, [searchQuery, supportedCurrencies]);
 
@@ -59,32 +55,22 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
   const handleSelectCurrency = (code: string) => {
     setCurrency(code);
     const selected = supportedCurrencies.find((c) => c.code === code);
-    triggerToast(`Currency updated to ${selected?.name || code} (${selected?.symbol || ''})`);
+    triggerToast(`Currency updated to ${selected?.name || code}`);
   };
 
   const handleSelectNumbering = (sys: NumberingSystem) => {
     setNumberingSystem(sys);
     triggerToast(
       sys === 'indian'
-        ? 'Numbering set to Lakhs & Crores (1,23,456)'
-        : 'Numbering set to Millions & Billions (123,456)'
-    );
-  };
-
-  const handleSelectDecimals = (mode: DecimalPrecisionMode) => {
-    setDecimalMode(mode);
-    triggerToast(
-      mode === 'always'
-        ? 'Decimal display set to Always 2 Decimals'
-        : 'Decimal display set to Smart Auto'
+        ? 'Numbering set to Indian System'
+        : 'Numbering set to International System'
     );
   };
 
   const handleResetDefaults = () => {
     setCurrency('INR');
     setNumberingSystem('indian');
-    setDecimalMode('auto');
-    triggerToast('Reset to default Indian Rupee (₹) and Lakhs grouping');
+    triggerToast('Reset to default Indian Rupee and Indian numbering');
   };
 
 
@@ -112,7 +98,7 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
         </div>
 
         {/* Quick Reset Button */}
-        {(currency !== 'INR' || numberingSystem !== 'indian' || decimalMode !== 'auto') && (
+        {(currency !== 'INR' || numberingSystem !== 'indian') && (
           <button
             type="button"
             onClick={handleResetDefaults}
@@ -172,10 +158,7 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
         {/* Configuration summary line */}
         <div className="mt-3 flex items-center justify-between text-[11px] text-theme-muted font-mono">
           <span>{currencyConfig.name}</span>
-          <span>
-            {numberingSystem === 'indian' ? 'Lakhs (2,2,3)' : 'Millions (3,3)'} •{' '}
-            {decimalMode === 'always' ? 'Always 2 Dec' : 'Smart Auto Dec'}
-          </span>
+          <span>{numberingSystem === 'indian' ? 'Indian System (Lakhs & Crores)' : 'International System (Millions & Billions)'}</span>
         </div>
       </section>
 
@@ -200,24 +183,9 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
                 : 'border-theme-border bg-theme-card/60 hover:bg-theme-card-hover'
             )}
           >
-            <div className="flex flex-col gap-0.5">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-theme-primary">
-                  Indian System (Lakhs & Crores)
-                </span>
-                {currency === 'INR' && (
-                  <span className="rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.2 text-[9px] font-medium font-mono">
-                    Recommended
-                  </span>
-                )}
-              </div>
-              <span className="text-[11px] text-theme-secondary font-mono">
-                {currencyConfig.symbol} 1,23,456.78
-              </span>
-              <span className="text-[10px] text-theme-muted">
-                2, 2, 3 digit grouping (10 Lakhs = 1 Million)
-              </span>
-            </div>
+            <span className="text-xs font-semibold text-theme-primary">
+              Indian System (Lakhs & Crores)
+            </span>
 
             <div
               className={cn(
@@ -242,24 +210,9 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
                 : 'border-theme-border bg-theme-card/60 hover:bg-theme-card-hover'
             )}
           >
-            <div className="flex flex-col gap-0.5">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-theme-primary">
-                  International System (Millions & Billions)
-                </span>
-                {currency !== 'INR' && (
-                  <span className="rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 px-1.5 py-0.2 text-[9px] font-medium font-mono">
-                    Standard
-                  </span>
-                )}
-              </div>
-              <span className="text-[11px] text-theme-secondary font-mono">
-                {currencyConfig.symbol} 123,456.78
-              </span>
-              <span className="text-[10px] text-theme-muted">
-                Standard 3-digit comma grouping (1,000,000)
-              </span>
-            </div>
+            <span className="text-xs font-semibold text-theme-primary">
+              International System (Millions & Billions)
+            </span>
 
             <div
               className={cn(
@@ -275,57 +228,12 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
         </div>
       </section>
 
-      {/* 4. Decimal Precision Mode */}
-      <section className="flex flex-col gap-2">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-theme-muted px-1">
-          Decimal Precision
-        </span>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => handleSelectDecimals('auto')}
-            className={cn(
-              'flex flex-col rounded-xl border p-3 text-left transition-all',
-              decimalMode === 'auto'
-                ? 'border-violet-500/60 bg-violet-500/10'
-                : 'border-theme-border bg-theme-card/60 hover:bg-theme-card-hover'
-            )}
-          >
-            <span className="text-xs font-semibold text-theme-primary">Smart Auto</span>
-            <span className="text-[10px] text-theme-muted mt-0.5">
-              Hides .00 for whole figures ({currencyConfig.symbol} 500)
-            </span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleSelectDecimals('always')}
-            className={cn(
-              'flex flex-col rounded-xl border p-3 text-left transition-all',
-              decimalMode === 'always'
-                ? 'border-violet-500/60 bg-violet-500/10'
-                : 'border-theme-border bg-theme-card/60 hover:bg-theme-card-hover'
-            )}
-          >
-            <span className="text-xs font-semibold text-theme-primary">Always 2 Decimals</span>
-            <span className="text-[10px] text-theme-muted mt-0.5">
-              Bank statement style ({currencyConfig.symbol} 500.00)
-            </span>
-          </button>
-        </div>
-      </section>
-
-      {/* 5. Currency Selection Catalog */}
+      {/* 4. Currency Selection Catalog */}
       <section className="flex flex-col gap-2.5">
-        <div className="flex items-center justify-between px-1">
-          <div className="flex items-center gap-1.5">
-            <Coins className="size-3.5 text-theme-muted" />
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-theme-muted">
-              Select Base Currency
-            </span>
-          </div>
-          <span className="text-[11px] font-mono text-theme-secondary">
-            {filteredCurrencies.length} available
+        <div className="flex items-center gap-1.5 px-1">
+          <Coins className="size-3.5 text-theme-muted" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-theme-muted">
+            Select Base Currency
           </span>
         </div>
 
@@ -336,7 +244,7 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search currency code, name, or country..."
+            placeholder="Search currency code or name..."
             className="w-full rounded-xl border border-theme-border bg-theme-card/70 py-2.5 pl-9 pr-4 text-xs text-theme-primary placeholder:text-theme-muted focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 transition-all"
           />
         </div>
@@ -363,45 +271,31 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    {/* Currency Flag & Symbol Badge */}
-                    <div className="relative flex size-10 items-center justify-center rounded-xl bg-theme-card-subtle border border-theme-border text-base">
+                    {/* Currency Flag */}
+                    <div className="flex size-10 items-center justify-center rounded-xl bg-theme-card-subtle border border-theme-border text-lg shrink-0">
                       <span>{c.flag}</span>
-                      <span className="absolute -bottom-1 -right-1 flex size-4 items-center justify-center rounded-full bg-theme-elevated border border-theme-border text-[9px] font-mono font-bold text-theme-primary">
-                        {c.symbol}
-                      </span>
                     </div>
 
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-semibold text-theme-primary font-mono">
-                          {c.code}
-                        </span>
-                        <span className="text-xs text-theme-secondary">•</span>
-                        <span className="text-xs text-theme-secondary font-medium">
-                          {c.name}
-                        </span>
-                      </div>
-                      <span className="text-[10px] text-theme-muted mt-0.5">
-                        {c.country}
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-theme-primary font-mono">
+                        {c.code}
+                      </span>
+                      <span className="text-xs text-theme-secondary">•</span>
+                      <span className="text-xs text-theme-secondary font-medium">
+                        {c.name}
                       </span>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono font-medium text-theme-secondary">
-                      {c.symbol} 1,250
-                    </span>
-
-                    <div
-                      className={cn(
-                        'flex size-5 shrink-0 items-center justify-center rounded-full border transition-all',
-                        isSelected
-                          ? 'border-violet-500 bg-violet-600 text-white'
-                          : 'border-theme-border bg-transparent'
-                      )}
-                    >
-                      {isSelected && <Check className="size-3 stroke-[3]" />}
-                    </div>
+                  <div
+                    className={cn(
+                      'flex size-5 shrink-0 items-center justify-center rounded-full border transition-all',
+                      isSelected
+                        ? 'border-violet-500 bg-violet-600 text-white'
+                        : 'border-theme-border bg-transparent'
+                    )}
+                  >
+                    {isSelected && <Check className="size-3 stroke-[3]" />}
                   </div>
                 </button>
               );
