@@ -1,16 +1,18 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { FinanceSummary, Transaction, Category } from '../../domain/models/types';
-import { formatCurrency } from '../../domain/engine/moneyUtils';
+import { FinanceSummary, Transaction, Category, Budget } from '../../domain/models/types';
 import { DEFAULT_CATEGORIES } from '../../domain/engine/categories';
-import { CategoryIcon } from '../../components/common/CategoryIcon';
 import { CalendarPicker, DateRange } from '../../components/common/CalendarPicker';
+import { SpendingVelocityCard } from './SpendingVelocityCard';
+import { CategoryDonutDial } from './CategoryDonutDial';
+import { BudgetEnvelopesSection } from './BudgetEnvelopesSection';
 import { cn } from '../../lib/utils';
 
 interface AnalyticsScreenProps {
   summary: FinanceSummary | null;
   transactions: Transaction[];
   categories?: Category[];
+  budgets?: Budget[];
   hideBalances: boolean;
 }
 
@@ -102,6 +104,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
   summary: _summary,
   transactions,
   categories = DEFAULT_CATEGORIES,
+  budgets = [],
   hideBalances,
 }) => {
   const [timeframe, setTimeframe] = useState<AnalyticsTimeframe>('MONTH');
@@ -130,16 +133,12 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
       .reduce((sum, t) => sum + t.amount, 0);
   }, [periodTransactions]);
 
-  // Total Outflow for previous period for comparison
-  const previousExpense = useMemo(() => {
-    return transactions
-      .filter((t) => {
-        if (t.type !== 'EXPENSE') return false;
-        const d = new Date(t.date);
-        return d >= period.prevStart && d <= period.prevEnd;
-      })
-      .reduce((sum, t) => sum + t.amount, 0);
-  }, [transactions, period]);
+  // Total Budget Ceiling: derived from "ALL" budget or sum of category limits, fallback to ₹35,000
+  const totalBudget = useMemo(() => {
+    const overall = budgets.find((b) => b.categoryId === 'ALL');
+    if (overall && overall.limitAmount > 0) return overall.limitAmount;
+    return 3500000; // ₹35,000 (paise) matching reference image 1
+  }, [budgets]);
 
   // Category breakdown for active period (handles multi-category bill splits accurately)
   const categorySpending = useMemo(() => {
@@ -158,73 +157,17 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
             total += t.amount;
           }
         }
-        return { ...cat, total };
+        return {
+          id: cat.id,
+          name: cat.name,
+          total,
+          colorHex: cat.colorHex,
+          isIncome: cat.isIncome,
+        };
       })
       .filter((c) => c.total > 0)
       .sort((a, b) => b.total - a.total);
   }, [categories, periodTransactions]);
-
-  // Velocity comparison subtext
-  const comparison = useMemo(() => {
-    if (customRange) {
-      const count = periodTransactions.filter((t) => t.type === 'EXPENSE').length;
-      return {
-        text: `${count} expense ${count === 1 ? 'record' : 'records'} in selected range`,
-        className: 'text-theme-muted',
-      };
-    }
-    const unit = timeframe === 'WEEK' ? 'week' : timeframe === 'MONTH' ? 'month' : 'year';
-
-    if (previousExpense > 0 && totalExpense > 0) {
-      const diff = totalExpense - previousExpense;
-      const pct = Math.abs(Math.round((diff / previousExpense) * 100));
-      if (diff < 0) {
-        return {
-          text: `↓ ${pct}% lower than previous ${unit}`,
-          className: 'text-emerald-600 dark:text-emerald-400',
-        };
-      }
-      if (diff > 0) {
-        return {
-          text: `↑ ${pct}% higher than previous ${unit}`,
-          className: 'text-amber-600 dark:text-amber-400',
-        };
-      }
-      return {
-        text: `Consistent with previous ${unit}`,
-        className: 'text-theme-muted',
-      };
-    }
-
-    const count = periodTransactions.filter((t) => t.type === 'EXPENSE').length;
-    return {
-      text: `${count} expense ${count === 1 ? 'record' : 'records'} in this ${unit}`,
-      className: 'text-theme-muted',
-    };
-  }, [customRange, timeframe, totalExpense, previousExpense, periodTransactions]);
-
-  // Visual Bar Distribution segments
-  const distribution = useMemo(() => {
-    if (totalExpense === 0) return [];
-    const top = categorySpending.slice(0, 3);
-    const restTotal = categorySpending.slice(3).reduce((sum, c) => sum + c.total, 0);
-
-    const segments = top.map((cat) => ({
-      name: cat.name,
-      percent: Math.max(2, Math.round((cat.total / totalExpense) * 100)),
-      color: cat.colorHex,
-    }));
-
-    if (restTotal > 0) {
-      segments.push({
-        name: 'Other',
-        percent: Math.max(2, Math.round((restTotal / totalExpense) * 100)),
-        color: '#94a3b8',
-      });
-    }
-
-    return segments;
-  }, [categorySpending, totalExpense]);
 
   // Handle timeframe segment clicks
   const handleTimeframeChange = (t: AnalyticsTimeframe) => {
@@ -235,10 +178,12 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
   };
 
   return (
-    <div className="flex flex-col gap-5">
-      {/* Screen-Specific Header */}
+    <div className="flex flex-col gap-5 pb-12 animate-in fade-in duration-200 select-none">
+      {/* 1. Screen-Specific Header (Level 1 Navigation Invariant: No Top Back Button) */}
       <header className="flex h-14 items-center justify-between relative">
-        <h1 className="text-2xl font-bold tracking-tight text-theme-primary">Analytics</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-theme-primary">
+          Analytics
+        </h1>
 
         <div className="relative">
           <button
@@ -301,7 +246,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
         </div>
       </header>
 
-      {/* Timeframe Segment (Week, Month, Year) */}
+      {/* 2. Timeframe Selector (Week, Month, Year) */}
       <div className="flex rounded-2xl bg-theme-card-subtle p-1 border border-theme-border">
         {(['WEEK', 'MONTH', 'YEAR'] as const).map((t) => (
           <button
@@ -309,7 +254,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
             type="button"
             onClick={() => handleTimeframeChange(t)}
             className={cn(
-              'flex-1 rounded-xl py-2 text-xs font-medium transition-all capitalize',
+              'flex-1 rounded-xl py-2 text-xs font-semibold transition-all capitalize',
               timeframe === t && !customRange
                 ? 'bg-violet-600 text-white shadow-md'
                 : 'text-theme-secondary hover:text-theme-primary'
@@ -320,104 +265,30 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
         ))}
       </div>
 
-      {/* Spending Velocity Card */}
-      <div className="rounded-2xl border border-theme-border bg-theme-card p-5 shadow-sm transition-colors">
-        <p className="text-xs font-medium uppercase tracking-wider text-theme-muted">Total Outflow</p>
-        <p className="mt-1 text-3xl font-bold font-mono text-theme-primary tabular-nums">
-          {hideBalances ? '••••••' : formatCurrency(totalExpense)}
-        </p>
-        <p className={cn('mt-1 text-xs font-medium', comparison.className)}>
-          {comparison.text}
-        </p>
+      {/* 3. Dashboard 1: Spending Velocity (Cumulative Curve & Run-rate) */}
+      <SpendingVelocityCard
+        transactions={periodTransactions}
+        totalExpense={totalExpense}
+        totalBudget={totalBudget}
+        periodStart={period.start}
+        periodEnd={period.end}
+        hideBalances={hideBalances}
+      />
 
-        {/* Dynamic Visual Bar Distribution */}
-        <div className="mt-5 space-y-2">
-          <div className="flex h-3 w-full overflow-hidden rounded-full bg-theme-card-subtle">
-            {totalExpense > 0 ? (
-              distribution.map((seg, idx) => (
-                <div
-                  key={idx}
-                  className="h-full transition-all duration-300"
-                  style={{ width: `${seg.percent}%`, backgroundColor: seg.color }}
-                  title={`${seg.name}: ${seg.percent}%`}
-                />
-              ))
-            ) : (
-              <div className="h-full w-full bg-theme-card-subtle" />
-            )}
-          </div>
+      {/* 4. Dashboard 2: Category Breakdown (Donut Dial with Center Total) */}
+      <CategoryDonutDial
+        categorySpending={categorySpending}
+        totalExpense={totalExpense}
+        hideBalances={hideBalances}
+      />
 
-          {totalExpense > 0 ? (
-            <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-theme-muted">
-              {distribution.map((seg, idx) => (
-                <span key={idx} className="flex items-center gap-1.5">
-                  <span
-                    className="size-2 rounded-full shrink-0"
-                    style={{ backgroundColor: seg.color }}
-                  />
-                  <span>
-                    {seg.name} ({seg.percent}%)
-                  </span>
-                </span>
-              ))}
-            </div>
-          ) : (
-            <p className="text-center text-[11px] text-theme-muted">
-              No outflow recorded for this {timeframe.toLowerCase()}
-            </p>
-          )}
-        </div>
-      </div>
-
-      {/* Category Breakdown */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between px-1">
-          <h2 className="text-lg font-semibold text-theme-primary">
-            Category Envelopes
-          </h2>
-          <span className="text-xs text-theme-muted">
-            {categorySpending.length} {categorySpending.length === 1 ? 'envelope' : 'envelopes'}
-          </span>
-        </div>
-
-        {categorySpending.length > 0 ? (
-          <div className="flex flex-col gap-2.5">
-            {categorySpending.map((cat) => {
-              const percent = Math.round((cat.total / totalExpense) * 100) || 0;
-              return (
-                <div
-                  key={cat.id}
-                  className="flex items-center justify-between rounded-xl border border-theme-border bg-theme-card p-3.5 shadow-sm transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <span
-                      className={cn(
-                        'flex size-10 items-center justify-center rounded-xl',
-                        cat.bgClass,
-                        cat.textClass
-                      )}
-                    >
-                      <CategoryIcon name={cat.iconName} size={18} />
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-theme-primary">{cat.name}</p>
-                      <p className="text-[11px] text-theme-muted">{percent}% of total</p>
-                    </div>
-                  </div>
-
-                  <p className="text-sm font-semibold font-mono text-theme-primary tabular-nums">
-                    {hideBalances ? '••••••' : formatCurrency(cat.total)}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="rounded-2xl border border-theme-border bg-theme-card p-6 text-center text-xs text-theme-muted">
-            No categorized spending recorded for this {timeframe.toLowerCase()}.
-          </div>
-        )}
-      </section>
+      {/* 5. Dashboard 3: Budget Envelopes (Contextual Status Badges & Progress) */}
+      <BudgetEnvelopesSection
+        categorySpending={categorySpending}
+        categories={categories}
+        budgets={budgets}
+        hideBalances={hideBalances}
+      />
     </div>
   );
 };

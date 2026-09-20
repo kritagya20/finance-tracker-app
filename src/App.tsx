@@ -34,6 +34,7 @@ export function App() {
     transactions,
     accounts,
     categories,
+    budgets,
     profile,
     hideBalances,
     toggleHideBalances,
@@ -271,6 +272,7 @@ export function App() {
                 summary={summary}
                 transactions={transactions}
                 categories={categories}
+                budgets={budgets}
                 hideBalances={hideBalances}
               />
             )}

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { FinanceService } from '../services/FinanceService';
 import {
   Account,
+  Budget,
   Category,
   FinanceSummary,
   Transaction,
@@ -13,6 +14,7 @@ export function useFinance() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [budgets, setBudgets] = useState<Budget[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hideBalances, setHideBalances] = useState<boolean>(() => {
@@ -31,18 +33,20 @@ export function useFinance() {
     try {
       setIsLoading(true);
       const repo = FinanceService.getRepo();
-      const [sumData, txData, accData, catData, profileData] = await Promise.all([
+      const [sumData, txData, accData, catData, profileData, budgetData] = await Promise.all([
         repo.getSummary(),
         repo.getTransactions(),
         repo.getAccounts(),
         repo.getCategories(),
         repo.getProfile(),
+        repo.getBudgets(),
       ]);
       setSummary(sumData);
       setTransactions(txData);
       setAccounts(accData);
       setCategories(catData);
       setProfile(profileData);
+      setBudgets(budgetData);
     } catch (err) {
       console.error('Failed to load finance data:', err);
     } finally {
@@ -146,6 +150,7 @@ export function useFinance() {
     transactions,
     accounts,
     categories,
+    budgets,
     profile,
     isLoading,
     hideBalances,

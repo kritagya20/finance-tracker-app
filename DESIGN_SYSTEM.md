@@ -780,5 +780,32 @@ Both `CategoryListScreen.tsx` and `PaymentAccountsScreen.tsx` strictly follow an
    - The Cash Wallet (`type: 'CASH'`) is an immutable system default instrument and is strictly non-deletable.
    - Rows for the default Cash wallet display an uppercase `DEFAULT` badge (`bg-violet-500/10 text-violet-500 dark:text-violet-400 border border-violet-500/20`) and completely omit the delete action button.
 
+## 37. Analytics Dashboard Suite (Velocity Curve, Donut Dial, Budget Envelopes)
+
+### 37.1 Spending Velocity Curve Architecture
+- **Surface**: `rounded-3xl border border-theme-border bg-theme-card p-5 shadow-sm`.
+- **Hero Spend Metric**: Prominent monospace bold balance (`text-3xl font-bold font-mono tracking-tight text-theme-primary`) paired with muted ceiling comparison (`of {formatCurrency(totalBudget)} budget`).
+- **Curve Geometry**: Smooth cubic Bezier spline (`M ... C ...`) in brand violet (`#8b5cf6`, stroke width 2.75px) with soft vertical gradient area fill (`rgba(139, 92, 246, 0.25)` to transparent).
+- **5-Tier Y-Axis Scale**: Hairline horizontal gridlines (`border-theme-border/50`) with right-aligned monospace labels (`34k`, `25.5k`, `17k`, `8.5k`, `0k`).
+- **Interactive Scrubber**: Touch and mouse scrub gestures reveal live vertical guide line, glowing marker dot, and monospace tooltip showing date and daily incremental delta.
+
+### 37.2 Category Donut Dial Architecture
+- **Geometry**: SVG circle with stroke-width 22px, rounded ends (`strokeLinecap="round"`), and inter-segment gaps.
+- **Center Cutout**: `Total spent` caption (`text-[11px] font-medium text-theme-muted`) and bold monospace hero total.
+- **Breakdown Legend**: 3-column rows matching the reference layout:
+  - Column 1: Color dot + Category Name (`text-xs font-semibold`).
+  - Column 2: Percentage of total in monospace (`text-xs font-mono text-theme-muted`).
+  - Column 3: Formatted currency amount in bold monospace (`text-xs font-mono font-bold text-theme-primary tabular-nums`).
+
+### 37.3 Budget Envelopes Architecture
+- **Envelope Cards**: Dedicated cards wrapped in `rounded-2xl border border-theme-border bg-theme-card p-4 space-y-2.5`.
+- **Status Thresholds & Badges**:
+  1. `Healthy` ($usage \le 75\%$): `bg-emerald-500/15 border-emerald-500/30 text-emerald-400` with `Check` icon.
+  2. `Near limit` ($75\% < usage \le 100\%$): `bg-amber-500/15 border-amber-500/30 text-amber-400` with `TrendingUp` icon.
+  3. `₹X over` ($usage > 100\%$): `bg-rose-500/15 border-rose-500/30 text-rose-400` with `AlertTriangle` icon and exact overage amount.
+- **Progress Track**: `h-2 rounded-full bg-theme-card-subtle overflow-hidden` with colored status bar.
+- **Limit Subtext**: `₹{spent} of ₹{limit} limit` in `font-mono text-xs text-theme-muted`.
+
+
 
 
