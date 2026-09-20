@@ -626,18 +626,18 @@ In accordance with production fintech standards (CRED, Google Pay, Paytm):
 
 ## 28.3 Currency & Numbering Architecture (`CurrencySettingsScreen`)
 - **Default Standards**: Default currency is Indian Rupee `INR (₹)` with Indian numbering format (`1,23,456.78`).
-- **Profile Listing Row**: The "Currency & Numbering" row in Profile renders as a clean, responsive button with leading `Globe` icon, title, and subtitle (`{name} ({symbol}) • {system}`). Right-hand badges and redundant arrows are omitted to guarantee zero multi-line breaking across compact viewports.
+- **Profile Listing Row**: The "Currency & Numbering" row in Profile renders as a responsive, clickable button with leading `Globe` icon, primary title, concise subtitle using currency abbreviation and symbol (`{currency} ({currencySymbol}) • {numberingSystem}`, e.g. `INR (₹) • Lakhs & Crores`), and a trailing `ChevronRight` navigation arrow matching other primary setting rows.
 - **Global Currency Propagation**: Changes to currency immediately reflect across all screens:
   - Top header net balance and privacy mask peek.
   - Dashboard Net Worth, Income (+), Expense (-) cards, and Budget progress bars.
   - Activity feed list items and transaction filter summary cards.
   - Outflow envelopes and spending velocity charts in Analytics.
   - Numeric touch keypads and quick chip increments in Add/Edit transaction flows (`AddTransactionDrawer.tsx`, `EditTransactionDrawer.tsx`).
-- **Numbering & Grouping Formats**: Streamlined title-only selection options (`Indian System (Lakhs & Crores)` vs `International System (Millions & Billions)`) without cognitive clutter or redundant sample figures:
-  - **Indian System**: Formatted via `en-IN` locale (`12,34,567.89`).
-  - **International System**: Formatted via `en-US` locale (`1,234,567.89`).
-- **Streamlined Catalog**: Currency picker items display country flag, ISO code, currency name, and active radio checkmark. Redundant country subtext, symbol overlays, count badges, and sample amount figures are omitted for crisp minimalism.
-- **Navigation Invariant**: Sub-screen uses a single `ArrowLeft` top back button and a Reset action. Conflicting `X` icons are strictly prohibited.
+- **Streamlined Screen Layout**:
+  - Top header features the single `ArrowLeft` back button, title "Currency & Numbering", and subtitle "Configure global display formats".
+  - Dedicated "Select Base Currency" catalog with fast client-side search across 10 currencies displaying country flag, ISO code, currency name, and active radio checkmark.
+  - Omitted: Live format preview card, Reset button, decimal precision, and separate numbering sections to ensure instant, friction-free currency switching.
+- **Navigation Invariant**: Sub-screen uses a single `ArrowLeft` top back button. Conflicting `X` icons are strictly prohibited.
 
 
 ---

@@ -73,7 +73,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onLogout,
 }) => {
   const { effectiveTheme, setThemePreference } = useTheme();
-  const { currencySymbol, currencyConfig, numberingSystem } = useCurrency();
+  const { currency, currencySymbol, numberingSystem } = useCurrency();
   const [activeSlide, setActiveSlide] = useState(0);
 
   const [isSupportOpen, setIsSupportOpen] = useState(false);
@@ -397,7 +397,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
           <button
             type="button"
             onClick={onNavigateToCurrency}
-            className="flex w-full items-center p-4 text-left hover:bg-theme-card-hover/40 transition-colors group"
+            className="flex w-full items-center justify-between p-4 text-left hover:bg-theme-card-hover/40 transition-colors group"
           >
             <div className="flex items-center gap-3">
               <div className="flex size-8 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
@@ -408,10 +408,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                   Currency & Numbering
                 </span>
                 <span className="text-[11px] text-theme-secondary mt-0.5">
-                  {currencyConfig.name} ({currencySymbol}) • {numberingSystem === 'indian' ? 'Lakhs & Crores' : 'Millions & Billions'}
+                  {currency} ({currencySymbol}) • {numberingSystem === 'indian' ? 'Lakhs & Crores' : 'Millions & Billions'}
                 </span>
               </div>
             </div>
+            <ChevronRight className="size-4 text-theme-muted group-hover:text-theme-primary transition-colors shrink-0" />
           </button>
 
         </div>

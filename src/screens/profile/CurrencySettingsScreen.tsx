@@ -1,16 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import {
-  ArrowLeft,
-  Search,
-  Check,
-  RotateCcw,
-  Sparkles,
-  TrendingUp,
-  TrendingDown,
-  Hash,
-  Coins,
-} from 'lucide-react';
-import { useCurrency, NumberingSystem } from '../../context/CurrencyContext';
+import { ArrowLeft, Search, Check, Coins } from 'lucide-react';
+import { useCurrency } from '../../context/CurrencyContext';
 import { cn } from '../../lib/utils';
 
 interface CurrencySettingsScreenProps {
@@ -24,12 +14,8 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
 }) => {
   const {
     currency,
-    currencyConfig,
-    numberingSystem,
     supportedCurrencies,
     setCurrency,
-    setNumberingSystem,
-    formatMoney,
   } = useCurrency();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,28 +41,12 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
   const handleSelectCurrency = (code: string) => {
     setCurrency(code);
     const selected = supportedCurrencies.find((c) => c.code === code);
-    triggerToast(`Currency updated to ${selected?.name || code}`);
+    triggerToast(`Currency updated to ${selected?.name || code} (${selected?.symbol || ''})`);
   };
-
-  const handleSelectNumbering = (sys: NumberingSystem) => {
-    setNumberingSystem(sys);
-    triggerToast(
-      sys === 'indian'
-        ? 'Numbering set to Indian System'
-        : 'Numbering set to International System'
-    );
-  };
-
-  const handleResetDefaults = () => {
-    setCurrency('INR');
-    setNumberingSystem('indian');
-    triggerToast('Reset to default Indian Rupee and Indian numbering');
-  };
-
 
   return (
     <div className="flex flex-col gap-5 pb-20 animate-in fade-in duration-200 select-none">
-      {/* 1. Header with single ArrowLeft navigation */}
+      {/* Header with single ArrowLeft navigation */}
       <header className="flex h-14 items-center justify-between">
         <div className="flex items-center gap-3">
           <button
@@ -96,139 +66,9 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
             </p>
           </div>
         </div>
-
-        {/* Quick Reset Button */}
-        {(currency !== 'INR' || numberingSystem !== 'indian') && (
-          <button
-            type="button"
-            onClick={handleResetDefaults}
-            className="flex items-center gap-1.5 rounded-full border border-theme-border bg-theme-card px-3 py-1.5 text-xs font-medium text-theme-secondary hover:text-theme-primary hover:bg-theme-card-hover active:scale-95 transition-all shadow-xs"
-          >
-            <RotateCcw className="size-3.5" />
-            <span>Reset</span>
-          </button>
-        )}
       </header>
 
-      {/* 2. Interactive Live Format Preview Hero Card */}
-      <section className="relative overflow-hidden rounded-2xl border border-theme-border bg-gradient-to-br from-theme-card via-theme-card to-theme-card-subtle p-4 shadow-sm">
-        <div className="flex items-center justify-between border-b border-theme-border/60 pb-2.5">
-          <div className="flex items-center gap-1.5">
-            <Sparkles className="size-3.5 text-violet-400" />
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-theme-muted font-mono">
-              LIVE FORMAT PREVIEW
-            </span>
-          </div>
-          <span className="rounded-full bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 text-[10px] font-mono font-medium text-violet-400">
-            {currencyConfig.code} ({currencyConfig.symbol})
-          </span>
-        </div>
-
-        {/* Hero Amount */}
-        <div className="my-3 flex flex-col">
-          <span className="text-xs text-theme-secondary mb-1">Sample Net Balance</span>
-          <span className="text-2xl font-bold tracking-tight text-theme-primary font-mono">
-            {formatMoney(12548050)}
-          </span>
-        </div>
-
-        {/* Sample Income and Expense Pills */}
-        <div className="grid grid-cols-2 gap-2 pt-1 border-t border-theme-border/40">
-          <div className="flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1.5">
-            <TrendingUp className="size-3.5 text-emerald-400 shrink-0" />
-            <div className="flex flex-col min-w-0">
-              <span className="text-[10px] text-emerald-400/80 uppercase font-semibold">Income</span>
-              <span className="text-xs font-semibold text-emerald-400 font-mono truncate">
-                +{formatMoney(8500000)}
-              </span>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 rounded-xl bg-rose-500/10 border border-rose-500/20 px-2.5 py-1.5">
-            <TrendingDown className="size-3.5 text-rose-400 shrink-0" />
-            <div className="flex flex-col min-w-0">
-              <span className="text-[10px] text-rose-400/80 uppercase font-semibold">Expense</span>
-              <span className="text-xs font-semibold text-rose-400 font-mono truncate">
-                -{formatMoney(245075)}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Configuration summary line */}
-        <div className="mt-3 flex items-center justify-between text-[11px] text-theme-muted font-mono">
-          <span>{currencyConfig.name}</span>
-          <span>{numberingSystem === 'indian' ? 'Indian System (Lakhs & Crores)' : 'International System (Millions & Billions)'}</span>
-        </div>
-      </section>
-
-      {/* 3. Numbering System Selection */}
-      <section className="flex flex-col gap-2">
-        <div className="flex items-center gap-1.5 px-1">
-          <Hash className="size-3.5 text-theme-muted" />
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-theme-muted">
-            Numbering & Grouping Format
-          </span>
-        </div>
-
-        <div className="grid grid-cols-1 gap-2.5">
-          {/* Indian System */}
-          <button
-            type="button"
-            onClick={() => handleSelectNumbering('indian')}
-            className={cn(
-              'flex items-center justify-between rounded-xl border p-3.5 text-left transition-all',
-              numberingSystem === 'indian'
-                ? 'border-violet-500/60 bg-violet-500/10 shadow-xs'
-                : 'border-theme-border bg-theme-card/60 hover:bg-theme-card-hover'
-            )}
-          >
-            <span className="text-xs font-semibold text-theme-primary">
-              Indian System (Lakhs & Crores)
-            </span>
-
-            <div
-              className={cn(
-                'flex size-5 shrink-0 items-center justify-center rounded-full border transition-all',
-                numberingSystem === 'indian'
-                  ? 'border-violet-500 bg-violet-600 text-white'
-                  : 'border-theme-border bg-transparent'
-              )}
-            >
-              {numberingSystem === 'indian' && <Check className="size-3 stroke-[3]" />}
-            </div>
-          </button>
-
-          {/* International System */}
-          <button
-            type="button"
-            onClick={() => handleSelectNumbering('international')}
-            className={cn(
-              'flex items-center justify-between rounded-xl border p-3.5 text-left transition-all',
-              numberingSystem === 'international'
-                ? 'border-violet-500/60 bg-violet-500/10 shadow-xs'
-                : 'border-theme-border bg-theme-card/60 hover:bg-theme-card-hover'
-            )}
-          >
-            <span className="text-xs font-semibold text-theme-primary">
-              International System (Millions & Billions)
-            </span>
-
-            <div
-              className={cn(
-                'flex size-5 shrink-0 items-center justify-center rounded-full border transition-all',
-                numberingSystem === 'international'
-                  ? 'border-violet-500 bg-violet-600 text-white'
-                  : 'border-theme-border bg-transparent'
-              )}
-            >
-              {numberingSystem === 'international' && <Check className="size-3 stroke-[3]" />}
-            </div>
-          </button>
-        </div>
-      </section>
-
-      {/* 4. Currency Selection Catalog */}
+      {/* Select Base Currency Catalog */}
       <section className="flex flex-col gap-2.5">
         <div className="flex items-center gap-1.5 px-1">
           <Coins className="size-3.5 text-theme-muted" />
