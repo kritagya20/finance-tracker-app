@@ -620,6 +620,7 @@ Empty states are **engagement opportunities**, not dead ends. Every empty state 
   - Sliding thumb (`translate-x-0` in light mode vs `translate-x-[34px]` in dark mode) with shadow elevation.
   - Provides instantaneous DOM class updates (`dark` class toggle) and `localStorage` persistence.
 - **Storage Metrics**: Transparent on-device statistics without exposing sensitive or intimidating technical jargon.
+- **Sign Out Action**: Labeled concisely as "Sign Out" with leading `LogOut` icon and trailing `ChevronRight`. Redundant or jargon-heavy labels such as "Lock Vault & Sign Out" or "Safely Locks On-Device Session" are strictly avoided in favor of clean, direct, universal UX copy.
 
 ## 28.2 Credential Modification Architecture (Change MPIN)
 In accordance with production fintech standards (CRED, Google Pay, Paytm):

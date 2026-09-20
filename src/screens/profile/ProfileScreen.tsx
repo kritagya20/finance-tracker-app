@@ -591,7 +591,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <ChevronRight className="size-4 text-rose-400/50 group-hover:text-rose-400 transition-colors" />
           </button>
 
-          {/* Lock Vault & Sign Out */}
+          {/* Sign Out */}
           {onLogout && (
             <button
               type="button"
@@ -602,14 +602,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
                 <div className="flex size-8 items-center justify-center rounded-xl bg-zinc-500/10 text-zinc-400">
                   <LogOut className="size-4" />
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-xs font-semibold text-theme-primary group-hover:text-violet-400 transition-colors">
-                    Lock Vault & Sign Out
-                  </span>
-                  <span className="text-[11px] text-theme-secondary mt-0.5">
-                    Safely Locks On-Device Session
-                  </span>
-                </div>
+                <span className="text-xs font-semibold text-theme-primary group-hover:text-violet-400 transition-colors">
+                  Sign Out
+                </span>
               </div>
               <ChevronRight className="size-4 text-theme-muted group-hover:text-theme-primary transition-colors" />
             </button>
