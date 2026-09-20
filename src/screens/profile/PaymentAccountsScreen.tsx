@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Plus, CreditCard, Landmark, Wallet, Trash2, ShieldCheck } from 'lucide-react';
-import { Account, AccountType } from '../../domain/models/types';
+import { ArrowLeft, Plus, Search, CreditCard, Landmark, Wallet, Trash2 } from 'lucide-react';
+import { Account } from '../../domain/models/types';
 import { formatCurrency } from '../../domain/engine/moneyUtils';
 import { AddAccountDrawer } from './AddAccountDrawer';
 import { EmptyState } from '../../components/common/EmptyState';
+import { cn } from '../../lib/utils';
 
 interface PaymentAccountsScreenProps {
   accounts: Account[];
@@ -12,44 +13,45 @@ interface PaymentAccountsScreenProps {
   onDeleteAccount?: (id: string) => Promise<void>;
 }
 
+type InstrumentFilter = 'ALL' | 'BANK' | 'CARD' | 'WALLET';
+
 export const PaymentAccountsScreen: React.FC<PaymentAccountsScreenProps> = ({
   accounts,
   onBack,
   onAddAccount,
   onDeleteAccount,
 }) => {
+  const [filter, setFilter] = useState<InstrumentFilter>('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [addInitialType, setAddInitialType] = useState<AccountType>('SAVINGS');
 
-  const totalBalance = useMemo(
-    () => accounts.reduce((sum, a) => sum + (a.currentBalance || 0), 0),
-    [accounts]
-  );
-
-  // Grouped instruments for scanning clarity (Fintech Standard)
-  const { bankAccounts, creditCards, walletsAndCash } = useMemo(() => {
-    const banks: Account[] = [];
-    const cards: Account[] = [];
-    const wallets: Account[] = [];
-
-    accounts.forEach((acc) => {
+  const filteredAccounts = useMemo(() => {
+    return accounts.filter((acc) => {
       const t = acc.type?.toUpperCase() || '';
-      if (t === 'CREDIT' || t === 'CREDIT_CARD') {
-        cards.push(acc);
-      } else if (t === 'WALLET' || t === 'CASH') {
-        wallets.push(acc);
-      } else {
-        banks.push(acc);
+
+      // Type filter
+      if (filter === 'BANK' && !['SAVINGS', 'CURRENT', 'CHECKING'].includes(t)) {
+        return false;
       }
+      if (filter === 'CARD' && !['CREDIT', 'CREDIT_CARD'].includes(t)) {
+        return false;
+      }
+      if (filter === 'WALLET' && !['WALLET', 'CASH'].includes(t)) {
+        return false;
+      }
+
+      // Search query match
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase().trim();
+        const nameMatch = acc.name.toLowerCase().includes(query);
+        const typeMatch = (acc.type || '').toLowerCase().includes(query);
+        const maskMatch = (acc.maskNumber || '').includes(query);
+        return nameMatch || typeMatch || maskMatch;
+      }
+
+      return true;
     });
-
-    return { bankAccounts: banks, creditCards: cards, walletsAndCash: wallets };
-  }, [accounts]);
-
-  const handleOpenAdd = (type: AccountType) => {
-    setAddInitialType(type);
-    setIsAddOpen(true);
-  };
+  }, [accounts, filter, searchQuery]);
 
   const getAccountIcon = (type: string) => {
     const t = type?.toUpperCase() || '';
@@ -60,6 +62,26 @@ export const PaymentAccountsScreen: React.FC<PaymentAccountsScreenProps> = ({
       return <Wallet className="size-5 text-emerald-400" />;
     }
     return <Landmark className="size-5 text-sky-400" />;
+  };
+
+  const getBadgeInfo = (type: string) => {
+    const t = type?.toUpperCase() || '';
+    if (t === 'CREDIT' || t === 'CREDIT_CARD') {
+      return {
+        label: 'Card',
+        className: 'bg-purple-500/10 text-purple-400 border border-purple-500/20',
+      };
+    }
+    if (t === 'WALLET' || t === 'CASH') {
+      return {
+        label: 'Wallet',
+        className: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20',
+      };
+    }
+    return {
+      label: 'Bank',
+      className: 'bg-sky-500/10 text-sky-400 border border-sky-500/20',
+    };
   };
 
   return (
@@ -81,326 +103,185 @@ export const PaymentAccountsScreen: React.FC<PaymentAccountsScreenProps> = ({
         </div>
       </header>
 
-      {/* 2. Elevated Portfolio Banner */}
-      <div className="rounded-2xl border border-theme-border bg-theme-card p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-semibold tracking-wider text-theme-muted uppercase">
-            Total Liquid Assets
-          </span>
-          <div className="flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[10px] font-semibold text-emerald-500">
-            <ShieldCheck className="size-3" />
-            <span>Encrypted Vault</span>
-          </div>
-        </div>
-
-        <div className="mt-1.5 text-2xl sm:text-3xl font-bold font-mono tracking-tight text-theme-primary tabular-nums">
-          {formatCurrency(totalBalance)}
-        </div>
-
-        <div className="mt-3 pt-2.5 border-t border-theme-border/50 flex items-center gap-2 text-[11px] text-theme-secondary font-medium">
-          <span className="font-mono text-theme-primary font-semibold">{accounts.length}</span>
-          <span>Instruments Connected</span>
-          <span className="text-theme-muted">•</span>
-          <span className="text-theme-muted text-[10px] font-mono">
-            {bankAccounts.length} Banks · {creditCards.length} Cards · {walletsAndCash.length} Wallets
-          </span>
-        </div>
+      {/* 2. Search Input */}
+      <div className="relative flex items-center">
+        <Search className="absolute left-3.5 size-4 text-theme-muted pointer-events-none" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search payment options..."
+          className="w-full h-11 rounded-xl border border-theme-border bg-theme-input pl-10 pr-3.5 text-xs font-medium text-theme-primary placeholder:text-theme-muted focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all shadow-xs"
+        />
+        {searchQuery && (
+          <button
+            type="button"
+            onClick={() => setSearchQuery('')}
+            className="absolute right-3 text-xs text-theme-muted hover:text-theme-primary"
+          >
+            Clear
+          </button>
+        )}
       </div>
 
-      {/* 3. Contextual Quick-Add Action Strip */}
-      <section className="flex flex-col gap-1.5">
-        <span className="text-[11px] font-semibold uppercase tracking-wider text-theme-muted px-1">
-          Link Payment Instrument
-        </span>
-        <div className="grid grid-cols-3 gap-2">
-          {/* Add Bank Account */}
-          <button
-            type="button"
-            onClick={() => handleOpenAdd('SAVINGS')}
-            className="flex flex-col items-center justify-center p-3 rounded-2xl border border-theme-border bg-theme-card/60 hover:bg-theme-card-hover hover:border-sky-500/40 active:scale-[0.97] transition-all shadow-xs group text-center"
-          >
-            <div className="flex size-9 items-center justify-center rounded-xl bg-sky-500/10 border border-sky-500/20 text-sky-400 group-hover:scale-105 transition-transform">
-              <Landmark className="size-4" />
-            </div>
-            <span className="text-xs font-semibold text-theme-primary mt-2">
-              Bank A/C
-            </span>
-            <span className="text-[10px] text-theme-muted truncate w-full">
-              Savings/Current
-            </span>
-          </button>
+      {/* 3. Filter Tabs */}
+      <div className="flex gap-2">
+        {(['ALL', 'BANK', 'CARD', 'WALLET'] as InstrumentFilter[]).map((tab) => {
+          const isSelected = filter === tab;
+          const label =
+            tab === 'ALL'
+              ? 'All'
+              : tab === 'BANK'
+              ? 'Banks'
+              : tab === 'CARD'
+              ? 'Cards'
+              : 'Wallets';
+          const count = accounts.filter((acc) => {
+            const t = acc.type?.toUpperCase() || '';
+            if (tab === 'ALL') return true;
+            if (tab === 'BANK') return ['SAVINGS', 'CURRENT', 'CHECKING'].includes(t);
+            if (tab === 'CARD') return ['CREDIT', 'CREDIT_CARD'].includes(t);
+            if (tab === 'WALLET') return ['WALLET', 'CASH'].includes(t);
+            return false;
+          }).length;
 
-          {/* Add Credit Card */}
-          <button
-            type="button"
-            onClick={() => handleOpenAdd('CREDIT_CARD')}
-            className="flex flex-col items-center justify-center p-3 rounded-2xl border border-theme-border bg-theme-card/60 hover:bg-theme-card-hover hover:border-purple-500/40 active:scale-[0.97] transition-all shadow-xs group text-center"
-          >
-            <div className="flex size-9 items-center justify-center rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 group-hover:scale-105 transition-transform">
-              <CreditCard className="size-4" />
-            </div>
-            <span className="text-xs font-semibold text-theme-primary mt-2">
-              Credit Card
-            </span>
-            <span className="text-[10px] text-theme-muted truncate w-full">
-              Visa / RuPay / MC
-            </span>
-          </button>
+          return (
+            <button
+              key={tab}
+              type="button"
+              onClick={() => setFilter(tab)}
+              className={cn(
+                'flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all shadow-xs',
+                isSelected
+                  ? 'border-violet-500/40 bg-violet-600 text-white'
+                  : 'border-theme-border bg-theme-card text-theme-secondary hover:bg-theme-card-hover'
+              )}
+            >
+              <span>{label}</span>
+              <span className="text-[10px] opacity-75 font-mono">({count})</span>
+            </button>
+          );
+        })}
+      </div>
 
-          {/* Add Wallet / Cash */}
-          <button
-            type="button"
-            onClick={() => handleOpenAdd('CASH')}
-            className="flex flex-col items-center justify-center p-3 rounded-2xl border border-theme-border bg-theme-card/60 hover:bg-theme-card-hover hover:border-emerald-500/40 active:scale-[0.97] transition-all shadow-xs group text-center"
-          >
-            <div className="flex size-9 items-center justify-center rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 group-hover:scale-105 transition-transform">
-              <Wallet className="size-4" />
-            </div>
-            <span className="text-xs font-semibold text-theme-primary mt-2">
-              Wallet / Cash
+      {/* 4. Inline Quick-Add Card (Shown when not actively searching) */}
+      {!searchQuery && (
+        <button
+          type="button"
+          onClick={() => setIsAddOpen(true)}
+          className="flex items-center gap-3 p-3.5 rounded-2xl border border-dashed border-violet-500/30 bg-violet-500/5 hover:bg-violet-500/10 hover:border-violet-500/50 active:scale-[0.98] transition-all text-left group cursor-pointer shadow-2xs"
+        >
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-400 group-hover:scale-105 transition-transform">
+            <Plus className="size-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="text-xs font-bold text-violet-600 dark:text-violet-400 block">
+              Link Payment Option
             </span>
-            <span className="text-[10px] text-theme-muted truncate w-full">
-              UPI & Cash Hand
+            <span className="text-[10px] text-theme-muted truncate block">
+              Add bank account, credit card, or cash wallet
             </span>
-          </button>
-        </div>
-      </section>
+          </div>
+        </button>
+      )}
 
-      {/* 4. Grouped Instrument Sections */}
-      {accounts.length === 0 ? (
+      {/* 5. Accounts Listing */}
+      {filteredAccounts.length === 0 ? (
         <EmptyState
           icon={CreditCard}
-          title="No payment options linked"
-          description="Link your bank accounts, credit cards, or cash wallets to track balances and auto-route expenses."
-          actionLabel="+ Link Bank Account"
-          onAction={() => handleOpenAdd('SAVINGS')}
+          title={searchQuery ? 'No matching accounts' : 'No payment options yet'}
+          description={
+            searchQuery
+              ? `No accounts match "${searchQuery}". Try a different name or link a new payment option.`
+              : 'Link your bank accounts, credit cards, or cash wallets to track liquid funds.'
+          }
+          actionLabel="+ Link Payment Option"
+          onAction={() => setIsAddOpen(true)}
+          secondaryActionLabel={searchQuery ? 'Clear Search' : undefined}
+          onSecondaryAction={searchQuery ? () => setSearchQuery('') : undefined}
         />
       ) : (
-        <div className="flex flex-col gap-4">
-          {/* Group 1: Bank Accounts */}
-          {bankAccounts.length > 0 && (
-            <section className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-theme-muted">
-                  Bank Accounts
-                </span>
-                <span className="text-[10px] font-mono text-theme-muted">
-                  {bankAccounts.length} linked
-                </span>
-              </div>
-              <div className="flex flex-col rounded-2xl border border-theme-border bg-theme-card/50 divide-y divide-theme-border overflow-hidden">
-                {bankAccounts.map((acc) => {
-                  const mask = acc.maskNumber || '4102';
-                  return (
-                    <div
-                      key={acc.id}
-                      className="flex items-center justify-between p-3.5 hover:bg-theme-card-hover/40 transition-colors"
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-theme-card-subtle border border-theme-border shadow-xs">
-                          {getAccountIcon(acc.type)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-bold text-theme-primary truncate">
-                            {acc.name}
-                          </p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] font-mono text-theme-muted">
-                              •••• {mask}
-                            </span>
-                            <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-semibold tracking-wider uppercase bg-theme-card-subtle text-theme-secondary border border-theme-border">
-                              {acc.type}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+        <div className="flex flex-col rounded-2xl border border-theme-border bg-theme-card/50 divide-y divide-theme-border overflow-hidden">
+          {filteredAccounts.map((acc) => {
+            const mask = acc.maskNumber || '4102';
+            const badgeInfo = getBadgeInfo(acc.type);
 
-                      <div className="flex items-center gap-2.5 shrink-0 ml-2">
-                        <div className="text-right">
-                          <div className="text-xs font-bold font-mono text-theme-primary tabular-nums">
-                            {formatCurrency(acc.currentBalance)}
-                          </div>
-                          <span className="text-[10px] text-theme-muted">Balance</span>
-                        </div>
+            return (
+              <div
+                key={acc.id}
+                className="flex items-center justify-between p-3.5 hover:bg-theme-card-hover/40 transition-colors"
+              >
+                <div className="flex items-center gap-3 min-w-0 flex-1">
+                  <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-theme-card-subtle border border-theme-border shadow-xs">
+                    {getAccountIcon(acc.type)}
+                  </div>
 
-                        {onDeleteAccount && accounts.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (window.confirm(`Unlink account "${acc.name}"?`)) {
-                                onDeleteAccount(acc.id);
-                              }
-                            }}
-                            title="Unlink account"
-                            className="flex size-8 items-center justify-center rounded-lg text-theme-muted hover:text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </button>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-bold text-theme-primary truncate">
+                      {acc.name}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[10px] font-mono text-theme-muted">
+                        •••• {mask}
+                      </span>
+                      <span
+                        className={cn(
+                          'inline-flex items-center rounded-md px-1.5 py-0.2 text-[9px] font-semibold uppercase tracking-wider',
+                          badgeInfo.className
                         )}
-                      </div>
+                      >
+                        {badgeInfo.label}
+                      </span>
                     </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
+                  </div>
+                </div>
 
-          {/* Group 2: Credit Cards */}
-          {creditCards.length > 0 && (
-            <section className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-theme-muted">
-                  Credit Cards
-                </span>
-                <span className="text-[10px] font-mono text-theme-muted">
-                  {creditCards.length} active
-                </span>
-              </div>
-              <div className="flex flex-col rounded-2xl border border-theme-border bg-theme-card/50 divide-y divide-theme-border overflow-hidden">
-                {creditCards.map((acc) => {
-                  const mask = acc.maskNumber || '4102';
-                  return (
-                    <div
-                      key={acc.id}
-                      className="flex items-center justify-between p-3.5 hover:bg-theme-card-hover/40 transition-colors"
+                <div className="flex items-center gap-2.5 shrink-0 ml-2">
+                  <div className="text-right">
+                    <div className="text-xs font-bold font-mono text-theme-primary tabular-nums">
+                      {formatCurrency(acc.currentBalance)}
+                    </div>
+                    <span className="text-[10px] text-theme-muted">Balance</span>
+                  </div>
+
+                  {onDeleteAccount && accounts.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (window.confirm(`Unlink account "${acc.name}"?`)) {
+                          onDeleteAccount(acc.id);
+                        }
+                      }}
+                      title="Unlink account"
+                      className="flex size-8 shrink-0 items-center justify-center rounded-lg text-theme-muted hover:text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all ml-1"
                     >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-theme-card-subtle border border-theme-border shadow-xs">
-                          {getAccountIcon(acc.type)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-bold text-theme-primary truncate">
-                            {acc.name}
-                          </p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] font-mono text-theme-muted">
-                              •••• {mask}
-                            </span>
-                            <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-semibold tracking-wider uppercase bg-purple-500/10 text-purple-400 border border-purple-500/20">
-                              CARD
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2.5 shrink-0 ml-2">
-                        <div className="text-right">
-                          <div className="text-xs font-bold font-mono text-theme-primary tabular-nums">
-                            {formatCurrency(acc.currentBalance)}
-                          </div>
-                          <span className="text-[10px] text-theme-muted">Available</span>
-                        </div>
-
-                        {onDeleteAccount && accounts.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (window.confirm(`Unlink card "${acc.name}"?`)) {
-                                onDeleteAccount(acc.id);
-                              }
-                            }}
-                            title="Unlink card"
-                            className="flex size-8 items-center justify-center rounded-lg text-theme-muted hover:text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  )}
+                </div>
               </div>
-            </section>
-          )}
-
-          {/* Group 3: Wallets & Cash */}
-          {walletsAndCash.length > 0 && (
-            <section className="flex flex-col gap-1.5">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-theme-muted">
-                  Wallets & Cash
-                </span>
-                <span className="text-[10px] font-mono text-theme-muted">
-                  {walletsAndCash.length} connected
-                </span>
-              </div>
-              <div className="flex flex-col rounded-2xl border border-theme-border bg-theme-card/50 divide-y divide-theme-border overflow-hidden">
-                {walletsAndCash.map((acc) => {
-                  const mask = acc.maskNumber || 'CASH';
-                  return (
-                    <div
-                      key={acc.id}
-                      className="flex items-center justify-between p-3.5 hover:bg-theme-card-hover/40 transition-colors"
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-theme-card-subtle border border-theme-border shadow-xs">
-                          {getAccountIcon(acc.type)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-bold text-theme-primary truncate">
-                            {acc.name}
-                          </p>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-[10px] font-mono text-theme-muted">
-                              {mask === 'CASH' ? 'Liquid Cash' : `•••• ${mask}`}
-                            </span>
-                            <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-semibold tracking-wider uppercase bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                              WALLET
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2.5 shrink-0 ml-2">
-                        <div className="text-right">
-                          <div className="text-xs font-bold font-mono text-theme-primary tabular-nums">
-                            {formatCurrency(acc.currentBalance)}
-                          </div>
-                          <span className="text-[10px] text-theme-muted">Balance</span>
-                        </div>
-
-                        {onDeleteAccount && accounts.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              if (window.confirm(`Unlink wallet "${acc.name}"?`)) {
-                                onDeleteAccount(acc.id);
-                              }
-                            }}
-                            title="Unlink wallet"
-                            className="flex size-8 items-center justify-center rounded-lg text-theme-muted hover:text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all"
-                          >
-                            <Trash2 className="size-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
+            );
+          })}
         </div>
       )}
 
-      {/* 5. Ergonomic Thumb-Zone Primary Action */}
+      {/* 6. Ergonomic Thumb-Zone Primary Action */}
       <div className="pt-2">
         <button
           type="button"
-          onClick={() => handleOpenAdd('SAVINGS')}
+          onClick={() => setIsAddOpen(true)}
           className="w-full h-12 rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 text-white text-sm font-semibold shadow-md shadow-violet-900/25 hover:brightness-110 active:scale-[0.97] transition-all flex items-center justify-center gap-2"
         >
           <Plus className="size-4" />
-          <span>Link New Payment Option</span>
+          <span>Link Payment Option</span>
         </button>
       </div>
 
-      {/* 6. Add Account Drawer */}
+      {/* 7. Add Account Drawer */}
       <AddAccountDrawer
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}
         onSave={onAddAccount}
-        initialType={addInitialType}
       />
     </div>
   );
