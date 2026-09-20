@@ -645,6 +645,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
       <SupportModal
         isOpen={isSupportOpen}
         onClose={() => setIsSupportOpen(false)}
+        onShowToast={showToast}
       />
 
       {/* About Modal */}

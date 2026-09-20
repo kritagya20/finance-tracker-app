@@ -652,6 +652,23 @@ In accordance with production fintech standards (CRED, Google Pay, Paytm):
   - Excluded: Heavy live format preview hero card, Reset button, and decimal precision section to keep the UI clean, lightweight, and focused.
 - **Navigation Invariant**: Sub-screen uses a single `ArrowLeft` top back button. Conflicting `X` icons are strictly prohibited.
 
+## 28.4 Bug Reporting & Support Drawer Architecture (`ReportBugDrawer`)
+- **Support Ingress**: The "Support & Guidance" screen (`SupportModal.tsx`) provides an interactive "Report a Bug" action row (replacing external `mailto:` links) with a `Bug` icon, descriptive subtitle, and trailing `ChevronRight` navigation indicator.
+- **Drawer Presentation & Gesture Dismissal**:
+  - Mounted as a bottom sheet drawer component (`ReportBugDrawer.tsx`) layered over the support modal (`z-50`).
+  - Integrated with `useDrawerDragToDismiss` on a 48px pull handle area (`touch-none cursor-grab active:cursor-grabbing`) supporting real-time downward dragging, proportional backdrop dimming, 75px dismissal threshold, and spring-back physics.
+  - **Navigation Invariant**: Header features a single `ArrowLeft` top-left back button. Conflicting `X` close icons are strictly prohibited.
+- **Form Fields & Validation Rules**:
+  - **Feature / Screen Name**: Single-line text input specifying the area where the bug occurred. Maximum **50 characters**, minimum 2 characters.
+  - **Remarks / Bug Details**: Multi-line textarea detailing reproduction steps or observed anomalies. Maximum **500 characters**, minimum 5 characters.
+  - **Screenshot Attachment (Optional)**: File uploader accepting images up to **5MB** (`5 * 1024 * 1024` bytes). Features an image thumbnail preview with file size badge (KB/MB) and a 1-tap remove action.
+  - **Defensive Validation**: Validation error alerts trigger **only on blur (`onBlur`) or form submission**, never while the user is actively typing. Live monospace character counters (`font-mono text-xs text-theme-muted`) provide clean visual feedback.
+- **SMTP Server Dispatch & Offline Resiliency**:
+  - Submissions are dispatched through `BugReportService.submitBugReport` targeting an SMTP relay endpoint configured via `VITE_SMTP_REPORT_URL`.
+  - Automatically captures critical non-PII diagnostic metadata: client timestamp, user agent string, viewport dimensions (`window.innerWidth × window.innerHeight`), and application version (`v1.0.0`).
+  - Generates an immutable reference ID (e.g. `#BUG-K8F2-91QA`).
+  - If the SMTP relay endpoint is unreachable or offline, the report is securely serialized and queued in encrypted local storage (`localStorage.getItem('app_bug_reports')`), guaranteeing zero data loss.
+- **Multi-Stage Completion**: Upon successful dispatch, transitions to an emerald checkmark confirmation stage displaying the reference ID and a full-width "Done" button to dismiss the drawer.
 
 ---
 
