@@ -8,6 +8,7 @@ interface AddAccountDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (account: Omit<Account, 'id'>) => Promise<void>;
+  initialType?: AccountType;
 }
 
 const CARD_STYLES = [
@@ -22,14 +23,21 @@ export const AddAccountDrawer: React.FC<AddAccountDrawerProps> = ({
   isOpen,
   onClose,
   onSave,
+  initialType,
 }) => {
   const [name, setName] = useState('');
-  const [type, setType] = useState<AccountType>('SAVINGS');
+  const [type, setType] = useState<AccountType>(initialType || 'SAVINGS');
   const [maskNumber, setMaskNumber] = useState('');
   const [balanceStr, setBalanceStr] = useState('0');
   const [selectedStyle, setSelectedStyle] = useState(CARD_STYLES[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (isOpen && initialType) {
+      setType(initialType);
+    }
+  }, [isOpen, initialType]);
 
   if (!isOpen) return null;
 

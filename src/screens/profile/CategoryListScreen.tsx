@@ -41,7 +41,7 @@ export const CategoryListScreen: React.FC<CategoryListScreenProps> = ({
 
   return (
     <div className="flex flex-col gap-4 pb-12 animate-in fade-in duration-200 select-none">
-      {/* 1. Header */}
+      {/* 1. Uncluttered Top Header (Level 1 Navigation Invariant) */}
       <header className="flex h-14 items-center justify-between">
         <div className="flex items-center gap-3">
           <button
@@ -56,15 +56,6 @@ export const CategoryListScreen: React.FC<CategoryListScreenProps> = ({
             Categories
           </h1>
         </div>
-
-        <button
-          type="button"
-          onClick={() => setIsAddOpen(true)}
-          className="flex h-10 items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 px-3.5 text-xs font-semibold text-white shadow-md shadow-violet-900/25 hover:brightness-110 active:scale-[0.97] transition-all"
-        >
-          <Plus className="size-4" />
-          <span>Add</span>
-        </button>
       </header>
 
       {/* 2. Search Input */}
@@ -116,30 +107,53 @@ export const CategoryListScreen: React.FC<CategoryListScreenProps> = ({
         })}
       </div>
 
-      {/* 4. Categories Listing */}
-      <div className="space-y-2.5">
-        {filteredCategories.length === 0 ? (
-          <EmptyState
-            icon={Tag}
-            title={searchQuery ? 'No matching categories' : 'No categories yet'}
-            description={
-              searchQuery
-                ? `No categories match "${searchQuery}". Try a different keyword or create a new category.`
-                : 'Create your first custom category to organize your income and expenses.'
-            }
-            actionLabel="+ Add New Category"
-            onAction={() => setIsAddOpen(true)}
-            secondaryActionLabel={searchQuery ? 'Clear Search' : undefined}
-            onSecondaryAction={searchQuery ? () => setSearchQuery('') : undefined}
-          />
-        ) : (
-          filteredCategories.map((cat) => {
-            const isCustom = cat.id.startsWith('cat_custom_') || !['cat_dining', 'cat_groceries', 'cat_fuel', 'cat_bills', 'cat_entertainment', 'cat_shopping', 'cat_salary', 'cat_freelance'].includes(cat.id);
+      {/* 4. Inline Quick-Add Card (Shown when not actively searching) */}
+      {!searchQuery && (
+        <button
+          type="button"
+          onClick={() => setIsAddOpen(true)}
+          className="flex items-center gap-3 p-3.5 rounded-2xl border border-dashed border-violet-500/30 bg-violet-500/5 hover:bg-violet-500/10 hover:border-violet-500/50 active:scale-[0.98] transition-all text-left group cursor-pointer shadow-2xs"
+        >
+          <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-400 group-hover:scale-105 transition-transform">
+            <Plus className="size-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="text-xs font-bold text-violet-600 dark:text-violet-400 block">
+              Create Custom Category
+            </span>
+            <span className="text-[10px] text-theme-muted truncate block">
+              Personalized income or expense bucket with custom icon & color
+            </span>
+          </div>
+        </button>
+      )}
+
+      {/* 5. Grouped Categories Listing */}
+      {filteredCategories.length === 0 ? (
+        <EmptyState
+          icon={Tag}
+          title={searchQuery ? 'No matching categories' : 'No categories yet'}
+          description={
+            searchQuery
+              ? `No categories match "${searchQuery}". Try a different keyword or create a new category.`
+              : 'Create your first custom category to organize your income and expenses.'
+          }
+          actionLabel="+ Add New Category"
+          onAction={() => setIsAddOpen(true)}
+          secondaryActionLabel={searchQuery ? 'Clear Search' : undefined}
+          onSecondaryAction={searchQuery ? () => setSearchQuery('') : undefined}
+        />
+      ) : (
+        <div className="flex flex-col rounded-2xl border border-theme-border bg-theme-card/50 divide-y divide-theme-border overflow-hidden">
+          {filteredCategories.map((cat) => {
+            const isCustom =
+              cat.id.startsWith('cat_custom_') ||
+              !['cat_dining', 'cat_groceries', 'cat_fuel', 'cat_bills', 'cat_entertainment', 'cat_shopping', 'cat_salary', 'cat_freelance'].includes(cat.id);
 
             return (
               <div
                 key={cat.id}
-                className="flex items-center justify-between p-3 rounded-2xl border border-theme-border bg-theme-card hover:bg-theme-card-hover/40 transition-colors shadow-xs"
+                className="flex items-center justify-between p-3.5 hover:bg-theme-card-hover/40 transition-colors"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div
@@ -184,18 +198,30 @@ export const CategoryListScreen: React.FC<CategoryListScreenProps> = ({
                       }
                     }}
                     title="Delete custom category"
-                    className="flex size-9 shrink-0 items-center justify-center rounded-xl text-theme-muted hover:text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all ml-2"
+                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-theme-muted hover:text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all ml-2"
                   >
-                    <Trash2 className="size-4" />
+                    <Trash2 className="size-3.5" />
                   </button>
                 )}
               </div>
             );
-          })
-        )}
+          })}
+        </div>
+      )}
+
+      {/* 6. Ergonomic Thumb-Zone Primary Action */}
+      <div className="pt-2">
+        <button
+          type="button"
+          onClick={() => setIsAddOpen(true)}
+          className="w-full h-12 rounded-xl bg-gradient-to-r from-violet-600 to-violet-500 text-white text-sm font-semibold shadow-md shadow-violet-900/25 hover:brightness-110 active:scale-[0.97] transition-all flex items-center justify-center gap-2"
+        >
+          <Plus className="size-4" />
+          <span>Add New Category</span>
+        </button>
       </div>
 
-      {/* 5. Add Category Drawer */}
+      {/* 7. Add Category Drawer */}
       <AddCategoryDrawer
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}

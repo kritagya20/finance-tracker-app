@@ -756,3 +756,17 @@ In accordance with production fintech standards (CRED, Google Pay, Paytm):
   - Sliding past the 75px threshold triggers an off-screen dismiss transition (`transform: translateX(±115%)`) and smooth vertical height collapse, clearing the notification from storage.
   - Releasing before the threshold snaps the card back to center (`0px`) smoothly.
 
+## 36. Contextual Action Strips & Screen-Level Creation Standards
+
+### 36.1 Ingress & Reachability Principles
+- **No Header Cramming**: Primary creation actions (e.g. `[+ Add]`) MUST NEVER be crammed into navigation headers alongside screen titles. Headers are reserved strictly for back navigation and screen titles.
+- **Thumb-Zone Primary CTAs**: Primary screen actions (e.g. `+ Link New Payment Option`, `+ Add New Category`) are anchored in the natural bottom thumb zone as full-width 48px (`h-12`) violet gradient CTAs (`bg-gradient-to-r from-violet-600 to-violet-500 rounded-xl font-semibold text-white shadow-lg shadow-violet-600/25 active:scale-[0.98]`).
+- **Contextual Quick-Add Action Strips**:
+  - Placed prominently below overview/summary cards.
+  - Multi-column tactile cards (`grid grid-cols-3 gap-2`) with semantic iconography, subtle hover/active scale (`active:scale-[0.96]`), and direct pre-routing (e.g., pre-populating account types such as Bank Account `SAVINGS`, Credit Card `CREDIT_CARD`, or Cash/Wallet `CASH`).
+  - Colors are contextually tinted with soft badges (Sky for Bank Accounts, Purple for Credit Cards, Emerald for Wallets).
+- **Hierarchical Grouping Over Flat Lists**:
+  - Multiple instrument types must be logically categorized into named groups (`BANK ACCOUNTS`, `CREDIT CARDS`, `WALLETS & CASH`) with clear group headers and counts.
+  - Each group is wrapped in a clean, elevated container (`rounded-2xl border border-theme-border bg-theme-card/50 divide-y divide-theme-border overflow-hidden`).
+- **Inline Creation Affordance**:
+  - In list-management screens (such as Categories), an inline tactile dashed card (`+ Create Custom Category` with `border-dashed border-theme-border hover:border-violet-500/40 hover:bg-violet-500/5`) provides high-affordance inline creation without forcing users to reach for the bottom CTA when scanning the list.
