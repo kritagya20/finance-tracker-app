@@ -37,4 +37,14 @@ BEFORE implementing, modifying, or refactoring ANY screen, component, UI element
   - Sheet container: `rounded-t-3xl bg-theme-elevated border-t border-theme-border shadow-2xl`.
   - Pull handle: 36×4px `rounded-full bg-slate-600/40 mx-auto my-2.5`.
 - **Disabled States**: 38% opacity (`opacity-[0.38] pointer-events-none`).
+- **Directional Arrow Invariants**:
+  - Swipe hints: Swipe right MUST use strictly `<ArrowRight />`; Swipe left MUST use strictly `<ArrowLeft />`. Never use `<ArrowLeftRight />`.
+  - Sorting controls: Ascending MUST use strictly `<ArrowUp />`; Descending MUST use strictly `<ArrowDown />`. Never use `<ArrowUpDown />`.
+- **Title Cleanliness Invariant**:
+  - Screen headers, drawer top bars, and section titles must rarely/never have decorative icons (e.g. clean "Transaction Details", "Timeline").
+- **Timeline & Audit Trail Invariants**:
+  - Stepper timeline left rail must use strictly uniform dots (`size-2.5 rounded-full bg-violet-500 ring-4 ring-theme-elevated`). Do not mix and match disparate icons (`Pencil`, `Tag`, `Receipt`, etc.) on the rail.
+  - The active top state is always titled **`Current State`**.
+- **Component Reusability & DRY Architecture**:
+  - Always compose screens from standardized primitives (`DrawerShell`, `DrawerHeader`, `SortBar`, `SearchInput`, `TransactionRow`). Never hand-code duplicate gesture physics or drawer scaffolding.
 

@@ -780,38 +780,48 @@ Both `CategoryListScreen.tsx` and `PaymentAccountsScreen.tsx` strictly follow an
    - The Cash Wallet (`type: 'CASH'`) is an immutable system default instrument and is strictly non-deletable.
    - Rows for the default Cash wallet display an uppercase `DEFAULT` badge (`bg-violet-500/10 text-violet-500 dark:text-violet-400 border border-violet-500/20`) and completely omit the delete action button.
 
-## 37. Analytics Dashboard Suite (Velocity Curve, Donut Dial, Budget Envelopes)
+## 37. Analytics Dashboard Suite (Velocity Curve & Unified Category Hub)
 
-### 37.1 Spending Velocity Curve Architecture
-- **Surface**: `rounded-3xl border border-theme-border bg-theme-card p-5 shadow-sm`.
-- **Hero Spend Metric**: Prominent monospace bold balance (`text-3xl font-bold font-mono tracking-tight text-theme-primary`) paired with muted ceiling comparison (`of {formatCurrency(totalBudget)} budget`).
-- **Curve Geometry**: Smooth cubic Bezier spline (`M ... C ...`) in brand violet (`#8b5cf6`, stroke width 2.75px) with soft vertical gradient area fill (`rgba(139, 92, 246, 0.25)` to transparent).
-- **5-Tier Y-Axis Scale**: Hairline horizontal gridlines (`border-theme-border/50`) with right-aligned monospace labels (`34k`, `25.5k`, `17k`, `8.5k`, `0k`).
-- **Interactive Scrubber**: Touch and mouse scrub gestures reveal live vertical guide line, glowing marker dot, and monospace tooltip showing date and daily incremental delta.
+### 37.1 Spending Velocity & Pacing Card Architecture
+- **Surface**: `rounded-3xl border border-white/5 bg-[#14151a] p-5 sm:p-6 shadow-xl transition-all select-none`.
+- **Card Header**: "Spending Velocity" title paired with a dynamic pacing status badge:
+  1. `On Track`: `bg-emerald-500/15 text-emerald-400 border border-emerald-500/30` with `Check` icon.
+  2. `Pacing High`: `bg-amber-500/15 text-amber-400 border border-amber-500/30` with `TrendingUp` icon.
+  3. `Over Budget`: `bg-rose-500/15 text-rose-400 border border-rose-500/30` with `AlertTriangle` icon.
+- **Hero Spend & Pacing Metric**:
+  - Hero amount in bold modern sans-serif (`text-3xl sm:text-[34px] font-bold font-sans tracking-tight text-white leading-none`).
+  - Real-time burn-rate subtitle: `₹{avgDailyBurn}/day avg · ₹{remainingBudget} remaining ({daysRemaining}d left)`.
+- **Curve Geometry**: Smooth Catmull-Rom cubic Bezier spline (`M ... C ...`) with 4-pass moving-average smoothing in brand violet (`#a78bfa`, stroke width 2.75px) with soft ambient gradient fill (`rgba(139, 92, 246, 0.25)` to transparent).
+- **Interactive Scrubber**: Touch and mouse scrub gestures reveal live vertical guide line, dual glowing marker dots, and dynamic header updates displaying the date and cumulative spend.
 
-### 37.2 Category Donut Dial Architecture
-- **Geometry**: SVG circle with stroke-width 22px, rounded ends (`strokeLinecap="round"`), and inter-segment gaps.
-- **Center Cutout**: `Total spent` caption (`text-[11px] font-medium text-theme-muted`) and bold monospace hero total.
-- **Breakdown Legend**: 3-column rows matching the reference layout:
-  - Column 1: Color dot + Category Name (`text-xs font-semibold`).
-  - Column 2: Percentage of total in monospace (`text-xs font-mono text-theme-muted`).
-  - Column 3: Formatted currency amount in bold monospace (`text-xs font-mono font-bold text-theme-primary tabular-nums`).
-
-### 37.3 Budget Envelopes Architecture
-- **Envelope Cards**: Dedicated cards wrapped in `rounded-2xl border border-theme-border bg-theme-card p-4 space-y-2.5`.
-- **Status Thresholds & Badges**:
-  1. `Healthy` ($usage \le 75\%$): `bg-emerald-500/15 border-emerald-500/30 text-emerald-400` with `Check` icon.
-  2. `Near limit` ($75\% < usage \le 100\%$): `bg-amber-500/15 border-amber-500/30 text-amber-400` with `TrendingUp` icon.
-  3. `₹X over` ($usage > 100\%$): `bg-rose-500/15 border-rose-500/30 text-rose-400` with `AlertTriangle` icon and exact overage amount.
-- **Progress Track**: `h-2 rounded-full bg-theme-card-subtle overflow-hidden` with colored status bar.
-- **Limit Subtext**: `₹{spent} of ₹{limit} limit` in `font-mono text-xs text-theme-muted`.
+### 37.2 Unified Category & Budget Intelligence Hub
+- **Mobile Paradigm**: Combines category spend share and envelope budget progress into single unified cards, completely eliminating duplicate category listings and saving ~470px of vertical space.
+- **Apple Card-Style Horizontal Segmented Spend Bar**:
+  - 12px height rail (`h-3 w-full rounded-full bg-slate-800/80 overflow-hidden flex gap-[2px] p-[2px]`).
+  - Proportional colored segments reflecting each category's outflow share.
+  - Interactive selection to highlight and filter categories.
+- **Triage Filter Chips**:
+  - `All (N)`: Shows all active expense categories.
+  - `Attention`: Toggles display to only categories that are near limit ($\ge 80\%$) or over budget.
+- **Unified Category Rows**:
+  - Category Squircle Icon Badge: `size-10 rounded-xl flex items-center justify-center` with 12% opacity tint and subtle border.
+  - Title and Outflow Share: Category Name (`text-sm font-semibold text-white`) + Share % (`{percent}% of total outflow`).
+  - Bold Outflow Amount: `formatCurrency(cat.spent)` on the right in `font-sans font-bold text-sm text-white`.
+  - Inline Budget Track: `h-2 w-full rounded-full bg-slate-800/80` with status fill (Emerald for Healthy, Amber for Near limit, Rose for Over budget).
+  - Limit & Status Subtext: `₹{spent} of ₹{limit} limit` paired with compact status badge (`Healthy`, `Near limit`, or `+₹X over`).
 
 ## 38. Home Dashboard & Total Balance Card Specification
 
 ### 38.1 Total Balance Card Specification
 - **Outer Gradient Rim**:
-  - `relative p-[1.5px] rounded-[32px] bg-gradient-to-br from-violet-500/50 via-slate-800/20 to-emerald-500/40 shadow-2xl shadow-violet-950/20`.
-  - Inner dark card: `rounded-[30.5px] bg-white dark:bg-[#14151a] p-6 sm:p-7 transition-colors`.
+  - `relative p-[1.5px] rounded-[32px] bg-gradient-to-br from-violet-500/50 via-slate-800/20 to-emerald-500/40 shadow-2xl shadow-violet-950/25 select-none transition-all group`.
+- **Enriched Frosted Glass Background Surface**:
+  - Inner card: `relative rounded-[30.5px] overflow-hidden bg-gradient-to-br from-white/95 via-slate-50/95 to-slate-100/90 dark:bg-gradient-to-br dark:from-[#181a27]/95 dark:via-[#11121d]/98 dark:to-[#0a0b13]/98 border border-white/20 dark:border-white/[0.08] backdrop-blur-2xl p-6 sm:p-7 transition-all shadow-inner`.
+  - Ambient Backlights: Top-left violet specular bloom (`bg-violet-600/[0.16] blur-3xl size-48`) and bottom-right emerald ambient bloom (`bg-emerald-500/[0.12] blur-3xl size-48`).
+  - Top hairline specular glass reflection (`h-px bg-gradient-to-r from-transparent via-white/30 to-transparent`).
+- **Glass Slider Slide-Over Effect**:
+  - **Automated Sheen Slide**: Diagonal light beam (`animate-glass-sheen` with wide ambient blur and crisp specular core) sweeps across the card diagonally every 6.5s.
+  - **Interactive Gesture Glass Slider**: Tracks user finger/mouse position (`pointerX` %) on move/drag, smoothly sliding a glass specular reflection over the card content in real-time.
 - **Top Header Label**:
   - `text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-400`.
   - Exact text: `TOTAL BALANCE`.
@@ -847,6 +857,86 @@ Both `CategoryListScreen.tsx` and `PaymentAccountsScreen.tsx` strictly follow an
   3. **Extremely Large Values (≥ ₹1 Crore in sub-cards; ≥ ₹100 Crores in hero)**:
      - Automated compact notation (e.g. `₹1.5Cr`, `₹15Cr`) is rendered to fit within card bounds.
   4. **Dynamic Font Scaling**: Sub-card amounts dynamically scale font size based on character length (`text-[17px]` for $\le 10$ chars, `text-[15px]` for 11–12 chars, `text-[14px]` for $\ge 13$ chars).
+
+## 39. Analytics Charting Engine & Interactive Inspection Suite
+
+### 39.1 Fritsch-Carlson Monotone Cubic Spline Engine
+- **Mathematical Invariant**: In cumulative spending charts, trajectories are monotonically non-decreasing ($y_{i+1} \le y_i$ in downward SVG coordinates). Standard cubic splines or Catmull-Rom splines produce false dips or overshoots. The engine implements the Fritsch-Carlson algorithm ensuring $C^1$ continuity and strict monotonicity.
+- **Dynamic Header Velocity Speedometer**:
+  - Replaces static, uninformative text ("Cumulative expense") with a live financial velocity indicator.
+  - Default overview: Displays `Avg: ₹{dailyAvg}/day` in `font-mono text-xs`.
+  - Scrubbing a day: Dynamically displays that day's delta (`+₹{daily} added` in rose or `₹0 spent` in emerald).
+- **Touch & Scrubbing Physics**:
+  - Scrubbing or tapping the spline curve smoothly updates the scrubber dot, floating tooltip pill, and bottom inspection rail without jumping or popping open drawers.
+  - **Zero-Spend Guard**: Days with ₹0 spent cannot trigger or open the drawer (`Zero spend` badge).
+  - The drawer opens strictly on explicit user action: tapping `"View expenses"` (when `daily > 0`) or `"View all expenses"`.
+
+### 39.2 Category Donut Dial Architecture
+- **2D Annular Sectors**: Donut segments are rendered as filled 2D annular sectors (`<path fill={color} />`) rather than 1D stroke dashes with `strokeLinecap="round"` (which warp short slices into deformed pills).
+  - Outer radius $R = 93\text{px}$, inner radius $r = 69\text{px}$ (24px ring thickness).
+  - Symmetrical radial divider cuts ($0.024\text{ rad}$ ~ 1.9px).
+  - Subtle $r_c = 3.5\text{px}$ corner fillets on all 4 vertices.
+- **Interactive Radial Pop-Out & Center Spotlight**:
+  - Tapping or hovering a slice pops it outward by 6px along its bisector angle while non-active slices dim to 35% opacity.
+  - Center cutout dynamically cross-fades to the selected category's name, pulsing indicator dot, exact rupee amount, and percentage of total spend.
+  - Bidirectional legend synchronization: clicking legend rows pops out the corresponding dial segment.
+
+### 39.3 Budget Envelopes Flush Bottom Border Rail
+- **Layout**: Full-width 4px bottom border rail (`h-1 w-full bg-slate-800/80` with `overflow-hidden` rounded corners) replacing the floating middle progress bar.
+- **2-Tier Content**:
+  - Top Row: Category title + percentage completion + `ChevronRight`.
+  - Bottom Row: `{spent} of {limit} limit` + contextual status badge (`⚠️ ₹150 over`, `↗ Near limit`, `✓ Healthy`).
+  - Achieves 25% vertical height compression (~58px card height).
+
+### 39.4 Standardized Fintech Bottom Sheet Drawers (`CategorySpendDrawer` & `VelocitySpendDrawer`)
+- **Container**: `fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[420px] rounded-t-3xl bg-theme-elevated border-t border-theme-border shadow-2xl flex flex-col overflow-hidden`.
+- **Backdrop**: `fixed inset-0 bg-black/60 backdrop-blur-sm z-40`.
+- **Gesture Physics**: Dual snap states (`58vh` partial and `90vh` full) with velocity-aware drag dismiss (`> 0.6 px/ms` or `> 200px` delta).
+- **Pull Handle**: 44×6px rounded bar (`w-11 h-1.5 rounded-full bg-slate-400/50`) with generous drag zone.
+
+## 40. Directional Arrow & Icon Semantics Invariant
+
+### 40.1 Swipe Gesture Arrow Invariant
+- **Rule**: Never use ambiguous dual-direction icons (`ArrowLeftRight`) on unidirectional swipe hints.
+- **Swipe Right (Edit / Reveal Left)**: Strictly use `<ArrowRight className="size-3" />` (single right arrow).
+- **Swipe Left (Delete / Reveal Right)**: Strictly use `<ArrowLeft className="size-3" />` (single left arrow).
+
+### 40.2 Sorting Direction Arrow Invariant
+- **Rule**: Never display both up and down arrows simultaneously (`ArrowUpDown` / `ChevronsUpDown`) on active sort controls.
+- **Ascending (`asc`)**: Strictly use `<ArrowUp className="size-3 stroke-[2.5]" />` (single top arrow).
+- **Descending (`desc`)**: Strictly use `<ArrowDown className="size-3 stroke-[2.5]" />` (single bottom arrow).
+- **Inactive**: Display no directional arrow.
+
+## 41. Title Cleanliness & Visual Stepper Timeline Standards
+
+### 41.1 Title Cleanliness Invariant
+- **Rule**: Screen headers, drawer top bars, and section titles must rarely or never contain decorative icons (e.g. avoid placing `<Receipt />` in "Transaction Details" or `<Clock />` in "Timeline").
+- **Typography**: Titles must be clean, readable uppercase text (`text-sm font-bold text-theme-primary uppercase tracking-wider`).
+
+### 41.2 Audit Stepper Timeline Invariant
+- **Rail Uniformity**: The left vertical rail must use strictly identical, clean theme dots (`size-2.5 rounded-full bg-violet-500 ring-4 ring-theme-elevated`). Do not mix and match disparate icons (`Pencil`, `Tag`, `Receipt`, checkmarks) on the vertical rail.
+- **Guide Line**: Subtle, uniform border track (`before:w-0.5 before:bg-theme-border/70 dark:before:bg-slate-700/60`).
+- **Reverse Chronological**: Latest events appear at the top, inception/capture at the bottom.
+- **Top State Title**: The active top state is always titled **`Current State`** (with contextual badge: `Revision #X`, `Modified`, or `Unmodified`).
+
+## 42. Transaction Detail Intermediate Drawer (`TransactionDetailDrawer.tsx`)
+- **Navigation Safety**: Tapping an activity item opens `TransactionDetailDrawer` for safe inspection rather than jumping directly into the edit form.
+- **Digital Receipt Card (Top Section)**:
+  - Merchant category icon avatar with dynamic color border.
+  - Bold amount in `font-mono text-3xl sm:text-4xl` with sign and contextual color.
+  - Full date and time in `font-mono`.
+  - Structured key-value rows: Payment Account, Category / Split Breakdown, and Notes.
+- **Audit Chronicle (Bottom Section)**: Reverse-chronological timeline displaying modification provenance.
+- **Fixed Action Bar**: Primary CTA "Edit Transaction" (launches `EditTransactionDrawer`), secondary destructive CTA "Delete Transaction".
+
+## 43. Add/Edit Expense Architecture & Category Type Isolation
+- **Step 1 (Keypad)**: 12-key numeric keypad, amount display, and transaction type toggle (`EXPENSE` | `INCOME` | `TRANSFER`).
+- **Step 2 (Specifics)**: Clean structured form for Merchant, Category, Bill Split, Account, Date, and Notes.
+- **Strict Category Isolation**:
+  - When `EXPENSE` is active: ONLY categories with `!cat.isIncome` are shown.
+  - When `INCOME` is active: ONLY categories with `cat.isIncome === true` are shown.
+  - Type switching immediately clears mismatched categories to prevent cross-contamination.
+
 
 
 
