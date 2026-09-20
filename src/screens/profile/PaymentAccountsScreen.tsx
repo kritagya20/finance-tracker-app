@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Plus, Search, CreditCard, Landmark, Wallet, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, Search, CreditCard, Landmark, Wallet, Trash2, AlertTriangle } from 'lucide-react';
 import { Account } from '../../domain/models/types';
 import { formatCurrency } from '../../domain/engine/moneyUtils';
 import { AddAccountDrawer } from './AddAccountDrawer';
@@ -24,6 +24,8 @@ export const PaymentAccountsScreen: React.FC<PaymentAccountsScreenProps> = ({
   const [filter, setFilter] = useState<InstrumentFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState<Account | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const filteredAccounts = useMemo(() => {
     return accounts.filter((acc) => {
@@ -84,6 +86,19 @@ export const PaymentAccountsScreen: React.FC<PaymentAccountsScreenProps> = ({
     };
   };
 
+  const handleConfirmDelete = async () => {
+    if (!accountToDelete || !onDeleteAccount) return;
+    try {
+      setIsDeleting(true);
+      await onDeleteAccount(accountToDelete.id);
+      setAccountToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete account:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4 pb-12 animate-in fade-in duration-200 select-none">
       {/* 1. Uncluttered Top Header (Level 1 Navigation Invariant) */}
@@ -124,7 +139,7 @@ export const PaymentAccountsScreen: React.FC<PaymentAccountsScreenProps> = ({
         )}
       </div>
 
-      {/* 3. Filter Tabs */}
+      {/* 3. Filter Tabs (Without counts) */}
       <div className="flex gap-2">
         {(['ALL', 'BANK', 'CARD', 'WALLET'] as InstrumentFilter[]).map((tab) => {
           const isSelected = filter === tab;
@@ -136,14 +151,6 @@ export const PaymentAccountsScreen: React.FC<PaymentAccountsScreenProps> = ({
               : tab === 'CARD'
               ? 'Cards'
               : 'Wallets';
-          const count = accounts.filter((acc) => {
-            const t = acc.type?.toUpperCase() || '';
-            if (tab === 'ALL') return true;
-            if (tab === 'BANK') return ['SAVINGS', 'CURRENT', 'CHECKING'].includes(t);
-            if (tab === 'CARD') return ['CREDIT', 'CREDIT_CARD'].includes(t);
-            if (tab === 'WALLET') return ['WALLET', 'CASH'].includes(t);
-            return false;
-          }).length;
 
           return (
             <button
@@ -158,7 +165,6 @@ export const PaymentAccountsScreen: React.FC<PaymentAccountsScreenProps> = ({
               )}
             >
               <span>{label}</span>
-              <span className="text-[10px] opacity-75 font-mono">({count})</span>
             </button>
           );
         })}
@@ -244,15 +250,11 @@ export const PaymentAccountsScreen: React.FC<PaymentAccountsScreenProps> = ({
                     <span className="text-[10px] text-theme-muted">Balance</span>
                   </div>
 
-                  {onDeleteAccount && accounts.length > 1 && (
+                  {onDeleteAccount && (
                     <button
                       type="button"
-                      onClick={() => {
-                        if (window.confirm(`Unlink account "${acc.name}"?`)) {
-                          onDeleteAccount(acc.id);
-                        }
-                      }}
-                      title="Unlink account"
+                      onClick={() => setAccountToDelete(acc)}
+                      title="Delete account"
                       className="flex size-8 shrink-0 items-center justify-center rounded-lg text-theme-muted hover:text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all ml-1"
                     >
                       <Trash2 className="size-3.5" />
@@ -283,6 +285,100 @@ export const PaymentAccountsScreen: React.FC<PaymentAccountsScreenProps> = ({
         onClose={() => setIsAddOpen(false)}
         onSave={onAddAccount}
       />
+
+      {/* 8. Delete Confirmation Modal Dialog */}
+      {accountToDelete && (
+        <div className="fixed inset-0 z-50 mx-auto max-w-[430px] flex items-center justify-center p-4 animate-in fade-in duration-150">
+          {/* Backdrop */}
+          <div
+            onClick={() => !isDeleting && setAccountToDelete(null)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+          />
+
+          {/* Modal Dialog */}
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-dialog-title"
+            className="relative z-10 w-full rounded-3xl border border-theme-border/80 bg-theme-elevated p-6 shadow-2xl animate-in zoom-in-95 duration-200 transition-colors"
+          >
+            {/* Header Alert Badge */}
+            <div className="flex flex-col items-center text-center">
+              <div className="flex size-14 items-center justify-center rounded-2xl border border-rose-500/25 bg-rose-500/10 text-rose-500 dark:text-rose-400 shadow-inner">
+                <AlertTriangle className="size-7" />
+              </div>
+
+              <h3
+                id="delete-dialog-title"
+                className="mt-4 text-lg font-bold tracking-tight text-theme-primary"
+              >
+                {accountToDelete.type?.toUpperCase() === 'SAVINGS' || accountToDelete.type?.toUpperCase() === 'CURRENT' || accountToDelete.type?.toUpperCase() === 'CHECKING'
+                  ? 'Delete Bank Account?'
+                  : 'Unlink Payment Option?'}
+              </h3>
+              <p className="mt-1 text-xs text-theme-muted max-w-[270px] leading-relaxed">
+                Are you sure you want to remove <span className="font-semibold text-theme-primary">{accountToDelete.name}</span>? This action will remove it from your active accounts.
+              </p>
+            </div>
+
+            {/* Account Summary Card */}
+            <div className="mt-5 rounded-2xl border border-theme-border/60 bg-theme-card-subtle/70 p-3.5 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-theme-card border border-theme-border shadow-xs">
+                  {getAccountIcon(accountToDelete.type)}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-bold text-theme-primary truncate">
+                    {accountToDelete.name}
+                  </p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[10px] font-mono text-theme-muted">
+                      •••• {accountToDelete.maskNumber || '4102'}
+                    </span>
+                    <span
+                      className={cn(
+                        'inline-flex items-center rounded-md px-1.5 py-0.2 text-[9px] font-semibold uppercase tracking-wider',
+                        getBadgeInfo(accountToDelete.type).className
+                      )}
+                    >
+                      {getBadgeInfo(accountToDelete.type).label}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-right shrink-0">
+                <div className="text-xs font-bold font-mono text-theme-primary tabular-nums">
+                  {formatCurrency(accountToDelete.currentBalance)}
+                </div>
+                <span className="text-[9px] text-theme-muted">Balance</span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setAccountToDelete(null)}
+                className="h-12 rounded-xl border border-theme-border bg-theme-card-subtle text-sm font-semibold text-theme-secondary hover:text-theme-primary hover:bg-theme-card-hover active:scale-[0.97] transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 text-sm font-semibold text-white shadow-lg shadow-rose-950/30 hover:brightness-110 active:scale-[0.97] transition-all disabled:opacity-50"
+              >
+                <Trash2 className="size-4" />
+                <span>{isDeleting ? 'Deleting...' : 'Yes, Delete'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

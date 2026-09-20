@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Plus, Search, Trash2, Tag } from 'lucide-react';
+import { ArrowLeft, Plus, Search, Trash2, Tag, AlertTriangle } from 'lucide-react';
 import { Category } from '../../domain/models/types';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
 import { AddCategoryDrawer } from './AddCategoryDrawer';
@@ -24,6 +24,8 @@ export const CategoryListScreen: React.FC<CategoryListScreenProps> = ({
   const [filter, setFilter] = useState<TypeFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const filteredCategories = useMemo(() => {
     return categories.filter((cat) => {
@@ -38,6 +40,19 @@ export const CategoryListScreen: React.FC<CategoryListScreenProps> = ({
       return true;
     });
   }, [categories, filter, searchQuery]);
+
+  const handleConfirmDelete = async () => {
+    if (!categoryToDelete || !onDeleteCategory) return;
+    try {
+      setIsDeleting(true);
+      await onDeleteCategory(categoryToDelete.id);
+      setCategoryToDelete(null);
+    } catch (error) {
+      console.error('Failed to delete category:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4 pb-12 animate-in fade-in duration-200 select-none">
@@ -79,14 +94,11 @@ export const CategoryListScreen: React.FC<CategoryListScreenProps> = ({
         )}
       </div>
 
-      {/* 3. Filter Tabs */}
+      {/* 3. Filter Tabs (Without counts) */}
       <div className="flex gap-2">
         {(['ALL', 'EXPENSE', 'INCOME'] as TypeFilter[]).map((tab) => {
           const isSelected = filter === tab;
           const label = tab === 'ALL' ? 'All' : tab === 'EXPENSE' ? 'Expenses' : 'Income';
-          const count = categories.filter((c) =>
-            tab === 'ALL' ? true : tab === 'EXPENSE' ? !c.isIncome : Boolean(c.isIncome)
-          ).length;
 
           return (
             <button
@@ -101,7 +113,6 @@ export const CategoryListScreen: React.FC<CategoryListScreenProps> = ({
               )}
             >
               <span>{label}</span>
-              <span className="text-[10px] opacity-75 font-mono">({count})</span>
             </button>
           );
         })}
@@ -192,11 +203,7 @@ export const CategoryListScreen: React.FC<CategoryListScreenProps> = ({
                 {isCustom && onDeleteCategory && (
                   <button
                     type="button"
-                    onClick={() => {
-                      if (window.confirm(`Delete category "${cat.name}"?`)) {
-                        onDeleteCategory(cat.id);
-                      }
-                    }}
+                    onClick={() => setCategoryToDelete(cat)}
                     title="Delete custom category"
                     className="flex size-8 shrink-0 items-center justify-center rounded-lg text-theme-muted hover:text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all ml-2"
                   >
@@ -227,6 +234,84 @@ export const CategoryListScreen: React.FC<CategoryListScreenProps> = ({
         onClose={() => setIsAddOpen(false)}
         onSave={onAddCategory}
       />
+
+      {/* 8. Delete Confirmation Modal Dialog */}
+      {categoryToDelete && (
+        <div className="fixed inset-0 z-50 mx-auto max-w-[430px] flex items-center justify-center p-4 animate-in fade-in duration-150">
+          {/* Backdrop */}
+          <div
+            onClick={() => !isDeleting && setCategoryToDelete(null)}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
+          />
+
+          {/* Modal Dialog */}
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-cat-title"
+            className="relative z-10 w-full rounded-3xl border border-theme-border/80 bg-theme-elevated p-6 shadow-2xl animate-in zoom-in-95 duration-200 transition-colors"
+          >
+            {/* Header Alert Badge */}
+            <div className="flex flex-col items-center text-center">
+              <div className="flex size-14 items-center justify-center rounded-2xl border border-rose-500/25 bg-rose-500/10 text-rose-500 dark:text-rose-400 shadow-inner">
+                <AlertTriangle className="size-7" />
+              </div>
+
+              <h3
+                id="delete-cat-title"
+                className="mt-4 text-lg font-bold tracking-tight text-theme-primary"
+              >
+                Delete Category?
+              </h3>
+              <p className="mt-1 text-xs text-theme-muted max-w-[270px] leading-relaxed">
+                Are you sure you want to delete <span className="font-semibold text-theme-primary">{categoryToDelete.name}</span>? Existing transactions will retain their history.
+              </p>
+            </div>
+
+            {/* Category Summary Card */}
+            <div className="mt-5 rounded-2xl border border-theme-border/60 bg-theme-card-subtle/70 p-3.5 flex items-center gap-3">
+              <div
+                className={cn(
+                  'flex size-10 shrink-0 items-center justify-center rounded-xl text-white shadow-xs',
+                  categoryToDelete.bgClass
+                )}
+              >
+                <CategoryIcon name={categoryToDelete.iconName} size={20} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold text-theme-primary truncate">
+                  {categoryToDelete.name}
+                </p>
+                <p className="text-[10px] text-theme-muted mt-0.5">
+                  {categoryToDelete.isIncome ? 'Income Category' : 'Expense Category'}
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="mt-6 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setCategoryToDelete(null)}
+                className="h-12 rounded-xl border border-theme-border bg-theme-card-subtle text-sm font-semibold text-theme-secondary hover:text-theme-primary hover:bg-theme-card-hover active:scale-[0.97] transition-all disabled:opacity-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleConfirmDelete}
+                className="flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 text-sm font-semibold text-white shadow-lg shadow-rose-950/30 hover:brightness-110 active:scale-[0.97] transition-all disabled:opacity-50"
+              >
+                <Trash2 className="size-4" />
+                <span>{isDeleting ? 'Deleting...' : 'Yes, Delete'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

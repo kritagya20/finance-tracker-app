@@ -762,7 +762,7 @@ In accordance with production fintech standards (CRED, Google Pay, Paytm):
 Both `CategoryListScreen.tsx` and `PaymentAccountsScreen.tsx` strictly follow an identical, minimal 6-layer layout:
 1. **Uncluttered Top Header**: Single `ArrowLeft` back button (`size-10 rounded-full border border-theme-border bg-theme-card`) and 24px bold title (`text-2xl font-bold tracking-tight text-theme-primary`). Header action buttons (e.g. `[+ Add]`) are strictly prohibited.
 2. **Search Input**: Full-width 44px (`h-11`) search bar with leading `Search` icon, clear button, and `bg-theme-input`.
-3. **Filter Tabs**: Horizontal chip bar (`All`, `Banks`, `Cards`, `Wallets` or `All`, `Expenses`, `Income`) displaying counts in monospace (`(N)`), with violet active states.
+3. **Filter Tabs**: Horizontal chip bar (`All`, `Banks`, `Cards`, `Wallets` or `All`, `Expenses`, `Income`) with violet active states. Numerical count indicators are omitted to keep the filter strip minimal and uncluttered.
 4. **Inline Quick-Add Card**:
    - Rendered above the list when not actively searching.
    - 48px+ tactile card with dashed violet border (`border-dashed border-violet-500/30 bg-violet-500/5 hover:bg-violet-500/10`), rounded 16px (`rounded-2xl`), leading `Plus` icon in `size-10 rounded-xl bg-violet-500/15 text-violet-400`, bold action title, and concise secondary guidance.
@@ -771,6 +771,10 @@ Both `CategoryListScreen.tsx` and `PaymentAccountsScreen.tsx` strictly follow an
    - All items reside in a single container (`rounded-2xl border border-theme-border bg-theme-card/50 divide-y divide-theme-border overflow-hidden`).
    - Heavy summary banners, multi-column button strips, and fragmented multi-card groups are strictly omitted to maintain minimal cognitive load.
    - Rows contain minimal essential data: instrument/category icon in `size-10 rounded-xl bg-theme-card-subtle`, item name, monospace mask/type badge, right-aligned mono balance or type, and subtle delete/unlink trash trigger.
-6. **Ergonomic Bottom Thumb-Zone CTA**:
+6. **Custom Delete Confirmation Dialogs**:
+   - Deletion of accounts or categories must never use native browser `window.confirm()`.
+   - Instead, a custom modal dialog (`ConfirmDeleteModal` pattern) with a rose `AlertTriangle` badge, item preview card with balance/type, and dual 48px Cancel (secondary outline) / "Yes, Delete" (destructive gradient `from-rose-600 to-rose-500`) action buttons is presented.
+7. **Ergonomic Bottom Thumb-Zone CTA**:
    - Pinned 48px (`h-12`) violet gradient CTA (`bg-gradient-to-r from-violet-600 to-violet-500 rounded-xl font-semibold text-white shadow-md shadow-violet-900/25 active:scale-[0.97]`).
+
 
