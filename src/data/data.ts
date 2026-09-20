@@ -430,6 +430,23 @@ export function getMockDatabase(): MockDatabaseState {
     if (raw) {
       const parsed = JSON.parse(raw) as MockDatabaseState;
       if (parsed && parsed.transactions && parsed.profile) {
+        // Guarantee default Cash wallet is always present
+        const hasCash = parsed.accounts?.some((a) => a.type === 'CASH' || a.id === 'acc_cash');
+        if (!hasCash) {
+          const defaultCash = SEED_DATA.accounts.find((a) => a.type === 'CASH') || {
+            id: 'acc_cash',
+            name: 'Cash Wallet',
+            type: 'CASH' as const,
+            currency: 'INR',
+            currentBalance: 0,
+            maskNumber: 'CASH',
+            institutionName: 'Physical Cash',
+            isActive: true,
+          };
+          parsed.accounts = parsed.accounts || [];
+          parsed.accounts.push(defaultCash);
+          saveMockDatabase(parsed);
+        }
         return parsed;
       }
     }
@@ -570,6 +587,10 @@ export const MockApiClient = {
 
   async deleteAccount(id: string): Promise<ApiResponse<{ id: string }>> {
     const db = getMockDatabase();
+    const target = db.accounts.find((a) => a.id === id);
+    if (target && (target.type === 'CASH' || target.id === 'acc_cash')) {
+      return createApiResponse({ id }, undefined, 'Default Cash wallet cannot be deleted', 400);
+    }
     db.accounts = db.accounts.filter((a) => a.id !== id);
     saveMockDatabase(db);
     return createApiResponse({ id }, undefined, 'Account deleted successfully');

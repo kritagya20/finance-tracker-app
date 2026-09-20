@@ -776,5 +776,9 @@ Both `CategoryListScreen.tsx` and `PaymentAccountsScreen.tsx` strictly follow an
    - Instead, a custom modal dialog (`ConfirmDeleteModal` pattern) with a rose `AlertTriangle` badge, item preview card with balance/type, and dual 48px Cancel (secondary outline) / "Yes, Delete" (destructive gradient `from-rose-600 to-rose-500`) action buttons is presented.
 7. **Ergonomic Bottom Thumb-Zone CTA**:
    - Pinned 48px (`h-12`) violet gradient CTA (`bg-gradient-to-r from-violet-600 to-violet-500 rounded-xl font-semibold text-white shadow-md shadow-violet-900/25 active:scale-[0.97]`).
+8. **System Default Instruments Invariant**:
+   - The Cash Wallet (`type: 'CASH'`) is an immutable system default instrument and is strictly non-deletable.
+   - Rows for the default Cash wallet display an uppercase `DEFAULT` badge (`bg-violet-500/10 text-violet-500 dark:text-violet-400 border border-violet-500/20`) and completely omit the delete action button.
+
 
 

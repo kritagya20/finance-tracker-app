@@ -86,8 +86,13 @@ export const PaymentAccountsScreen: React.FC<PaymentAccountsScreenProps> = ({
     };
   };
 
+  const isDefaultAccount = (acc: Account) => {
+    const t = acc.type?.toUpperCase() || '';
+    return t === 'CASH' || acc.id === 'acc_cash' || acc.name.toLowerCase().trim() === 'cash wallet';
+  };
+
   const handleConfirmDelete = async () => {
-    if (!accountToDelete || !onDeleteAccount) return;
+    if (!accountToDelete || !onDeleteAccount || isDefaultAccount(accountToDelete)) return;
     try {
       setIsDeleting(true);
       await onDeleteAccount(accountToDelete.id);
@@ -209,7 +214,8 @@ export const PaymentAccountsScreen: React.FC<PaymentAccountsScreenProps> = ({
       ) : (
         <div className="flex flex-col rounded-2xl border border-theme-border bg-theme-card/50 divide-y divide-theme-border overflow-hidden">
           {filteredAccounts.map((acc) => {
-            const mask = acc.maskNumber || '4102';
+            const isDefault = isDefaultAccount(acc);
+            const mask = acc.maskNumber || (isDefault ? 'CASH' : '4102');
             const badgeInfo = getBadgeInfo(acc.type);
 
             return (
@@ -226,9 +232,9 @@ export const PaymentAccountsScreen: React.FC<PaymentAccountsScreenProps> = ({
                     <p className="text-xs font-bold text-theme-primary truncate">
                       {acc.name}
                     </p>
-                    <div className="flex items-center gap-2 mt-0.5">
+                    <div className="flex items-center gap-1.5 mt-0.5">
                       <span className="text-[10px] font-mono text-theme-muted">
-                        •••• {mask}
+                        {isDefault ? 'Liquid Cash' : `•••• ${mask}`}
                       </span>
                       <span
                         className={cn(
@@ -238,6 +244,11 @@ export const PaymentAccountsScreen: React.FC<PaymentAccountsScreenProps> = ({
                       >
                         {badgeInfo.label}
                       </span>
+                      {isDefault && (
+                        <span className="inline-flex items-center rounded-md px-1.5 py-0.2 text-[9px] font-semibold uppercase tracking-wider bg-violet-500/10 text-violet-500 dark:text-violet-400 border border-violet-500/20">
+                          Default
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -250,7 +261,7 @@ export const PaymentAccountsScreen: React.FC<PaymentAccountsScreenProps> = ({
                     <span className="text-[10px] text-theme-muted">Balance</span>
                   </div>
 
-                  {onDeleteAccount && (
+                  {onDeleteAccount && !isDefault && (
                     <button
                       type="button"
                       onClick={() => setAccountToDelete(acc)}
