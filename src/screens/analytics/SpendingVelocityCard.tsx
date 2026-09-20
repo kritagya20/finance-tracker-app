@@ -1,6 +1,8 @@
 import React, { useState, useMemo, useRef } from 'react';
+import { Calendar, ChevronRight } from 'lucide-react';
 import { formatCurrency } from '../../domain/engine/moneyUtils';
 import { Transaction } from '../../domain/models/types';
+import { VelocitySpendDrawer } from './VelocitySpendDrawer';
 
 interface SpendingVelocityCardProps {
   transactions: Transaction[];
@@ -9,6 +11,8 @@ interface SpendingVelocityCardProps {
   periodStart: Date;
   periodEnd: Date;
   hideBalances: boolean;
+  timeframe?: 'WEEK' | 'MONTH' | 'YEAR';
+  onSelectTransaction?: (tx: Transaction) => void;
 }
 
 interface DataPoint {
@@ -18,6 +22,12 @@ interface DataPoint {
   daily: number;
 }
 
+interface XTick {
+  day: number;
+  label: string;
+  x: number;
+}
+
 export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
   transactions,
   totalExpense,
@@ -25,9 +35,14 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
   periodStart,
   periodEnd,
   hideBalances,
+  timeframe,
+  onSelectTransaction,
 }) => {
   const [hoveredPoint, setHoveredPoint] = useState<DataPoint | null>(null);
+  const [selectedDayPoint, setSelectedDayPoint] = useState<DataPoint | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
 
   // 1. Calculate number of days in the period
   const totalDays = useMemo(() => {
@@ -36,7 +51,8 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
     return Math.max(days, 1);
   }, [periodStart, periodEnd]);
 
-  // 2. Aggregate and smoothly interpolate cumulative velocity
+
+  // 3. Aggregate and smoothly interpolate cumulative velocity
   const { dataPoints, maxScale } = useMemo(() => {
     const dailyMap = new Map<number, number>();
 
@@ -61,26 +77,6 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
       rawCumulatives.push(running);
     }
 
-    // Ensure initial baseline is non-zero so curve starts at ~0k-1k like reference
-    const initialFloor = Math.min(totalExpense * 0.05, 100000); // 1k
-    for (let i = 0; i < rawCumulatives.length; i++) {
-      if (rawCumulatives[i] < initialFloor) {
-        rawCumulatives[i] = initialFloor * ((i + 1) / totalDays);
-      }
-    }
-
-    // Multi-pass moving average smoothing to eliminate right-angle stair steps
-    const smoothed = [...rawCumulatives];
-    for (let pass = 0; pass < 4; pass++) {
-      for (let i = 1; i < smoothed.length - 1; i++) {
-        smoothed[i] = 0.25 * smoothed[i - 1] + 0.5 * smoothed[i] + 0.25 * smoothed[i + 1];
-      }
-    }
-    // Guarantee end point equals totalExpense
-    if (smoothed.length > 0) {
-      smoothed[smoothed.length - 1] = Math.max(totalExpense, initialFloor);
-    }
-
     const points: DataPoint[] = [];
     for (let day = 1; day <= totalDays; day++) {
       const pointDate = new Date(periodStart);
@@ -90,25 +86,34 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
       points.push({
         day,
         dateStr,
-        cumulative: Math.round(smoothed[day - 1]),
+        cumulative: rawCumulatives[day - 1],
         daily: dailyMap.get(day) || 0,
       });
     }
 
-    // Tailor Y-axis scale to total expense so curve fills the card height like reference image 1
-    const effectiveSpend = Math.max(totalExpense, 1000000);
-    const maxScaleVal = Math.ceil((effectiveSpend * 1.06) / 200000) * 200000;
+    // Dynamic Y-axis ceiling: 4 clean interval tiers matching reference image
+    const effectiveSpend = Math.max(totalExpense, 100000);
+    const targetCeiling = effectiveSpend * 1.05;
+    const rawStep = targetCeiling / 4;
+    // Choose clean step increment (multiples of ₹500 or ₹1,000)
+    let step = 50000; // ₹500
+    if (rawStep > 500000) {
+      step = Math.ceil(rawStep / 50000) * 50000;
+    } else {
+      step = Math.ceil(rawStep / 25000) * 25000;
+    }
+    const maxScaleVal = Math.max(step * 4, 100000);
 
     return { dataPoints: points, maxScale: maxScaleVal };
   }, [transactions, periodStart, periodEnd, totalDays, totalExpense]);
 
-  // 3. SVG Coordinates Mapping
+  // 4. SVG Coordinates Mapping
   const chartWidth = 320;
-  const chartHeight = 160;
+  const chartHeight = 150;
   const paddingLeft = 36;
   const paddingRight = 10;
-  const paddingTop = 12;
-  const paddingBottom = 24;
+  const paddingTop = 14;
+  const paddingBottom = 22;
 
   const plotWidth = chartWidth - paddingLeft - paddingRight;
   const plotHeight = chartHeight - paddingTop - paddingBottom;
@@ -124,7 +129,7 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
     return paddingTop + plotHeight - ratio * plotHeight;
   };
 
-  // 4. Generate smooth Catmull-Rom cubic spline path
+  // 5. Generate smooth Monotone Cubic Hermite Spline (Fritsch-Carlson)
   const curvePoints = useMemo(() => {
     return dataPoints.map((p) => ({
       x: getX(p.day),
@@ -133,36 +138,83 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
   }, [dataPoints, maxScale]);
 
   const pathD = useMemo(() => {
-    if (curvePoints.length === 0) return '';
-    if (curvePoints.length === 1) return `M ${curvePoints[0].x} ${curvePoints[0].y}`;
+    const n = curvePoints.length;
+    if (n === 0) return '';
+    if (n === 1) return `M ${curvePoints[0].x.toFixed(2)} ${curvePoints[0].y.toFixed(2)}`;
+    if (n === 2) {
+      return `M ${curvePoints[0].x.toFixed(2)} ${curvePoints[0].y.toFixed(2)} L ${curvePoints[1].x.toFixed(2)} ${curvePoints[1].y.toFixed(2)}`;
+    }
 
-    let d = `M ${curvePoints[0].x} ${curvePoints[0].y}`;
-    for (let i = 0; i < curvePoints.length - 1; i++) {
-      const p0 = curvePoints[i === 0 ? i : i - 1];
-      const p1 = curvePoints[i];
-      const p2 = curvePoints[i + 1];
-      const p3 = curvePoints[i + 2 < curvePoints.length ? i + 2 : i + 1];
+    // Calculate secant slopes between adjacent points
+    const dxs: number[] = new Array(n - 1);
+    const dys: number[] = new Array(n - 1);
+    const slopes: number[] = new Array(n - 1);
 
-      const cp1x = p1.x + (p2.x - p0.x) / 6;
-      const cp1y = p1.y + (p2.y - p0.y) / 6;
-      const cp2x = p2.x - (p3.x - p1.x) / 6;
-      const cp2y = p2.y - (p3.y - p1.y) / 6;
+    for (let i = 0; i < n - 1; i++) {
+      const dx = curvePoints[i + 1].x - curvePoints[i].x;
+      const dy = curvePoints[i + 1].y - curvePoints[i].y;
+      dxs[i] = dx;
+      dys[i] = dy;
+      slopes[i] = dx !== 0 ? dy / dx : 0;
+    }
 
-      d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+    // Tangents initialization
+    const m: number[] = new Array(n);
+    m[0] = slopes[0];
+    m[n - 1] = slopes[n - 2];
+
+    for (let i = 1; i < n - 1; i++) {
+      if (slopes[i - 1] * slopes[i] <= 0) {
+        m[i] = 0;
+      } else {
+        m[i] = (slopes[i - 1] + slopes[i]) / 2;
+      }
+    }
+
+    // Fritsch-Carlson monotonicity condition
+    for (let i = 0; i < n - 1; i++) {
+      if (slopes[i] === 0) {
+        m[i] = 0;
+        m[i + 1] = 0;
+      } else {
+        const alpha = m[i] / slopes[i];
+        const beta = m[i + 1] / slopes[i];
+        const hyp = alpha * alpha + beta * beta;
+        if (hyp > 9) {
+          const tau = 3 / Math.sqrt(hyp);
+          m[i] = tau * alpha * slopes[i];
+          m[i + 1] = tau * beta * slopes[i];
+        }
+      }
+    }
+
+    // Convert Hermite intervals to cubic Bézier control points
+    let d = `M ${curvePoints[0].x.toFixed(2)} ${curvePoints[0].y.toFixed(2)}`;
+    for (let i = 0; i < n - 1; i++) {
+      const p0 = curvePoints[i];
+      const p1 = curvePoints[i + 1];
+      const dx = dxs[i];
+
+      const cp1x = p0.x + dx / 3;
+      const cp1y = p0.y + (m[i] * dx) / 3;
+      const cp2x = p1.x - dx / 3;
+      const cp2y = p1.y - (m[i + 1] * dx) / 3;
+
+      d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p1.x.toFixed(2)} ${p1.y.toFixed(2)}`;
     }
     return d;
   }, [curvePoints]);
 
-  // Closed area for subtle gradient fill under curve
+  // Closed area for subtle ambient gradient fill
   const areaD = useMemo(() => {
     if (curvePoints.length < 2 || !pathD) return '';
     const first = curvePoints[0];
     const last = curvePoints[curvePoints.length - 1];
     const bottomY = paddingTop + plotHeight;
-    return `${pathD} L ${last.x} ${bottomY} L ${first.x} ${bottomY} Z`;
+    return `${pathD} L ${last.x.toFixed(2)} ${bottomY} L ${first.x.toFixed(2)} ${bottomY} Z`;
   }, [curvePoints, pathD, paddingTop, plotHeight]);
 
-  // 5. Y-Axis Ticks (5 clean tiers matching reference)
+  // 6. Y-Axis Ticks (clean 5-tier grid)
   const yTicks = useMemo(() => {
     const tiers = [1, 0.75, 0.5, 0.25, 0];
     return tiers.map((ratio) => {
@@ -180,7 +232,82 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
     });
   }, [maxScale, paddingTop, plotHeight]);
 
-  // 6. Interactive Scrubber Event Handlers
+  // 7. X-Axis Ticks dynamically computed based on selected timeline
+  const xTicks = useMemo<XTick[]>(() => {
+    if (totalDays <= 1) {
+      return [{ day: 1, label: '1', x: paddingLeft + plotWidth / 2 }];
+    }
+
+    // A. Weekly Timeline (<= 7 days): show key weekdays (Mon, Wed, Fri, Sun)
+    if (timeframe === 'WEEK' || totalDays <= 7) {
+      const days = [1, 3, 5, 7].filter((d) => d <= totalDays);
+      if (days[days.length - 1] !== totalDays) {
+        days.push(totalDays);
+      }
+      return days.map((day) => {
+        const d = new Date(periodStart);
+        d.setDate(periodStart.getDate() + (day - 1));
+        const label = d.toLocaleDateString('en-US', { weekday: 'short' });
+        return {
+          day,
+          label,
+          x: getX(day),
+        };
+      });
+    }
+
+    // B. Monthly Timeline (8 to 35 days): show key milestone days (1, 10, 20, end of month)
+    if (timeframe === 'MONTH' || (totalDays >= 8 && totalDays <= 35)) {
+      const dayCandidates = [1, 10, 20, totalDays];
+      const uniqueDays = Array.from(new Set(dayCandidates)).sort((a, b) => a - b);
+      return uniqueDays.map((day) => ({
+        day,
+        label: `${day}`,
+        x: getX(day),
+      }));
+    }
+
+    // C. Yearly Timeline (>= 120 days): show quarterly/seasonal month labels (Jan, Apr, Jul, Oct, Dec)
+    if (timeframe === 'YEAR' || totalDays >= 120) {
+      const ratios = [0, 0.25, 0.5, 0.75, 1];
+      return ratios.map((ratio) => {
+        const day = Math.max(1, Math.min(totalDays, Math.round(1 + ratio * (totalDays - 1))));
+        const d = new Date(periodStart);
+        d.setDate(periodStart.getDate() + (day - 1));
+        const label = d.toLocaleDateString('en-US', { month: 'short' });
+        return {
+          day,
+          label,
+          x: getX(day),
+        };
+      });
+    }
+
+    // D. Custom intermediate range: 4 evenly spaced milestone dates
+    const count = 4;
+    const ticks: XTick[] = [];
+    for (let i = 0; i < count; i++) {
+      const ratio = i / (count - 1);
+      const day = Math.max(1, Math.min(totalDays, Math.round(1 + ratio * (totalDays - 1))));
+      const d = new Date(periodStart);
+      d.setDate(periodStart.getDate() + (day - 1));
+      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      ticks.push({
+        day,
+        label,
+        x: getX(day),
+      });
+    }
+    return ticks;
+  }, [timeframe, totalDays, periodStart, plotWidth, paddingLeft]);
+
+  // Daily velocity rate (burn rate)
+  const dailyAvg = useMemo(() => {
+    if (totalDays <= 0) return 0;
+    return Math.round(totalExpense / totalDays);
+  }, [totalExpense, totalDays]);
+
+  // 7. Interactive Scrubber Event Handlers (Scrubbing only - no sudden drawer jumps!)
   const handleTouchOrMouse = (clientX: number) => {
     if (!svgRef.current || dataPoints.length === 0) return;
     const rect = svgRef.current.getBoundingClientRect();
@@ -192,45 +319,84 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
     setHoveredPoint(found);
   };
 
+  const handlePointClick = (clientX: number) => {
+    handleTouchOrMouse(clientX);
+  };
+
   return (
-    <div className="rounded-3xl border border-white/5 bg-[#14151a] p-6 shadow-xl transition-colors select-none">
-      {/* 1. Card Header */}
+    <div
+      ref={cardRef}
+      className="relative rounded-3xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-gradient-to-b dark:from-[#13151f] dark:to-[#0c0d14] p-5 sm:p-6 shadow-xl transition-all select-none overflow-hidden"
+    >
+      {/* Top Hairline Specular Reflection */}
+      <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/20 dark:via-white/10 to-transparent" />
+
+      {/* 1. Card Header: High-utility velocity indicator instead of static 'Cumulative expense' */}
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold tracking-tight text-white">
+        <h2 className="text-base font-semibold tracking-tight text-slate-900 dark:text-white">
           Spending Velocity
         </h2>
-        <span className="text-sm font-normal text-slate-400">
-          Cumulative
-        </span>
+        {hoveredPoint ? (
+          hoveredPoint.daily > 0 ? (
+            <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/20">
+              +{formatCurrency(hoveredPoint.daily, undefined, false)} added
+            </span>
+          ) : (
+            <span className="text-xs font-mono font-medium px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              ₹0 spent
+            </span>
+          )
+        ) : (
+          <span className="text-xs font-mono font-medium px-2.5 py-1 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/[0.08]">
+            Avg: {hideBalances ? '••••••' : `${formatCurrency(dailyAvg, undefined, false)}/day`}
+          </span>
+        )}
       </div>
 
-      {/* 2. Hero Spend vs Budget Metric in Clean Sans-Serif Bold */}
+      {/* 2. Hero Spend vs Budget Metric with dynamic scrubbing */}
       <div className="mt-3 flex items-baseline">
-        <span className="text-3xl sm:text-[34px] font-bold font-sans tracking-tight text-white leading-none">
-          {hideBalances ? '••••••' : formatCurrency(hoveredPoint ? hoveredPoint.cumulative : totalExpense, undefined, false)}
+        <span className="text-3xl sm:text-[34px] font-bold font-mono tracking-tight text-slate-900 dark:text-white leading-none">
+          {hideBalances
+            ? '••••••'
+            : formatCurrency(hoveredPoint ? hoveredPoint.cumulative : totalExpense, undefined, false)}
         </span>
-        <span className="ml-2.5 text-sm font-sans text-slate-400 font-normal">
-          of {formatCurrency(totalBudget, undefined, false)} budget
+        <span className="ml-2.5 text-sm font-sans text-slate-500 dark:text-slate-400 font-normal truncate">
+          {hoveredPoint
+            ? `on ${hoveredPoint.dateStr}`
+            : `of ${formatCurrency(totalBudget, undefined, false)} budget`}
         </span>
       </div>
 
       {/* 3. The Velocity SVG Spline Canvas */}
-      <div className="mt-5 relative w-full overflow-hidden">
+      <div className="mt-4 relative w-full overflow-hidden">
         <svg
           ref={svgRef}
           viewBox={`0 0 ${chartWidth} ${chartHeight}`}
           className="w-full h-auto overflow-visible cursor-crosshair touch-none"
+          onClick={(e) => {
+            e.stopPropagation();
+            handlePointClick(e.clientX);
+          }}
           onMouseMove={(e) => handleTouchOrMouse(e.clientX)}
-          onMouseLeave={() => setHoveredPoint(null)}
+          onTouchStart={(e) => {
+            if (e.touches.length > 0) handleTouchOrMouse(e.touches[0].clientX);
+          }}
           onTouchMove={(e) => {
             if (e.touches.length > 0) handleTouchOrMouse(e.touches[0].clientX);
           }}
-          onTouchEnd={() => setHoveredPoint(null)}
         >
           <defs>
-            <linearGradient id="velocityGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.22" />
-              <stop offset="100%" stopColor="#a78bfa" stopOpacity="0.0" />
+            <linearGradient
+              id="velocityGradient"
+              x1="0"
+              y1={paddingTop}
+              x2="0"
+              y2={paddingTop + plotHeight}
+              gradientUnits="userSpaceOnUse"
+            >
+              <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.22" />
+              <stop offset="65%" stopColor="#8b5cf6" stopOpacity="0.05" />
+              <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.0" />
             </linearGradient>
           </defs>
 
@@ -242,14 +408,15 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
                 y1={tick.y}
                 x2={paddingLeft + plotWidth}
                 y2={tick.y}
-                stroke="rgba(255, 255, 255, 0.08)"
+                stroke="currentColor"
+                className="text-slate-200 dark:text-white/[0.07]"
                 strokeWidth="1"
               />
               <text
                 x={paddingLeft - 8}
                 y={tick.y + 3.5}
                 textAnchor="end"
-                className="fill-slate-500 text-[11px] font-sans select-none"
+                className="fill-slate-400 dark:fill-slate-500 text-[10px] font-sans select-none"
               >
                 {tick.label}
               </text>
@@ -265,7 +432,7 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
               d={pathD}
               fill="none"
               stroke="#a78bfa"
-              strokeWidth="3"
+              strokeWidth="2.75"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
@@ -273,7 +440,8 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
 
           {/* Interactive Touch Scrubber Indicator */}
           {hoveredPoint && (
-            <g>
+            <g className="transition-all duration-150 ease-out">
+              {/* Vertical inspection hairline */}
               <line
                 x1={getX(hoveredPoint.day)}
                 y1={paddingTop}
@@ -282,7 +450,17 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
                 stroke="#a78bfa"
                 strokeWidth="1.5"
                 strokeDasharray="3 3"
-                opacity="0.8"
+                opacity="0.85"
+              />
+
+              {/* Concentric glowing radar beacon */}
+              <circle
+                cx={getX(hoveredPoint.day)}
+                cy={getY(hoveredPoint.cumulative)}
+                r="8"
+                fill="#8b5cf6"
+                opacity="0.25"
+                className="animate-ping"
               />
               <circle
                 cx={getX(hoveredPoint.day)}
@@ -293,28 +471,155 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
                 strokeWidth="2"
                 className="drop-shadow-md"
               />
+
+              {/* Floating micro-pill badge above/below scrubber point */}
+              {(() => {
+                const ptX = getX(hoveredPoint.day);
+                const ptY = getY(hoveredPoint.cumulative);
+                const isNearTop = ptY < paddingTop + 24;
+                const badgeY = isNearTop ? ptY + 16 : ptY - 14;
+                const badgeText = formatCurrency(hoveredPoint.cumulative, undefined, false);
+                const clampedBadgeX = Math.max(paddingLeft + 24, Math.min(paddingLeft + plotWidth - 24, ptX));
+
+                return (
+                  <g>
+                    <rect
+                      x={clampedBadgeX - 26}
+                      y={badgeY - 8}
+                      width="52"
+                      height="16"
+                      rx="4"
+                      className="fill-slate-900 dark:fill-[#1e1f29] stroke-violet-500/40"
+                      strokeWidth="1"
+                    />
+                    <text
+                      x={clampedBadgeX}
+                      y={badgeY + 3.5}
+                      textAnchor="middle"
+                      className="fill-white text-[9px] font-mono font-semibold select-none"
+                    >
+                      {badgeText}
+                    </text>
+                  </g>
+                );
+              })()}
             </g>
           )}
 
-          {/* X-Axis Bound Labels (Day 1 on Left, Day N on Right) */}
-          <text
-            x={paddingLeft}
-            y={chartHeight - 4}
-            textAnchor="start"
-            className="fill-slate-500 text-[11px] font-sans select-none font-medium"
-          >
-            1
-          </text>
-          <text
-            x={paddingLeft + plotWidth}
-            y={chartHeight - 4}
-            textAnchor="end"
-            className="fill-slate-500 text-[11px] font-sans select-none font-medium"
-          >
-            {totalDays}
-          </text>
+          {/* Dynamic Timeline Milestones and Ticks */}
+          {xTicks.map((tick, idx) => {
+            const isFirst = idx === 0;
+            const isLast = idx === xTicks.length - 1;
+            const anchor = isFirst ? 'start' : isLast ? 'end' : 'middle';
+            return (
+              <g key={idx}>
+                <line
+                  x1={tick.x}
+                  y1={paddingTop + plotHeight}
+                  x2={tick.x}
+                  y2={paddingTop + plotHeight + 3}
+                  stroke="currentColor"
+                  className="text-slate-300 dark:text-white/15"
+                  strokeWidth="1"
+                />
+                <text
+                  x={tick.x}
+                  y={chartHeight - 4}
+                  textAnchor={anchor}
+                  className="fill-slate-400 dark:fill-slate-500 text-[10px] sm:text-[11px] font-sans select-none font-medium"
+                >
+                  {tick.label}
+                </text>
+              </g>
+            );
+          })}
         </svg>
       </div>
+
+      {/* 4. Inspection Rail */}
+      <div className="mt-4 pt-3.5 border-t border-slate-200/70 dark:border-white/[0.08]">
+        {hoveredPoint ? (
+          <div className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/70 dark:border-white/[0.08] shadow-xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="flex size-7 items-center justify-center rounded-xl bg-violet-500/10 text-violet-500 shrink-0">
+                <Calendar className="size-4" />
+              </div>
+              <div className="flex flex-col min-w-0 text-left">
+                <span className="text-xs font-semibold text-slate-900 dark:text-white truncate">
+                  {hoveredPoint.dateStr}
+                </span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-sans">
+                  {hoveredPoint.daily > 0
+                    ? `${formatCurrency(hoveredPoint.daily, undefined, false)} spent`
+                    : '₹0 spent • No expenses'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {hoveredPoint.daily > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedDayPoint(hoveredPoint);
+                    setIsDrawerOpen(true);
+                  }}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold active:scale-95 transition-all shadow-xs"
+                >
+                  <span>View expenses</span>
+                  <ChevronRight className="size-3.5" />
+                </button>
+              ) : (
+                <span className="text-xs font-medium text-slate-400 dark:text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/60 dark:bg-white/[0.05]">
+                  Zero spend
+                </span>
+              )}
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedDayPoint(null);
+                  setIsDrawerOpen(true);
+                }}
+                className="inline-flex items-center gap-0.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 px-1 py-1 transition-colors"
+                title="View all expenses for this period"
+              >
+                <span>All</span>
+                <ChevronRight className="size-3" />
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
+            <span>Tap curve to inspect day</span>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedDayPoint(null);
+                setIsDrawerOpen(true);
+              }}
+              className="inline-flex items-center gap-1 text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline active:opacity-75"
+            >
+              <span>View all expenses</span>
+              <ChevronRight className="size-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* 5. Velocity Spend Drawer (Bottom Sheet) */}
+      <VelocitySpendDrawer
+        isOpen={isDrawerOpen}
+        onClose={() => setIsDrawerOpen(false)}
+        dayPoint={selectedDayPoint}
+        transactions={transactions}
+        periodStart={periodStart}
+        periodEnd={periodEnd}
+        totalExpense={totalExpense}
+        totalBudget={totalBudget}
+        hideBalances={hideBalances}
+        onSelectTransaction={onSelectTransaction}
+      />
     </div>
   );
 };

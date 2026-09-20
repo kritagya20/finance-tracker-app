@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, BarChart3 } from 'lucide-react';
 import { FinanceSummary, Transaction, Category, Budget } from '../../domain/models/types';
 import { DEFAULT_CATEGORIES } from '../../domain/engine/categories';
 import { CalendarPicker, DateRange } from '../../components/common/CalendarPicker';
+import { EmptyState } from '../../components/common/EmptyState';
 import { SpendingVelocityCard } from './SpendingVelocityCard';
 import { CategoryDonutDial } from './CategoryDonutDial';
 import { BudgetEnvelopesSection } from './BudgetEnvelopesSection';
@@ -14,6 +15,9 @@ interface AnalyticsScreenProps {
   categories?: Category[];
   budgets?: Budget[];
   hideBalances: boolean;
+  onOpenAddModal?: () => void;
+  onNavigate?: (tab: 'home' | 'activity' | 'analytics' | 'profile') => void;
+  onSelectTransaction?: (tx: Transaction) => void;
 }
 
 export type AnalyticsTimeframe = 'WEEK' | 'MONTH' | 'YEAR';
@@ -106,6 +110,9 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
   categories = DEFAULT_CATEGORIES,
   budgets = [],
   hideBalances,
+  onOpenAddModal,
+  onNavigate,
+  onSelectTransaction,
 }) => {
   const [timeframe, setTimeframe] = useState<AnalyticsTimeframe>('MONTH');
   const [customRange, setCustomRange] = useState<DateRange | null>(null);
@@ -162,6 +169,9 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
           name: cat.name,
           total,
           colorHex: cat.colorHex,
+          iconName: cat.iconName,
+          bgClass: cat.bgClass,
+          textClass: cat.textClass,
           isIncome: cat.isIncome,
         };
       })
@@ -265,30 +275,65 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
         ))}
       </div>
 
-      {/* 3. Dashboard 1: Spending Velocity (Cumulative Curve & Run-rate) */}
-      <SpendingVelocityCard
-        transactions={periodTransactions}
-        totalExpense={totalExpense}
-        totalBudget={totalBudget}
-        periodStart={period.start}
-        periodEnd={period.end}
-        hideBalances={hideBalances}
-      />
+      {/* 3. Screen Content: Engaging No-Data State OR Velocity + Category Hub */}
+      {totalExpense === 0 || periodTransactions.length === 0 ? (
+        <EmptyState
+          icon={BarChart3}
+          badge={period.label}
+          title="No Spending Activity"
+          description={`You haven't logged any expenses for ${period.label}. Log an expense or adjust your timeframe to view spending velocity and category insights.`}
+          actionLabel={onOpenAddModal ? "+ Log an Expense" : undefined}
+          onAction={onOpenAddModal}
+          secondaryActionLabel={
+            timeframe !== 'MONTH'
+              ? "Switch to Month"
+              : onNavigate
+              ? "View All Activity"
+              : undefined
+          }
+          onSecondaryAction={() => {
+            if (timeframe !== 'MONTH') {
+              handleTimeframeChange('MONTH');
+            } else if (onNavigate) {
+              onNavigate('activity');
+            }
+          }}
+          className="mt-2"
+        />
+      ) : (
+        <>
+          {/* Hero Spending Velocity & Pacing Card */}
+          <SpendingVelocityCard
+            transactions={periodTransactions}
+            totalExpense={totalExpense}
+            totalBudget={totalBudget}
+            periodStart={period.start}
+            periodEnd={period.end}
+            hideBalances={hideBalances}
+            timeframe={timeframe}
+            onSelectTransaction={onSelectTransaction}
+          />
 
-      {/* 4. Dashboard 2: Category Breakdown (Donut Dial with Center Total) */}
-      <CategoryDonutDial
-        categorySpending={categorySpending}
-        totalExpense={totalExpense}
-        hideBalances={hideBalances}
-      />
+          {/* 2. Category Breakdown Donut Dial matching reference */}
+          <CategoryDonutDial
+            categorySpending={categorySpending}
+            totalExpense={totalExpense}
+            transactions={periodTransactions}
+            periodLabel={period.label}
+            hideBalances={hideBalances}
+          />
 
-      {/* 5. Dashboard 3: Budget Envelopes (Contextual Status Badges & Progress) */}
-      <BudgetEnvelopesSection
-        categorySpending={categorySpending}
-        categories={categories}
-        budgets={budgets}
-        hideBalances={hideBalances}
-      />
+          {/* 3. Budget Envelopes Section matching reference */}
+          <BudgetEnvelopesSection
+            categorySpending={categorySpending}
+            categories={categories}
+            budgets={budgets}
+            transactions={periodTransactions}
+            periodLabel={period.label}
+            hideBalances={hideBalances}
+          />
+        </>
+      )}
     </div>
   );
 };

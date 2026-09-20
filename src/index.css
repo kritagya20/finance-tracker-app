@@ -80,6 +80,31 @@ html.dark, [data-theme='dark'] {
   animation: shake 0.35s cubic-bezier(0.2, 0, 0, 1);
 }
 
+@keyframes glass-sheen {
+  0% {
+    transform: translateX(-160%) skewX(-25deg);
+    opacity: 0;
+  }
+  2% {
+    opacity: 0.7;
+  }
+  10% {
+    opacity: 0.7;
+  }
+  14% {
+    transform: translateX(300%) skewX(-25deg);
+    opacity: 0;
+  }
+  15%, 100% {
+    transform: translateX(300%) skewX(-25deg);
+    opacity: 0;
+  }
+}
+
+.animate-glass-sheen {
+  animation: glass-sheen 18s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
 body {
   margin: 0;
   padding: 0;

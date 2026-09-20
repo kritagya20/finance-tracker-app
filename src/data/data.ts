@@ -123,7 +123,13 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
     rawSmsText: 'Sent Rs.280.00 from HDFC Bank A/C **4102 to STARBUCKS',
     notes: 'Coffee & snack',
     createdAt: now - oneHour * 3,
-    updatedAt: now - oneHour * 3,
+    updatedAt: now - oneHour * 1,
+    editHistory: [
+      {
+        timestamp: now - oneHour * 1,
+        summary: 'Added note: "Coffee & snack"',
+      },
+    ],
   },
   {
     id: 'tx_uber_today',
@@ -154,7 +160,13 @@ export const INITIAL_TRANSACTIONS: Transaction[] = [
     source: 'MANUAL',
     notes: 'Home essentials (2 items)',
     createdAt: now - oneDay,
-    updatedAt: now - oneDay,
+    updatedAt: now - oneHour * 12,
+    editHistory: [
+      {
+        timestamp: now - oneHour * 12,
+        summary: 'Reclassified category from General Expense to Shopping',
+      },
+    ],
   },
 
   // 12 SEPTEMBER

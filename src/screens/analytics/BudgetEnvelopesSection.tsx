@@ -1,13 +1,16 @@
-import React, { useMemo } from 'react';
-import { AlertTriangle, Check, TrendingUp } from 'lucide-react';
-import { Budget, Category } from '../../domain/models/types';
+import React, { useState, useMemo } from 'react';
+import { AlertTriangle, Check, ChevronRight, TrendingUp } from 'lucide-react';
+import { Budget, Category, Transaction } from '../../domain/models/types';
 import { formatCurrency } from '../../domain/engine/moneyUtils';
 import { CategorySpendItem } from './CategoryDonutDial';
+import { CategorySpendDrawer } from './CategorySpendDrawer';
 
 interface BudgetEnvelopesSectionProps {
   categorySpending: CategorySpendItem[];
   categories: Category[];
   budgets: Budget[];
+  transactions: Transaction[];
+  periodLabel?: string;
   hideBalances: boolean;
 }
 
@@ -25,15 +28,20 @@ export const BudgetEnvelopesSection: React.FC<BudgetEnvelopesSectionProps> = ({
   categorySpending,
   categories,
   budgets,
+  transactions,
+  periodLabel,
   hideBalances,
 }) => {
-  // Compute envelope progress for each category
-  const envelopes = useMemo<EnvelopeItem[]>(() => {
-    // Map existing budgets by categoryId
-    const budgetMap = new Map<string, Budget>();
-    budgets.forEach((b) => budgetMap.set(b.categoryId, b));
+  const [selectedEnvelope, setSelectedEnvelope] = useState<EnvelopeItem | null>(null);
 
-    // Derive envelopes for all expense categories that either have a budget or have spending
+  const envelopes = useMemo<EnvelopeItem[]>(() => {
+    const budgetMap = new Map<string, Budget>();
+    budgets.forEach((b) => mapBudget(budgetMap, b));
+
+    function mapBudget(map: Map<string, Budget>, b: Budget) {
+      map.set(b.categoryId, b);
+    }
+
     const expenseCategories = categories.filter((c) => !c.isIncome);
 
     const items: EnvelopeItem[] = expenseCategories
@@ -42,20 +50,18 @@ export const BudgetEnvelopesSection: React.FC<BudgetEnvelopesSectionProps> = ({
         const spent = spendRecord ? spendRecord.total : 0;
         const configuredBudget = budgetMap.get(cat.id);
 
-        // Limit in paise (e.g. from configured budget, or fallback default based on category type)
         let limit = configuredBudget ? configuredBudget.limitAmount : 0;
         if (!limit) {
-          // Dynamic sensible fallbacks matching reference
           if (cat.id === 'cat_dining' || cat.name.toLowerCase().includes('dining') || cat.name.toLowerCase().includes('food')) {
             limit = 1500000; // ₹15,000
           } else if (cat.id === 'cat_shopping' || cat.name.toLowerCase().includes('shopping')) {
             limit = 500000; // ₹5,000
-          } else if (cat.id === 'cat_fuel' || cat.name.toLowerCase().includes('transport')) {
+          } else if (cat.id === 'cat_fuel' || cat.name.toLowerCase().includes('transport') || cat.name.toLowerCase().includes('travel')) {
             limit = 800000; // ₹8,000
           } else if (cat.id === 'cat_bills' || cat.name.toLowerCase().includes('bills')) {
             limit = 600000; // ₹6,000
           } else {
-            limit = Math.max(spent * 1.2, 500000); // 120% of spend or ₹5,000
+            limit = Math.max(spent * 1.25, 500000);
           }
         }
 
@@ -80,102 +86,133 @@ export const BudgetEnvelopesSection: React.FC<BudgetEnvelopesSectionProps> = ({
         };
       })
       .filter((env) => env.spent > 0 || budgetMap.has(env.categoryId))
-      .sort((a, b) => b.percent - a.percent); // Sort by highest usage first
+      .sort((a, b) => b.percent - a.percent);
 
     return items;
   }, [categorySpending, categories, budgets]);
 
+  if (envelopes.length === 0) {
+    return null;
+  }
+
   return (
     <section className="space-y-3 select-none">
-      {/* 1. Section Header */}
-      <div className="flex items-center justify-between px-1">
-        <h2 className="text-base font-bold tracking-tight text-theme-primary">
-          Budget Envelopes
-        </h2>
-        <span className="text-xs text-theme-muted font-medium">
-          {envelopes.length} active
-        </span>
-      </div>
+      {/* 1. Section Title matching budget_envelopes_reference.png */}
+      <h2 className="text-base font-bold tracking-tight text-slate-900 dark:text-white px-1">
+        Budget Envelopes
+      </h2>
 
-      {/* 2. Stack of Envelope Cards */}
-      {envelopes.length === 0 ? (
-        <div className="rounded-2xl border border-theme-border bg-theme-card p-6 text-center text-xs text-theme-muted">
-          No budget envelopes configured yet.
-        </div>
-      ) : (
-        <div className="flex flex-col gap-3.5">
-          {envelopes.map((env) => {
-            const isOver = env.status === 'OVER_BUDGET';
-            const isNear = env.status === 'NEAR_LIMIT';
+      {/* 2. Distinct Envelope Cards */}
+      <div className="flex flex-col gap-2.5">
+        {envelopes.map((env) => {
+          const isOver = env.status === 'OVER_BUDGET';
+          const isNear = env.status === 'NEAR_LIMIT';
 
-            return (
-              <div
-                key={env.categoryId}
-                className="rounded-[22px] border border-white/5 bg-[#14151a] p-5 shadow-xl space-y-3 transition-colors"
-              >
-                {/* Top Row: Title, Status Badge & Percentage */}
+          return (
+            <div
+              key={env.categoryId}
+              role="button"
+              tabIndex={0}
+              onClick={() => setSelectedEnvelope(env)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setSelectedEnvelope(env);
+                }
+              }}
+              className="rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-gradient-to-b dark:from-[#13151f] dark:to-[#0c0d14] shadow-md overflow-hidden transition-all cursor-pointer hover:border-slate-300 dark:hover:border-white/20 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+            >
+              {/* Card Body (2 Compact Tiers) */}
+              <div className="p-3.5 sm:p-4 space-y-2">
+                {/* Top Row: Category Title & Percentage */}
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                    <span className="text-base font-semibold text-white truncate">
-                      {env.categoryName}
-                    </span>
+                  <span className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white truncate">
+                    {env.categoryName}
+                  </span>
 
-                    {/* Contextual Status Badge matching reference image 3 */}
-                    {isOver ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30 shrink-0">
-                        <AlertTriangle className="size-3.5 shrink-0" />
-                        <span>{formatCurrency(env.overAmount, undefined, false)} over</span>
-                      </span>
-                    ) : isNear ? (
-                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
-                        <TrendingUp className="size-3.5 shrink-0" />
-                        <span>Near limit</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
-                        <Check className="size-3.5 shrink-0" />
-                        <span>Healthy</span>
-                      </span>
-                    )}
+                  {/* Percentage & Chevron on Right */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span
+                      className={`text-sm sm:text-base font-bold font-mono ${
+                        isOver
+                          ? 'text-rose-400'
+                          : isNear
+                          ? 'text-amber-400'
+                          : 'text-emerald-400'
+                      }`}
+                    >
+                      {env.percent}%
+                    </span>
+                    <ChevronRight className="size-4 text-slate-400 dark:text-slate-500 transition-transform group-hover:translate-x-0.5" />
+                  </div>
+                </div>
+
+                {/* Bottom Row: Spent of Limit & Compressed Status Tag */}
+                <div className="flex items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400 font-sans">
+                  <div className="truncate">
+                    <span className="font-mono text-slate-900 dark:text-slate-200 font-medium">
+                      {hideBalances ? '••••••' : formatCurrency(env.spent, undefined, false)}
+                    </span>{' '}
+                    <span>of </span>
+                    <span className="font-mono">
+                      {formatCurrency(env.limit, undefined, false)}
+                    </span>{' '}
+                    <span>limit</span>
                   </div>
 
-                  {/* Percentage on Right in Clean Bold Sans-Serif */}
-                  <span
-                    className={`text-base font-bold font-sans shrink-0 ${
-                      isOver
-                        ? 'text-rose-400'
-                        : isNear
-                        ? 'text-amber-400'
-                        : 'text-emerald-400'
-                    }`}
-                  >
-                    {env.percent}%
-                  </span>
-                </div>
-
-                {/* Middle Row: Progress Bar Track */}
-                <div className="h-2.5 w-full rounded-full bg-slate-800/80 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full transition-all duration-500 ease-out ${
-                      isOver
-                        ? 'bg-rose-500'
-                        : isNear
-                        ? 'bg-amber-400'
-                        : 'bg-emerald-400'
-                    }`}
-                    style={{ width: `${Math.min(100, Math.max(3, env.percent))}%` }}
-                  />
-                </div>
-
-                {/* Bottom Row: Clean Sans-Serif Spent of Limit */}
-                <div className="text-xs text-slate-400 font-sans font-normal">
-                  {hideBalances ? '••••••' : formatCurrency(env.spent, undefined, false)}{' '}
-                  <span>of {formatCurrency(env.limit, undefined, false)} limit</span>
+                  {/* Compressed Status Badge */}
+                  {isOver ? (
+                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-medium bg-rose-500/15 text-rose-400 border border-rose-500/25 shrink-0">
+                      <AlertTriangle className="size-2.5 shrink-0" />
+                      <span>
+                        <span className="font-mono">{formatCurrency(env.overAmount, undefined, false)}</span> over
+                      </span>
+                    </span>
+                  ) : isNear ? (
+                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/25 shrink-0">
+                      <TrendingUp className="size-2.5 shrink-0" />
+                      <span>Near limit</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 shrink-0">
+                      <Check className="size-2.5 shrink-0" />
+                      <span>Healthy</span>
+                    </span>
+                  )}
                 </div>
               </div>
-            );
-          })}
-        </div>
+
+              {/* Full-Width Flush Bottom Rail (Option A) */}
+              <div className="h-1 w-full bg-slate-100 dark:bg-slate-800/80">
+                <div
+                  className={`h-full transition-all duration-500 ease-out ${
+                    isOver
+                      ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'
+                      : isNear
+                      ? 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.4)]'
+                      : 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]'
+                  }`}
+                  style={{ width: `${Math.min(100, Math.max(3, env.percent))}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 3. Deep Inspection Category Spend Drawer */}
+      {selectedEnvelope && (
+        <CategorySpendDrawer
+          isOpen={!!selectedEnvelope}
+          onClose={() => setSelectedEnvelope(null)}
+          categoryId={selectedEnvelope.categoryId}
+          categoryName={selectedEnvelope.categoryName}
+          totalSpent={selectedEnvelope.spent}
+          budgetLimit={selectedEnvelope.limit}
+          periodLabel={periodLabel}
+          transactions={transactions}
+          hideBalances={hideBalances}
+        />
       )}
     </section>
   );
