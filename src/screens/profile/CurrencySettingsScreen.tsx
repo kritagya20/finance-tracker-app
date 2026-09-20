@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Search, Check, Coins } from 'lucide-react';
-import { useCurrency } from '../../context/CurrencyContext';
+import { ArrowLeft, Search, Check, Coins, Hash } from 'lucide-react';
+import { useCurrency, NumberingSystem } from '../../context/CurrencyContext';
 import { cn } from '../../lib/utils';
 
 interface CurrencySettingsScreenProps {
@@ -14,8 +14,10 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
 }) => {
   const {
     currency,
+    numberingSystem,
     supportedCurrencies,
     setCurrency,
+    setNumberingSystem,
   } = useCurrency();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,6 +44,15 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
     setCurrency(code);
     const selected = supportedCurrencies.find((c) => c.code === code);
     triggerToast(`Currency updated to ${selected?.name || code} (${selected?.symbol || ''})`);
+  };
+
+  const handleSelectNumbering = (sys: NumberingSystem) => {
+    setNumberingSystem(sys);
+    triggerToast(
+      sys === 'indian'
+        ? 'Numbering set to Indian System (Lakhs & Crores)'
+        : 'Numbering set to International System (Millions & Billions)'
+    );
   };
 
   return (
@@ -141,6 +152,72 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
               );
             })
           )}
+        </div>
+      </section>
+
+      {/* Numbering & Grouping Format (At bottom) */}
+      <section className="flex flex-col gap-2">
+        <div className="flex items-center gap-1.5 px-1">
+          <Hash className="size-3.5 text-theme-muted" />
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-theme-muted">
+            Numbering & Grouping Format
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 gap-2.5">
+          {/* Indian System */}
+          <button
+            type="button"
+            onClick={() => handleSelectNumbering('indian')}
+            className={cn(
+              'flex items-center justify-between rounded-xl border p-3.5 text-left transition-all',
+              numberingSystem === 'indian'
+                ? 'border-violet-500/60 bg-violet-500/10 shadow-xs'
+                : 'border-theme-border bg-theme-card/60 hover:bg-theme-card-hover'
+            )}
+          >
+            <span className="text-xs font-semibold text-theme-primary">
+              Indian System (Lakhs & Crores)
+            </span>
+
+            <div
+              className={cn(
+                'flex size-5 shrink-0 items-center justify-center rounded-full border transition-all',
+                numberingSystem === 'indian'
+                  ? 'border-violet-500 bg-violet-600 text-white'
+                  : 'border-theme-border bg-transparent'
+              )}
+            >
+              {numberingSystem === 'indian' && <Check className="size-3 stroke-[3]" />}
+            </div>
+          </button>
+
+          {/* International System */}
+          <button
+            type="button"
+            onClick={() => handleSelectNumbering('international')}
+            className={cn(
+              'flex items-center justify-between rounded-xl border p-3.5 text-left transition-all',
+              numberingSystem === 'international'
+                ? 'border-violet-500/60 bg-violet-500/10 shadow-xs'
+                : 'border-theme-border bg-theme-card/60 hover:bg-theme-card-hover'
+            )}
+          >
+            <span className="text-xs font-semibold text-theme-primary">
+              International System (Millions & Billions)
+            </span>
+
+            <div
+              className={cn(
+                'flex size-5 shrink-0 items-center justify-center rounded-full border transition-all',
+                numberingSystem === 'international'
+                  ? 'border-violet-500 bg-violet-600 text-white'
+                  : 'border-theme-border bg-transparent'
+              )}
+            >
+              {numberingSystem === 'international' && <Check className="size-3 stroke-[3]" />}
+            </div>
+          </button>
         </div>
       </section>
 
