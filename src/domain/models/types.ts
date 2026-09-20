@@ -16,6 +16,14 @@ export interface SplitItem {
   note?: string;
 }
 
+export interface TransactionEditLog {
+  timestamp: number;
+  summary: string;
+  field?: string;
+  previousValue?: string;
+  newValue?: string;
+}
+
 export interface Transaction {
   id: string;
   accountId: string;
@@ -32,6 +40,7 @@ export interface Transaction {
   rawSmsText?: string;
   createdAt: number;
   updatedAt: number;
+  editHistory?: TransactionEditLog[];
 }
 
 export interface Account {
@@ -76,6 +85,9 @@ export interface FinanceSummary {
 
 export type DatePreset =
   | 'ALL'
+  | 'LAST_7_DAYS'
+  | 'LAST_15_DAYS'
+  | 'LAST_30_DAYS'
   | 'THIS_WEEK'
   | 'LAST_WEEK'
   | 'THIS_MONTH'

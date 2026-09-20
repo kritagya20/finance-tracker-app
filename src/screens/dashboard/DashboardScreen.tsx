@@ -18,6 +18,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
   summary,
   transactions,
   hideBalances,
+  onOpenAddModal,
   onNavigate,
   onSelectTransaction,
 }) => {
@@ -30,6 +31,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({
         hideBalances={hideBalances}
         onSeeAll={() => onNavigate('activity')}
         onSelectTransaction={onSelectTransaction}
+        onOpenAddModal={onOpenAddModal}
       />
     </div>
   );

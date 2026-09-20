@@ -74,10 +74,10 @@ export function App() {
   const [isViewingNotifications, setIsViewingNotifications] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
-  const [selectedTxForEdit, setSelectedTxForEdit] = useState<Transaction | null>(null);
+  const [selectedTxForInspect, setSelectedTxForInspect] = useState<Transaction | null>(null);
 
   const handleSelectTransactionFromHome = (tx: Transaction) => {
-    setSelectedTxForEdit(tx);
+    setSelectedTxForInspect(tx);
     setActiveTab('activity');
   };
 
@@ -176,7 +176,7 @@ export function App() {
               if (transactionId) {
                 const target = transactions.find((t) => t.id === transactionId);
                 if (target) {
-                  setSelectedTxForEdit(target);
+                  setSelectedTxForInspect(target);
                 }
               }
               setActiveTab('activity');
@@ -262,8 +262,9 @@ export function App() {
                 hideBalances={hideBalances}
                 onDeleteTransaction={deleteTransaction}
                 onUpdateTransaction={updateTransaction}
-                initialEditingTransaction={selectedTxForEdit}
-                onClearInitialEditing={() => setSelectedTxForEdit(null)}
+                initialInspectingTransaction={selectedTxForInspect}
+                onClearInitialInspecting={() => setSelectedTxForInspect(null)}
+                onOpenAddModal={() => setIsAddDrawerOpen(true)}
               />
             )}
 
@@ -274,6 +275,9 @@ export function App() {
                 categories={categories}
                 budgets={budgets}
                 hideBalances={hideBalances}
+                onOpenAddModal={() => setIsAddDrawerOpen(true)}
+                onNavigate={(tab) => setActiveTab(tab)}
+                onSelectTransaction={handleSelectTransactionFromHome}
               />
             )}
 

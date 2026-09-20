@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   ArrowLeft,
-  Trash2,
   Delete,
   Calendar,
   CreditCard,
@@ -19,9 +18,10 @@ import {
   TransactionType,
   Account,
   SplitItem,
+  TransactionEditLog,
 } from '../../domain/models/types';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
-import { parseKeypadToPaise, paiseToRupees } from '../../domain/engine/moneyUtils';
+import { parseKeypadToPaise, paiseToRupees, formatCurrency } from '../../domain/engine/moneyUtils';
 import { CalendarPicker } from '../../components/common/CalendarPicker';
 import { CategorySplitEditor } from '../logger/CategorySplitEditor';
 import { useCurrency } from '../../context/CurrencyContext';
@@ -33,7 +33,6 @@ interface EditTransactionDrawerProps {
   categories: Category[];
   accounts?: Account[];
   onSave: (updates: Partial<Transaction>) => Promise<void>;
-  onDelete: (id: string) => void;
   onClose: () => void;
 }
 
@@ -51,7 +50,6 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
   categories,
   accounts = [],
   onSave,
-  onDelete,
   onClose,
 }) => {
   const { currencySymbol, numberingSystem } = useCurrency();
@@ -89,6 +87,76 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
   // Active Sub-Sheet Picker ('category' | 'account' | 'date' | null)
   const [activePicker, setActivePicker] = useState<'category' | 'account' | 'date' | null>(null);
 
+  // Draggable bottom sheet physics
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const isDraggingRef = useRef(false);
+  const startYRef = useRef(0);
+  const startTimeRef = useRef(0);
+
+  const handleDragStart = useCallback((clientY: number) => {
+    isDraggingRef.current = true;
+    startYRef.current = clientY;
+    startTimeRef.current = Date.now();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragMove = useCallback((clientY: number) => {
+    if (!isDraggingRef.current) return;
+    const deltaY = clientY - startYRef.current;
+    if (deltaY > 0) {
+      setDragOffset(deltaY);
+    } else {
+      setDragOffset(deltaY * 0.2); // slight resistance when pulling up past top
+    }
+  }, []);
+
+  const handleDragEnd = useCallback((clientY: number) => {
+    if (!isDraggingRef.current) return;
+    isDraggingRef.current = false;
+    setIsDragging(false);
+
+    const deltaY = clientY - startYRef.current;
+    const elapsed = Math.max(1, Date.now() - startTimeRef.current);
+    const velocity = deltaY / elapsed;
+
+    if (velocity > 0.5 || deltaY > 150) {
+      onClose();
+      setDragOffset(0);
+    } else {
+      setDragOffset(0);
+    }
+  }, [onClose]);
+
+  useEffect(() => {
+    if (!isDragging) return;
+
+    const onPointerMove = (e: PointerEvent) => handleDragMove(e.clientY);
+    const onPointerUp = (e: PointerEvent) => handleDragEnd(e.clientY);
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) handleDragMove(e.touches[0].clientY);
+    };
+    const onTouchEnd = (e: TouchEvent) => {
+      if (e.changedTouches.length > 0) {
+        handleDragEnd(e.changedTouches[0].clientY);
+      } else {
+        handleDragEnd(startYRef.current);
+      }
+    };
+
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    window.addEventListener('pointerup', onPointerUp, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+    };
+  }, [isDragging, handleDragMove, handleDragEnd]);
+
   // Initialize values when transaction changes
   useEffect(() => {
     if (tx) {
@@ -117,6 +185,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
   useEffect(() => {
     if (isOpen) {
       setIsRendered(true);
+      setDragOffset(0);
       setStep(2);
       setErrors({});
       setErrorMessage(null);
@@ -126,6 +195,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       return () => cancelAnimationFrame(timer);
     } else {
       setIsAnimatingIn(false);
+      setDragOffset(0);
       const timer = setTimeout(() => {
         setIsRendered(false);
         setActivePicker(null);
@@ -176,6 +246,13 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
     if (errors.category) {
       setErrors((prev) => ({ ...prev, category: false }));
       setErrorMessage(null);
+    }
+
+    if (type !== 'EXPENSE') {
+      setSelectedCategoryId(catId);
+      setSplits([]);
+      setActivePicker(null);
+      return;
     }
 
     const paiseAmount = parseKeypadToPaise(amountStr);
@@ -300,6 +377,48 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
         ? (splits[0]?.categoryId || tx.categoryId)
         : (selectedCategoryId || (splits.length === 1 ? splits[0].categoryId : '') || tx.categoryId);
       const effectiveMerchant = merchantName.trim() || tx.merchantName;
+      const cleanNotes = notes.trim() ? notes.trim() : undefined;
+
+      // Track human-readable change summaries for timeline
+      const changes: string[] = [];
+      if (paiseAmount !== tx.amount) {
+        changes.push(`Amount changed to ${formatCurrency(paiseAmount, undefined, false)}`);
+      }
+      if (effectiveMerchant !== tx.merchantName) {
+        changes.push(`Payee updated to "${effectiveMerchant}"`);
+      }
+      if (effectiveCategoryId !== tx.categoryId) {
+        const oldCat = categories.find((c) => c.id === tx.categoryId)?.name || 'Previous category';
+        const newCat = categories.find((c) => c.id === effectiveCategoryId)?.name || 'New category';
+        changes.push(`Category reclassified from ${oldCat} to ${newCat}`);
+      }
+      if (selectedAccountId && selectedAccountId !== tx.accountId) {
+        const newAcc = accountOptions.find((a) => a.id === selectedAccountId)?.name || 'New account';
+        changes.push(`Payment account changed to ${newAcc}`);
+      }
+      if (cleanNotes !== tx.notes) {
+        changes.push(cleanNotes ? `Notes updated: "${cleanNotes}"` : 'Notes cleared');
+      }
+      if (isSplit !== tx.isSplit) {
+        changes.push(isSplit ? 'Converted to multi-category bill split' : 'Removed bill split');
+      }
+
+      const newLogs: TransactionEditLog[] = changes.length > 0
+        ? changes.map((summary) => ({
+            timestamp: Date.now(),
+            summary,
+          }))
+        : [
+            {
+              timestamp: Date.now(),
+              summary: 'Transaction details reviewed & updated',
+            },
+          ];
+
+      const updatedHistory: TransactionEditLog[] = [
+        ...(tx.editHistory || []),
+        ...newLogs,
+      ];
 
       await onSave({
         type,
@@ -307,10 +426,11 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
         merchantName: effectiveMerchant,
         categoryId: effectiveCategoryId,
         accountId: selectedAccountId,
-        notes: notes.trim() ? notes.trim() : undefined,
+        notes: cleanNotes,
         date: updatedDate.toISOString(),
         isSplit,
         splits: isSplit ? splits : undefined,
+        editHistory: updatedHistory,
       });
       onClose();
     } catch (err) {
@@ -321,13 +441,23 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
     }
   };
 
+  const filteredCategories = useMemo(() => {
+    if (type === 'INCOME') {
+      return categories.filter((c) => !!c.isIncome);
+    }
+    if (type === 'EXPENSE') {
+      return categories.filter((c) => !c.isIncome);
+    }
+    return categories;
+  }, [categories, type]);
+
   const accountOptions = accounts.length > 0 ? accounts : DEFAULT_ACCOUNTS;
   const currentAccount =
     accountOptions.find((a) => a.id === selectedAccountId) || accountOptions[0];
 
   const activeCategoryId = selectedCategoryId || (splits.length === 1 ? splits[0].categoryId : '');
   const currentCategory =
-    categories.find((c) => c.id === activeCategoryId) || categories[0];
+    filteredCategories.find((c) => c.id === activeCategoryId) || categories.find((c) => c.id === activeCategoryId) || filteredCategories[0] || categories[0];
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
@@ -350,30 +480,84 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
 
   const isSplit = splits.length > 1 && type === 'EXPENSE';
 
+  const sheetStyle: React.CSSProperties = {
+    transform: !isAnimatingIn
+      ? 'translateY(100%)'
+      : dragOffset !== 0
+      ? `translateY(${dragOffset}px)`
+      : 'translateY(0)',
+    transition: isDragging
+      ? 'none'
+      : 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
+  };
+
+  const backdropOpacity = !isAnimatingIn
+    ? 0
+    : dragOffset > 0
+    ? Math.max(0.1, 1 - dragOffset / 300)
+    : 1;
+
+  const backdropStyle: React.CSSProperties = {
+    opacity: backdropOpacity,
+    transition: isDragging ? 'none' : 'opacity 250ms ease-out',
+  };
+
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className={cn(
-        'fixed inset-0 z-50 flex flex-col bg-theme-elevated transition-all duration-300 mx-auto max-w-[390px] overflow-hidden select-none',
-        isAnimatingIn ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6 pointer-events-none'
-      )}
-    >
-      {/* ------------------------------------------------------------------ */}
-      {/* STEP 1: AMOUNT KEYPAD (Full-Screen GPay-Inspired Minimal Flow)     */}
-      {/* ------------------------------------------------------------------ */}
-      {step === 1 && (
-        <div className="flex flex-col flex-1 min-h-0 justify-between px-5 pt-4 pb-8 animate-in fade-in duration-200">
-          {/* Top Bar: Back Arrow + Type Switcher */}
-          <div className="flex items-center justify-between pb-2 shrink-0">
-            <button
-              type="button"
-              onClick={() => setStep(2)}
-              aria-label="Back to details"
-              className="flex size-9 items-center justify-center rounded-full text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+    <>
+      {/* 1. Backdrop */}
+      <div
+        onClick={onClose}
+        aria-hidden="true"
+        style={backdropStyle}
+        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity select-none"
+      />
+
+      {/* 2. Bottom Sheet Container */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-transaction-title"
+        style={sheetStyle}
+        className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[420px] h-[92vh] max-h-[92vh] rounded-t-3xl bg-theme-elevated border-t border-theme-border shadow-2xl flex flex-col overflow-hidden select-none"
+      >
+        {/* Generous Draggable Pull Handle Zone */}
+        <div
+          onPointerDown={(e) => {
+            if (e.button === 0) handleDragStart(e.clientY);
+          }}
+          onTouchStart={(e) => handleDragStart(e.touches[0].clientY)}
+          className="w-full pt-3 pb-1 flex flex-col items-center justify-center shrink-0 cursor-grab active:cursor-grabbing touch-none select-none group"
+          title="Drag down to close"
+        >
+          <div className="w-11 h-1.5 rounded-full bg-slate-400/50 dark:bg-slate-500/50 group-hover:bg-slate-500 dark:group-hover:bg-slate-400 group-active:scale-95 transition-all shadow-xs" />
+        </div>
+
+        {/* ------------------------------------------------------------------ */}
+        {/* STEP 1: AMOUNT KEYPAD (Full-Screen GPay-Inspired Minimal Flow)     */}
+        {/* ------------------------------------------------------------------ */}
+        {step === 1 && (
+          <div className="flex flex-col flex-1 min-h-0 justify-between px-5 pt-2 pb-8 animate-in fade-in duration-200">
+            {/* Top Bar: Back Arrow + Type Switcher */}
+            <div
+              onPointerDown={(e) => {
+                if (e.button === 0) handleDragStart(e.clientY);
+              }}
+              onTouchStart={(e) => handleDragStart(e.touches[0].clientY)}
+              className="flex items-center justify-between pb-2 shrink-0 touch-none select-none cursor-grab active:cursor-grabbing border-b border-theme-border/30"
             >
-              <ArrowLeft className="size-5" />
-            </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setStep(2);
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                onTouchStart={(e) => e.stopPropagation()}
+                aria-label="Back to details"
+                className="flex size-9 items-center justify-center rounded-xl text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+              >
+                <ArrowLeft className="size-5" />
+              </button>
 
             <div className="flex items-center rounded-full bg-theme-card-subtle p-0.5">
               {(['EXPENSE', 'INCOME', 'TRANSFER'] as TransactionType[]).map((t) => {
@@ -383,7 +567,15 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
                   <button
                     key={t}
                     type="button"
-                    onClick={() => setType(t)}
+                    onClick={() => {
+                      if (type !== t) {
+                        setType(t);
+                        setSelectedCategoryId('');
+                        setSplits([]);
+                        setErrors((prev) => ({ ...prev, category: false, splitBalance: false }));
+                        setErrorMessage(null);
+                      }
+                    }}
                     className={cn(
                       'px-3.5 py-1.5 text-xs font-semibold rounded-full transition-all',
                       isSelected
@@ -483,28 +675,32 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       {step === 2 && (
         <div className="flex flex-col flex-1 min-h-0 animate-in fade-in duration-200">
           {/* Top Bar: Back Arrow + Title + Delete */}
-          <div className="flex items-center justify-between px-5 pt-4 pb-3 shrink-0">
+          <div
+            onPointerDown={(e) => {
+              if (e.button === 0) handleDragStart(e.clientY);
+            }}
+            onTouchStart={(e) => handleDragStart(e.touches[0].clientY)}
+            className="flex items-center justify-between px-5 pt-1 pb-3 shrink-0 touch-none select-none cursor-grab active:cursor-grabbing border-b border-theme-border/30"
+          >
             <button
               type="button"
-              onClick={onClose}
+              onClick={(e) => {
+                e.stopPropagation();
+                onClose();
+              }}
+              onPointerDown={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
               aria-label="Back"
-              className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+              className="flex size-9 items-center justify-center rounded-xl text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
             >
               <ArrowLeft className="size-5" />
             </button>
 
-            <span className="text-sm font-bold text-theme-primary">
+            <span className="text-sm font-bold text-theme-primary uppercase tracking-wider">
               Edit Transaction
             </span>
 
-            <button
-              type="button"
-              onClick={() => onDelete(tx.id)}
-              aria-label="Delete"
-              className="flex size-9 items-center justify-center rounded-full text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all"
-            >
-              <Trash2 className="size-4" />
-            </button>
+            <div className="size-9" />
           </div>
 
           {/* Scrollable Content Body */}
@@ -578,7 +774,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
             {/* Unified Category Section */}
             <div>
               <label className="block text-xs font-medium text-theme-secondary mb-1.5">
-                Category
+                {type === 'INCOME' ? 'Income Category' : 'Category'}
               </label>
               {isSplit ? (
                 <div className="space-y-2">
@@ -598,7 +794,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
                   <CategorySplitEditor
                     totalAmountPaise={activeAmount}
                     splits={splits}
-                    categories={categories}
+                    categories={filteredCategories}
                     onChange={(updated) => {
                       if (updated.length === 1) {
                         setSelectedCategoryId(updated[0].categoryId);
@@ -627,17 +823,17 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
                       <div
                         className={cn(
                           'flex size-9 items-center justify-center rounded-lg text-white shadow-xs',
-                          currentCategory.bgClass
+                          currentCategory?.bgClass || 'bg-violet-600'
                         )}
                       >
-                        <CategoryIcon name={currentCategory.iconName} size={18} />
+                        <CategoryIcon name={currentCategory?.iconName || 'Tag'} size={18} />
                       </div>
                       <div>
                         <div className={cn('text-xs font-semibold', errors.category ? 'text-rose-500' : 'text-theme-primary')}>
-                          {currentCategory.name}
+                          {currentCategory?.name || (type === 'INCOME' ? 'Choose income category' : 'Choose category')}
                         </div>
                         <div className="text-[11px] text-theme-muted">
-                          Tap to change or split
+                          {currentCategory ? 'Tap to change' + (type === 'EXPENSE' ? ' or split' : '') : 'Tap to select'}
                         </div>
                       </div>
                     </div>
@@ -762,11 +958,19 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
               <ArrowLeft className="size-5" />
             </button>
             <div>
-              <span className="text-sm font-bold text-theme-primary">Select Category</span>
+              <span className="text-sm font-bold text-theme-primary">
+                {type === 'EXPENSE'
+                  ? 'Select Expense Category'
+                  : type === 'INCOME'
+                  ? 'Select Income Category'
+                  : 'Select Category'}
+              </span>
               <p className="text-[11px] text-theme-muted">
-                {splits.length > 1
-                  ? `${splits.length} categories selected • Split bill below`
-                  : 'Choose 1 category or tap multiple to split'}
+                {type === 'EXPENSE'
+                  ? splits.length > 1
+                    ? `${splits.length} categories selected • Split bill below`
+                    : 'Choose 1 category or tap multiple to split'
+                  : 'Choose 1 category'}
               </p>
             </div>
           </div>
@@ -775,7 +979,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
           <div className="flex-1 overflow-y-auto no-scrollbar min-h-0 px-5 py-4 space-y-4">
             {/* Category Grid with Generous Spacing and No Harsh White Borders */}
             <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-              {categories.map((cat) => {
+              {filteredCategories.map((cat) => {
                 const isSelectedInSplit = splits.some((s) => s.categoryId === cat.id);
                 const isSingleSelected = !splits.length && selectedCategoryId === cat.id;
                 const isSelected = isSelectedInSplit || isSingleSelected;
@@ -814,13 +1018,19 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
               })}
             </div>
 
+            {filteredCategories.length === 0 && (
+              <div className="py-8 text-center text-xs text-theme-muted">
+                No {type === 'EXPENSE' ? 'expense' : 'income'} categories available.
+              </div>
+            )}
+
             {/* Whenever user clicks more than single category: Show Categorization Breakdown Right Here! */}
-            {splits.length > 1 && (
+            {type === 'EXPENSE' && splits.length > 1 && (
               <div className="pt-4 border-t border-theme-divider animate-in fade-in duration-150">
                 <CategorySplitEditor
                   totalAmountPaise={activeAmount}
                   splits={splits}
-                  categories={categories}
+                  categories={filteredCategories}
                   onChange={(updated) => {
                     if (updated.length === 1) {
                       setSelectedCategoryId(updated[0].categoryId);
@@ -954,5 +1164,6 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
         </div>
       )}
     </div>
-  );
+  </>
+);
 };

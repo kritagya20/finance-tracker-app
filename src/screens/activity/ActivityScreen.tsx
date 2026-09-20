@@ -2,9 +2,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   Download,
-  ArrowLeftRight,
-  ArrowDownLeft,
-  ArrowUpRight,
+  ArrowRight,
+  ArrowLeft,
   Receipt,
 } from 'lucide-react';
 import { Transaction, Category, Account, DatePreset } from '../../domain/models/types';
@@ -13,8 +12,9 @@ import { TransactionItem } from '../../components/common/TransactionItem';
 import { Dropdown } from '../../components/ui/Dropdown';
 import { CalendarPicker, DateRange } from '../../components/common/CalendarPicker';
 import { EditTransactionDrawer } from './EditTransactionDrawer';
+import { TransactionDetailDrawer } from './TransactionDetailDrawer';
 import { ConfirmDeleteModal } from '../../components/common/ConfirmDeleteModal';
-import { cn } from '../../lib/utils';
+import { EmptyState } from '../../components/common/EmptyState';
 
 interface ActivityScreenProps {
   transactions: Transaction[];
@@ -24,7 +24,10 @@ interface ActivityScreenProps {
   onDeleteTransaction: (id: string) => void;
   onUpdateTransaction?: (id: string, updates: Partial<Transaction>) => Promise<unknown>;
   initialEditingTransaction?: Transaction | null;
+  initialInspectingTransaction?: Transaction | null;
   onClearInitialEditing?: () => void;
+  onClearInitialInspecting?: () => void;
+  onOpenAddModal?: () => void;
 }
 
 type TypeFilter = 'ALL' | 'EXPENSE' | 'INCOME' | 'TRANSFER';
@@ -39,21 +42,33 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
   onDeleteTransaction,
   onUpdateTransaction,
   initialEditingTransaction,
+  initialInspectingTransaction,
   onClearInitialEditing,
+  onClearInitialInspecting,
+  onOpenAddModal,
 }) => {
+  const [inspectingTransaction, setInspectingTransaction] = useState<Transaction | null>(null);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [deletingTransaction, setDeletingTransaction] = useState<Transaction | null>(null);
+  const [openedFromDetail, setOpenedFromDetail] = useState(false);
+
+  useEffect(() => {
+    if (initialInspectingTransaction) {
+      setInspectingTransaction(initialInspectingTransaction);
+      onClearInitialInspecting?.();
+    }
+  }, [initialInspectingTransaction, onClearInitialInspecting]);
 
   useEffect(() => {
     if (initialEditingTransaction) {
-      setEditingTransaction(initialEditingTransaction);
+      setInspectingTransaction(initialEditingTransaction);
       onClearInitialEditing?.();
     }
   }, [initialEditingTransaction, onClearInitialEditing]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('ALL');
-  const [dateFilter, setDateFilter] = useState<DateFilter>('THIS_MONTH');
+  const [dateFilter, setDateFilter] = useState<DateFilter>('LAST_7_DAYS');
   const [customRange, setCustomRange] = useState<DateRange | null>(null);
   const [showCustomCalendar, setShowCustomCalendar] = useState(false);
   const [sourceFilter, setSourceFilter] = useState<SourceFilter>('ALL');
@@ -61,6 +76,23 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
 
   // Active Dropdown Popover
   const [activeDropdown, setActiveDropdown] = useState<'type' | 'date' | 'source' | 'category' | null>(null);
+
+  const hasActiveFilters =
+    searchQuery.trim() !== '' ||
+    typeFilter !== 'ALL' ||
+    dateFilter !== 'LAST_7_DAYS' ||
+    customRange !== null ||
+    sourceFilter !== 'ALL' ||
+    categoryFilter !== 'ALL';
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setTypeFilter('ALL');
+    setDateFilter('LAST_7_DAYS');
+    setCustomRange(null);
+    setSourceFilter('ALL');
+    setCategoryFilter('ALL');
+  };
 
   // Filtered transactions
   const filtered = useMemo(() => {
@@ -86,7 +118,22 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
 
       // Date Filtering
       const txDate = new Date(tx.date);
-      if (dateFilter === 'THIS_WEEK') {
+      if (dateFilter === 'LAST_7_DAYS') {
+        const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+        const endToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        if (txDate < sevenDaysAgo || txDate > endToday) return false;
+      } else if (dateFilter === 'LAST_15_DAYS') {
+        const fifteenDaysAgo = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
+        fifteenDaysAgo.setHours(0, 0, 0, 0);
+        const endToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        if (txDate < fifteenDaysAgo || txDate > endToday) return false;
+      } else if (dateFilter === 'LAST_30_DAYS') {
+        const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        thirtyDaysAgo.setHours(0, 0, 0, 0);
+        const endToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+        if (txDate < thirtyDaysAgo || txDate > endToday) return false;
+      } else if (dateFilter === 'THIS_WEEK') {
         const day = now.getDay();
         const diffToMonday = (day + 6) % 7;
         const start = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMonday, 0, 0, 0, 0);
@@ -192,31 +239,26 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
 
   // Static option sets for filter dropdowns
   const TYPE_OPTIONS = [
-    { label: 'All Types', value: 'ALL' },
-    { label: 'Debit (Expenses)', value: 'EXPENSE' },
-    { label: 'Credit (Income)', value: 'INCOME' },
+    { label: 'All', value: 'ALL' },
+    { label: 'Credit', value: 'INCOME' },
+    { label: 'Debit', value: 'EXPENSE' },
     { label: 'Transfer', value: 'TRANSFER' },
   ];
 
   const DATE_OPTIONS = [
-    { label: 'This Week', value: 'THIS_WEEK' },
-    { label: 'Last Week', value: 'LAST_WEEK' },
-    { label: 'This Month', value: 'THIS_MONTH' },
-    { label: 'Last Month', value: 'LAST_MONTH' },
-    { label: 'Last 60 Days', value: 'LAST_60_DAYS' },
-    { label: 'Last 90 Days', value: 'LAST_90_DAYS' },
-    { label: 'This Year', value: 'THIS_YEAR' },
-    { label: 'All Time', value: 'ALL' },
+    { label: '7 Days', value: 'LAST_7_DAYS' },
+    { label: '15 Days', value: 'LAST_15_DAYS' },
+    { label: '30 Days', value: 'LAST_30_DAYS' },
     { label: 'Custom Range...', value: 'CUSTOM' },
   ];
 
   const SOURCE_OPTIONS = [
-    { label: 'All Sources', value: 'ALL' },
-    { label: 'Source: Auto-SMS', value: 'AUTO_SMS' },
-    { label: 'Source: Manual', value: 'MANUAL' },
+    { label: 'All', value: 'ALL' },
+    { label: 'Manual', value: 'MANUAL' },
+    { label: 'SMS', value: 'AUTO_SMS' },
   ];
 
-  // Human readable labels
+  // Human readable labels with clean Key: Value prefixes
   const typeLabel =
     typeFilter === 'EXPENSE'
       ? 'Type: Debit'
@@ -224,44 +266,36 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
       ? 'Type: Credit'
       : typeFilter === 'TRANSFER'
       ? 'Type: Transfer'
-      : 'All Types';
+      : 'Type: All';
 
   const dateLabel =
     dateFilter === 'CUSTOM' && customRange
-      ? `${new Date(customRange.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} - ${new Date(customRange.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
-      : dateFilter === 'THIS_WEEK'
-      ? 'This Week'
-      : dateFilter === 'LAST_WEEK'
-      ? 'Last Week'
-      : dateFilter === 'THIS_MONTH'
-      ? 'This Month'
-      : dateFilter === 'LAST_MONTH'
-      ? 'Last Month'
-      : dateFilter === 'LAST_60_DAYS'
-      ? 'Last 60 Days'
-      : dateFilter === 'LAST_90_DAYS'
-      ? 'Last 90 Days'
-      : dateFilter === 'THIS_YEAR'
-      ? 'This Year'
+      ? `Last: ${new Date(customRange.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} - ${new Date(customRange.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+      : dateFilter === 'LAST_7_DAYS'
+      ? 'Last: 7 Days'
+      : dateFilter === 'LAST_15_DAYS'
+      ? 'Last: 15 Days'
+      : dateFilter === 'LAST_30_DAYS'
+      ? 'Last: 30 Days'
       : dateFilter === 'CUSTOM'
-      ? 'Custom Range'
-      : 'All Time';
+      ? 'Last: Custom Range'
+      : 'Last: 7 Days';
 
   const sourceLabel =
     sourceFilter === 'AUTO_SMS'
-      ? 'Source: Auto-SMS'
+      ? 'Source: SMS'
       : sourceFilter === 'MANUAL'
       ? 'Source: Manual'
-      : 'All Sources';
+      : 'Source: All';
 
   const categoryLabel =
     categoryFilter === 'ALL'
-      ? 'Category'
-      : categories.find((c) => c.id === categoryFilter)?.name || 'Category';
+      ? 'Category: All'
+      : `Category: ${categories.find((c) => c.id === categoryFilter)?.name || 'Other'}`;
 
   const categoryOptions = useMemo(
     () => [
-      { label: 'All Categories', value: 'ALL' },
+      { label: 'All', value: 'ALL' },
       ...categories.map((cat) => ({ label: cat.name, value: cat.id })),
     ],
     [categories]
@@ -269,7 +303,6 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
 
   const isIncomeView = typeFilter === 'INCOME';
   const displayTotal = isIncomeView ? totalIncome : totalSpent;
-  const displayLabel = isIncomeView ? 'Total Income' : 'Total Spent';
 
   const handleExportCSV = () => {
     const headers = ['Date', 'Merchant', 'Category', 'Type', 'Amount (INR)', 'Source', 'Notes'];
@@ -351,7 +384,7 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
                 setCustomRange(null);
               }
             }}
-            isActive={dateFilter !== 'ALL'}
+            isActive={dateFilter !== 'LAST_7_DAYS' || customRange !== null}
             isOpen={activeDropdown === 'date'}
             onOpenChange={(open) => setActiveDropdown(open ? 'date' : null)}
             align="auto"
@@ -384,86 +417,63 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
         </div>
       </div>
 
-      {/* Enhanced Activity Summary & Gesture Card */}
-      <div className="rounded-2xl border border-theme-border bg-theme-card p-3.5 shadow-sm backdrop-blur-md">
-        <div className="flex items-center justify-between">
-          {/* Left: Transaction Count Metric */}
-          <div className="flex items-center gap-2.5">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-xl border border-violet-500/25 bg-violet-500/15 text-violet-500 dark:text-violet-400">
-              <Receipt className="size-4" />
-            </div>
-            <div className="flex flex-col">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-theme-muted">
-                Transactions
+      {/* Understated Metadata & Swipe Gesture Hint matching reference */}
+      {filtered.length > 0 && (
+        <div className="flex flex-col gap-2.5 select-none pt-1">
+          {/* Calm, non-focusable metadata line */}
+          <p className="text-xs sm:text-[13px] text-slate-500 dark:text-slate-400 px-1 font-normal tracking-tight">
+            Showing{' '}
+            <span className="font-semibold text-slate-800 dark:text-slate-100">
+              {filtered.length} {filtered.length === 1 ? 'transaction' : 'transactions'}
+            </span>
+            <span className="mx-1.5 text-slate-400 dark:text-slate-600">•</span>
+            {isIncomeView ? 'Total received' : 'Total spent'}{' '}
+            <span className="font-semibold font-mono text-slate-800 dark:text-slate-100">
+              {hideBalances ? '••••••' : formatCurrency(displayTotal, undefined, true)}
+            </span>
+          </p>
+
+          {/* Symmetrical Swipe Gesture Hint Pill */}
+          <div className="flex items-center justify-between rounded-full border border-slate-200/90 dark:border-white/10 bg-slate-100/80 dark:bg-[#13151f]/80 px-4 py-2 text-xs text-slate-500 dark:text-slate-400 shadow-sm">
+            {/* Left: Swipe Right to Edit */}
+            <div className="flex items-center gap-2">
+              <span className="flex size-6 items-center justify-center rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400 shrink-0">
+                <ArrowRight className="size-3" />
               </span>
-              <span className="text-sm font-bold text-theme-primary tabular-nums">
-                {filtered.length}{' '}
-                <span className="text-xs font-normal text-theme-muted">
-                  {filtered.length === 1 ? 'record' : 'records'}
-                </span>
+              <span className="font-medium whitespace-nowrap">Swipe right to edit</span>
+            </div>
+
+            {/* Vertical Divider */}
+            <div className="h-3.5 w-px bg-slate-200 dark:bg-white/10 shrink-0 mx-2" />
+
+            {/* Right: Swipe Left to Delete */}
+            <div className="flex items-center gap-2">
+              <span className="font-medium whitespace-nowrap">Swipe left to delete</span>
+              <span className="flex size-6 items-center justify-center rounded-full bg-rose-500/20 text-rose-600 dark:text-rose-400 shrink-0">
+                <ArrowLeft className="size-3" />
               </span>
             </div>
           </div>
-
-          {/* Vertical Separator */}
-          <div className="h-8 w-px bg-theme-border" />
-
-          {/* Right: Total Amount Metric */}
-          <div className="flex items-center gap-2.5 text-right">
-            <div className="flex flex-col">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-theme-muted">
-                {displayLabel}
-              </span>
-              <span
-                className={cn(
-                  'text-sm font-semibold font-mono tabular-nums',
-                  isIncomeView ? 'text-emerald-500 dark:text-emerald-400' : 'text-theme-primary'
-                )}
-              >
-                {hideBalances ? '••••••' : formatCurrency(displayTotal)}
-              </span>
-            </div>
-            <div
-              className={cn(
-                'flex size-9 shrink-0 items-center justify-center rounded-xl border',
-                isIncomeView
-                  ? 'border-emerald-500/25 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                  : 'border-rose-500/25 bg-rose-500/15 text-rose-500 dark:text-rose-400'
-              )}
-            >
-              {isIncomeView ? (
-                <ArrowDownLeft className="size-4" />
-              ) : (
-                <ArrowUpRight className="size-4" />
-              )}
-            </div>
-          </div>
         </div>
-
-        {/* Integrated Gesture Hint Footer */}
-        <div className="mt-3 flex items-center justify-center gap-4 border-t border-theme-divider pt-2.5 text-[11px] text-theme-muted">
-          <span className="flex items-center gap-1.5">
-            <span className="flex size-4 items-center justify-center rounded bg-blue-500/15 text-blue-600 dark:text-blue-300">
-              <ArrowLeftRight className="size-2.5" />
-            </span>
-            Swipe right to edit
-          </span>
-          <span className="h-3 w-px bg-theme-border" />
-          <span className="flex items-center gap-1.5">
-            Swipe left to delete
-            <span className="flex size-4 items-center justify-center rounded bg-rose-500/15 text-rose-600 dark:text-rose-300">
-              <ArrowLeftRight className="size-2.5" />
-            </span>
-          </span>
-        </div>
-      </div>
+      )}
 
       {/* Grouped Transaction Lists */}
       <div className="flex flex-col gap-5 pt-1">
         {groupedSections.length === 0 ? (
-          <div className="py-16 text-center text-sm text-theme-muted">
-            No transactions match your search.
-          </div>
+          <EmptyState
+            icon={Receipt}
+            title={hasActiveFilters ? "No matching transactions" : "No transactions recorded"}
+            description={
+              hasActiveFilters
+                ? "No transactions match your search query or active filters. Reset your filters to view all records."
+                : "You haven't recorded any transactions yet. Tap below to log your first expense or income."
+            }
+            actionLabel={hasActiveFilters ? "Reset Filters" : onOpenAddModal ? "+ Add Transaction" : undefined}
+            onAction={hasActiveFilters ? handleResetFilters : onOpenAddModal}
+            secondaryActionLabel={hasActiveFilters && onOpenAddModal ? "+ Add Transaction" : undefined}
+            onSecondaryAction={onOpenAddModal}
+            className="mt-2"
+          />
         ) : (
           groupedSections.map((group) => {
             const groupHeader =
@@ -490,7 +500,7 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
                         hideBalances={hideBalances}
                         onDelete={() => setDeletingTransaction(tx)}
                         onEdit={(t) => setEditingTransaction(t)}
-                        onClick={(t) => setEditingTransaction(t)}
+                        onClick={(t) => setInspectingTransaction(t)}
                       />
                     );
                   })}
@@ -501,7 +511,30 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
         )}
       </div>
 
-      {/* Edit Transaction Drawer */}
+      {/* Intermediate Transaction Detail & Lifecycle Drawer */}
+      <TransactionDetailDrawer
+        isOpen={!!inspectingTransaction}
+        transaction={
+          inspectingTransaction
+            ? transactions.find((t) => t.id === inspectingTransaction.id) || inspectingTransaction
+            : null
+        }
+        categories={categories}
+        accounts={accounts}
+        hideBalances={hideBalances}
+        onEdit={(t) => {
+          setEditingTransaction(t);
+          setOpenedFromDetail(true);
+          setInspectingTransaction(null);
+        }}
+        onDelete={(t) => {
+          setDeletingTransaction(t);
+          setInspectingTransaction(null);
+        }}
+        onClose={() => setInspectingTransaction(null)}
+      />
+
+      {/* Edit Transaction Drawer (Bottom Sheet) */}
       <EditTransactionDrawer
         isOpen={!!editingTransaction}
         transaction={editingTransaction}
@@ -511,14 +544,24 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
           if (editingTransaction && onUpdateTransaction) {
             await onUpdateTransaction(editingTransaction.id, updates);
           }
+          if (openedFromDetail && editingTransaction) {
+            const updated = {
+              ...editingTransaction,
+              ...updates,
+              updatedAt: Date.now(),
+            };
+            setInspectingTransaction(updated);
+            setOpenedFromDetail(false);
+          }
           setEditingTransaction(null);
         }}
-        onDelete={(id) => {
-          const target = transactions.find((t) => t.id === id) || editingTransaction;
+        onClose={() => {
+          if (openedFromDetail && editingTransaction) {
+            setInspectingTransaction(editingTransaction);
+            setOpenedFromDetail(false);
+          }
           setEditingTransaction(null);
-          setDeletingTransaction(target);
         }}
-        onClose={() => setEditingTransaction(null)}
       />
 
       {/* Confirm Delete Pop-Up Dialog */}

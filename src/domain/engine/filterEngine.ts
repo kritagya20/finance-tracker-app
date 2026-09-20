@@ -44,7 +44,22 @@ export function filterTransactions(
     // 5. Date-wise filtering
     const txDate = new Date(tx.date);
 
-    if (filter.datePreset === 'THIS_WEEK') {
+    if (filter.datePreset === 'LAST_7_DAYS') {
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+      const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      if (txDate < sevenDaysAgo || txDate > endOfToday) return false;
+    } else if (filter.datePreset === 'LAST_15_DAYS') {
+      const fifteenDaysAgo = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
+      fifteenDaysAgo.setHours(0, 0, 0, 0);
+      const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      if (txDate < fifteenDaysAgo || txDate > endOfToday) return false;
+    } else if (filter.datePreset === 'LAST_30_DAYS') {
+      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      thirtyDaysAgo.setHours(0, 0, 0, 0);
+      const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+      if (txDate < thirtyDaysAgo || txDate > endOfToday) return false;
+    } else if (filter.datePreset === 'THIS_WEEK') {
       const day = now.getDay();
       const diffToMonday = (day + 6) % 7;
       const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diffToMonday, 0, 0, 0, 0);
