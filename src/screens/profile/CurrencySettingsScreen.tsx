@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Search, Check, Coins, Hash } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { ArrowLeft, Search, Check, X } from 'lucide-react';
 import { useCurrency, NumberingSystem } from '../../context/CurrencyContext';
 import { cn } from '../../lib/utils';
 
@@ -21,16 +21,25 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
   } = useCurrency();
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+
+  // Debounce search query to provide responsive micro-interaction
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 180);
+    return () => clearTimeout(handler);
+  }, [searchQuery]);
 
   const filteredCurrencies = useMemo(() => {
-    if (!searchQuery.trim()) return supportedCurrencies;
-    const q = searchQuery.toLowerCase().trim();
+    if (!debouncedQuery.trim()) return supportedCurrencies;
+    const q = debouncedQuery.toLowerCase().trim();
     return supportedCurrencies.filter(
       (c) =>
         c.code.toLowerCase().includes(q) ||
         c.name.toLowerCase().includes(q)
     );
-  }, [searchQuery, supportedCurrencies]);
+  }, [debouncedQuery, supportedCurrencies]);
 
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -80,24 +89,21 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
       </header>
 
       {/* Numbering & Grouping Format (At top) */}
-      <section className="flex flex-col gap-2">
-        <div className="flex items-center gap-1.5 px-1">
-          <Hash className="size-3.5 text-theme-muted" />
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-theme-muted">
-            Numbering & Grouping Format
-          </span>
-        </div>
+      <section className="flex flex-col gap-2.5">
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-theme-muted px-1">
+          Numbering & Grouping Format
+        </span>
 
-        <div className="grid grid-cols-1 gap-2.5">
+        <div className="flex flex-col rounded-2xl border border-theme-border bg-theme-card/50 divide-y divide-theme-border overflow-hidden">
           {/* Indian System */}
           <button
             type="button"
             onClick={() => handleSelectNumbering('indian')}
             className={cn(
-              'flex items-center justify-between rounded-xl border p-3.5 text-left transition-all',
+              'flex w-full items-center justify-between p-3.5 text-left transition-colors',
               numberingSystem === 'indian'
-                ? 'border-violet-500/60 bg-violet-500/10 shadow-xs'
-                : 'border-theme-border bg-theme-card/60 hover:bg-theme-card-hover'
+                ? 'bg-violet-500/10'
+                : 'hover:bg-theme-card-hover/50'
             )}
           >
             <span className="text-xs font-semibold text-theme-primary">
@@ -121,10 +127,10 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
             type="button"
             onClick={() => handleSelectNumbering('international')}
             className={cn(
-              'flex items-center justify-between rounded-xl border p-3.5 text-left transition-all',
+              'flex w-full items-center justify-between p-3.5 text-left transition-colors',
               numberingSystem === 'international'
-                ? 'border-violet-500/60 bg-violet-500/10 shadow-xs'
-                : 'border-theme-border bg-theme-card/60 hover:bg-theme-card-hover'
+                ? 'bg-violet-500/10'
+                : 'hover:bg-theme-card-hover/50'
             )}
           >
             <span className="text-xs font-semibold text-theme-primary">
@@ -147,23 +153,30 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
 
       {/* Select Base Currency Catalog */}
       <section className="flex flex-col gap-2.5">
-        <div className="flex items-center gap-1.5 px-1">
-          <Coins className="size-3.5 text-theme-muted" />
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-theme-muted">
-            Select Base Currency
-          </span>
-        </div>
+        <span className="text-[11px] font-semibold uppercase tracking-wider text-theme-muted px-1">
+          Select Base Currency
+        </span>
 
-        {/* Search Input */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-theme-muted" />
+        {/* Search Input with Debounce & Clear Action */}
+        <div className="relative group">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-theme-muted transition-colors group-focus-within:text-violet-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search currency code or name..."
-            className="w-full rounded-xl border border-theme-border bg-theme-card/70 py-2.5 pl-9 pr-4 text-xs text-theme-primary placeholder:text-theme-muted focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 transition-all"
+            className="w-full rounded-xl border border-theme-border bg-theme-card/70 py-2.5 pl-9 pr-9 text-xs text-theme-primary placeholder:text-theme-muted focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 transition-all duration-200 focus:scale-[1.005]"
           />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              aria-label="Clear search"
+              className="absolute right-3 top-1/2 -translate-y-1/2 size-5 flex items-center justify-center rounded-full bg-theme-muted/20 text-theme-secondary hover:text-theme-primary hover:bg-theme-muted/30 active:scale-90 transition-all"
+            >
+              <X className="size-3" />
+            </button>
+          )}
         </div>
 
         {/* Currency List */}

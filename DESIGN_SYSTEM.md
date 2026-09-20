@@ -635,8 +635,10 @@ In accordance with production fintech standards (CRED, Google Pay, Paytm):
   - Numeric touch keypads and quick chip increments in Add/Edit transaction flows (`AddTransactionDrawer.tsx`, `EditTransactionDrawer.tsx`).
 - **Streamlined Screen Layout**:
   - Top header features the single `ArrowLeft` back button, title "Currency & Numbering", and subtitle "Configure global display formats".
-  - Top-positioned "Numbering & Grouping Format" section offering two clean, interactive cards: "Indian System (Lakhs & Crores)" and "International System (Millions & Billions)" with active violet indicator and toast feedback.
-  - Dedicated "Select Base Currency" catalog positioned below numbering format, with fast client-side search across 10 currencies displaying country flag, ISO code, currency name, and active radio checkmark.
+  - Consistent section headers: Standardized to heading-only uppercase tracking-wider typography (`text-[11px] font-semibold uppercase tracking-wider text-theme-muted px-1`) without mismatched leading icons.
+  - Unified card grouping: Both "Numbering & Grouping Format" and "Select Base Currency" sections utilize identical unified containers (`rounded-2xl border border-theme-border bg-theme-card/50 divide-y divide-theme-border overflow-hidden`) with full-width responsive items, violet active states (`bg-violet-500/10`), and radio checkmark badges.
+  - Top-positioned "Numbering & Grouping Format": Features `Indian System (Lakhs & Crores)` and `International System (Millions & Billions)` with instant toast confirmation.
+  - Debounced Base Currency Search: Real-time search with 180ms debounce, subtle focus zoom (`focus:scale-[1.005]`), and 1-tap tactile clear button (`X`).
   - Excluded: Heavy live format preview hero card, Reset button, and decimal precision section to keep the UI clean, lightweight, and focused.
 - **Navigation Invariant**: Sub-screen uses a single `ArrowLeft` top back button. Conflicting `X` icons are strictly prohibited.
 
