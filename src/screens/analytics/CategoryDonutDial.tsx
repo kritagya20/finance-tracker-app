@@ -15,16 +15,12 @@ interface CategoryDonutDialProps {
   hideBalances: boolean;
 }
 
-// Fallback high-contrast vibrant palette matching reference image 2
-const DEFAULT_PALETTE = [
-  '#f43f5e', // Rose/Red (Food & Dining)
-  '#8b5cf6', // Violet/Purple (Housing & Rent)
-  '#0ea5e9', // Sky/Cyan (Transportation)
-  '#f59e0b', // Amber/Orange (Shopping)
-  '#10b981', // Emerald (Groceries / Health)
-  '#ec4899', // Pink (Entertainment)
-  '#6366f1', // Indigo (Bills)
-  '#94a3b8', // Slate (Other)
+// Exactly 4 vibrant, high-contrast colors matching reference image 2
+const REFERENCE_PALETTE = [
+  '#f43f5e', // Coral / Rose
+  '#8b5cf6', // Violet / Purple
+  '#38bdf8', // Sky / Cyan
+  '#f59e0b', // Amber / Orange
 ];
 
 export const CategoryDonutDial: React.FC<CategoryDonutDialProps> = ({
@@ -32,62 +28,75 @@ export const CategoryDonutDial: React.FC<CategoryDonutDialProps> = ({
   totalExpense,
   hideBalances,
 }) => {
-  // 1. Process category slices with percentages and colors
+  // 1. Process category slices: strictly top 4 categories (or top 3 + Other)
   const slices = useMemo(() => {
     if (totalExpense === 0 || categorySpending.length === 0) return [];
 
-    // Filter to only expenses with spending > 0
     const active = categorySpending.filter((c) => c.total > 0 && !c.isIncome);
     if (active.length === 0) return [];
 
-    // Take top 4 or all, group rest as "Other"
-    const top = active.slice(0, 4);
-    const rest = active.slice(4);
-    const restTotal = rest.reduce((sum, c) => sum + c.total, 0);
+    // If more than 4 categories, take top 3 and aggregate the rest into "Other"
+    let displayList: { id: string; name: string; total: number; color: string }[] = [];
+    if (active.length <= 4) {
+      displayList = active.map((cat, idx) => ({
+        id: cat.id,
+        name: cat.name,
+        total: cat.total,
+        color: REFERENCE_PALETTE[idx % REFERENCE_PALETTE.length],
+      }));
+    } else {
+      const top3 = active.slice(0, 3);
+      const rest = active.slice(3);
+      const restTotal = rest.reduce((sum, c) => sum + c.total, 0);
 
-    const result = top.map((cat, idx) => ({
-      id: cat.id,
-      name: cat.name,
-      total: cat.total,
-      percent: Math.round((cat.total / totalExpense) * 100),
-      ratio: cat.total / totalExpense,
-      color: cat.colorHex || DEFAULT_PALETTE[idx % DEFAULT_PALETTE.length],
-    }));
-
-    if (restTotal > 0) {
-      result.push({
-        id: 'cat_other',
-        name: 'Other',
-        total: restTotal,
-        percent: Math.round((restTotal / totalExpense) * 100),
-        ratio: restTotal / totalExpense,
-        color: '#94a3b8',
-      });
+      displayList = [
+        ...top3.map((cat, idx) => ({
+          id: cat.id,
+          name: cat.name,
+          total: cat.total,
+          color: REFERENCE_PALETTE[idx],
+        })),
+        {
+          id: 'cat_other',
+          name: 'Other',
+          total: restTotal,
+          color: REFERENCE_PALETTE[3], // Orange for the 4th slice
+        },
+      ];
     }
 
-    return result;
+    return displayList.map((item) => {
+      const ratio = item.total / totalExpense;
+      const percent = Math.round(ratio * 100);
+      return {
+        ...item,
+        ratio,
+        percent,
+      };
+    });
   }, [categorySpending, totalExpense]);
 
-  // 2. SVG Donut Arc Geometry
-  const size = 200;
-  const strokeWidth = 22;
-  const radius = (size - strokeWidth) / 2 - 4; // ~73
-  const circumference = 2 * Math.PI * radius; // ~458.67
+  // 2. SVG Donut Arc Geometry: Mathematical non-overlapping rounded caps
+  const size = 220;
+  const strokeWidth = 24;
+  const radius = (size - strokeWidth) / 2 - 6; // radius = 86
+  const circumference = 2 * Math.PI * radius; // ~540.35
 
-  // Calculate dasharrays and offsets with rounded cap gaps
   const arcs = useMemo(() => {
     if (slices.length === 0) return [];
 
     const hasMultiple = slices.length > 1;
-    // Gap size in stroke-dasharray units (subtle spacing)
-    const gap = hasMultiple ? 14 : 0;
+    // Each strokeLinecap="round" extends by strokeWidth (strokeWidth/2 at each end).
+    // To have a visible dark gap of 10px between the rounded ends of adjacent slices:
+    const visibleGap = 10;
+    const deduction = hasMultiple ? strokeWidth + visibleGap : 0;
     let accumulatedRatio = 0;
 
     return slices.map((slice) => {
-      const sliceLength = slice.ratio * circumference;
-      const visibleLength = Math.max(0, sliceLength - gap);
-      // Rotation offset starting from 12 o'clock (-90 degrees)
-      const offset = -(accumulatedRatio * circumference) - gap / 2;
+      const arcLength = slice.ratio * circumference;
+      const visibleLength = Math.max(2, arcLength - deduction);
+      // Offset starts at 12 o'clock (-90 deg), shifted forward by half deduction so caps center in slice slot
+      const offset = -(accumulatedRatio * circumference + deduction / 2);
       accumulatedRatio += slice.ratio;
 
       return {
@@ -96,38 +105,25 @@ export const CategoryDonutDial: React.FC<CategoryDonutDialProps> = ({
         strokeDashoffset: offset,
       };
     });
-  }, [slices, circumference]);
+  }, [slices, circumference, strokeWidth]);
 
   return (
-    <div className="rounded-3xl border border-theme-border bg-theme-card p-5 shadow-sm transition-colors select-none">
+    <div className="rounded-3xl border border-white/5 bg-[#14151a] p-6 shadow-xl transition-colors select-none">
       {/* 1. Card Header */}
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold tracking-tight text-theme-primary">
-          Category Breakdown
-        </span>
-      </div>
+      <h2 className="text-base font-semibold tracking-tight text-white">
+        Category Breakdown
+      </h2>
 
-      {/* 2. Donut Dial Graphic with Center Total */}
-      <div className="mt-4 flex flex-col items-center justify-center">
-        <div className="relative size-[200px] flex items-center justify-center">
+      {/* 2. Donut Graphic with Center Total */}
+      <div className="mt-5 flex flex-col items-center justify-center">
+        <div className="relative size-[220px] flex items-center justify-center">
           <svg
             width={size}
             height={size}
             className="rotate-[-90deg] overflow-visible"
             viewBox={`0 0 ${size} ${size}`}
           >
-            {/* Background ring */}
-            <circle
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              fill="none"
-              stroke="currentColor"
-              className="text-theme-border/40"
-              strokeWidth={strokeWidth}
-            />
-
-            {/* Segment Arcs */}
+            {/* Slices: zero background ring underneath to prevent visual artifacts */}
             {arcs.map((arc) => (
               <circle
                 key={arc.id}
@@ -145,52 +141,45 @@ export const CategoryDonutDial: React.FC<CategoryDonutDialProps> = ({
             ))}
           </svg>
 
-          {/* Center Cutout Info */}
+          {/* Center Cutout Text */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
-            <span className="text-[11px] font-medium text-theme-muted">
+            <span className="text-xs font-medium text-slate-400">
               Total spent
             </span>
-            <span className="mt-0.5 text-xl font-bold font-mono tracking-tight text-theme-primary tabular-nums">
-              {hideBalances ? '••••••' : formatCurrency(totalExpense)}
+            <span className="mt-1 text-3xl font-bold font-sans tracking-tight text-white leading-none">
+              {hideBalances ? '••••••' : formatCurrency(totalExpense, undefined, false)}
             </span>
           </div>
         </div>
       </div>
 
-      {/* 3. Category Breakdown List */}
-      <div className="mt-6 flex flex-col divide-y divide-theme-border/50">
+      {/* 3. Category Legend: Calm, spacious rows without harsh divider lines */}
+      <div className="mt-7 flex flex-col space-y-3.5">
         {slices.length === 0 ? (
-          <p className="py-4 text-center text-xs text-theme-muted">
+          <p className="py-4 text-center text-xs text-slate-400">
             No categorized expenses recorded in this period.
           </p>
         ) : (
           slices.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0"
-            >
+            <div key={item.id} className="flex items-center justify-between">
               {/* Left: Indicator Dot & Name */}
-              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              <div className="flex items-center gap-3 min-w-0">
                 <span
-                  className="size-2.5 rounded-full shrink-0 shadow-xs"
+                  className="size-3 rounded-full shrink-0 shadow-sm"
                   style={{ backgroundColor: item.color }}
                 />
-                <span className="text-xs font-semibold text-theme-primary truncate">
+                <span className="text-sm font-medium text-slate-200 truncate">
                   {item.name}
                 </span>
               </div>
 
-              {/* Center: Percentage */}
-              <div className="w-16 text-center shrink-0">
-                <span className="text-xs font-mono text-theme-muted font-medium">
+              {/* Right: Percentage & Currency Amount */}
+              <div className="flex items-center gap-6 shrink-0">
+                <span className="text-sm font-sans text-slate-400 font-normal w-10 text-right">
                   {item.percent}%
                 </span>
-              </div>
-
-              {/* Right: Currency Amount */}
-              <div className="text-right shrink-0">
-                <span className="text-xs font-mono font-bold text-theme-primary tabular-nums">
-                  {hideBalances ? '••••••' : formatCurrency(item.total)}
+                <span className="text-sm font-sans font-semibold text-white w-20 text-right">
+                  {hideBalances ? '••••••' : formatCurrency(item.total, undefined, false)}
                 </span>
               </div>
             </div>

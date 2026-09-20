@@ -103,7 +103,7 @@ export const BudgetEnvelopesSection: React.FC<BudgetEnvelopesSectionProps> = ({
           No budget envelopes configured yet.
         </div>
       ) : (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-3.5">
           {envelopes.map((env) => {
             const isOver = env.status === 'OVER_BUDGET';
             const isNear = env.status === 'NEAR_LIMIT';
@@ -111,42 +111,42 @@ export const BudgetEnvelopesSection: React.FC<BudgetEnvelopesSectionProps> = ({
             return (
               <div
                 key={env.categoryId}
-                className="rounded-2xl border border-theme-border bg-theme-card p-4 shadow-sm space-y-2.5 transition-colors"
+                className="rounded-[22px] border border-white/5 bg-[#14151a] p-5 shadow-xl space-y-3 transition-colors"
               >
                 {/* Top Row: Title, Status Badge & Percentage */}
                 <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <span className="text-sm font-semibold text-theme-primary truncate">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <span className="text-base font-semibold text-white truncate">
                       {env.categoryName}
                     </span>
 
                     {/* Contextual Status Badge matching reference image 3 */}
                     {isOver ? (
-                      <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold bg-rose-500/15 text-rose-500 dark:text-rose-400 border border-rose-500/30 shrink-0">
-                        <AlertTriangle className="size-3 shrink-0" />
-                        <span>{formatCurrency(env.overAmount)} over</span>
+                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-rose-500/15 text-rose-400 border border-rose-500/30 shrink-0">
+                        <AlertTriangle className="size-3.5 shrink-0" />
+                        <span>{formatCurrency(env.overAmount, undefined, false)} over</span>
                       </span>
                     ) : isNear ? (
-                      <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold bg-amber-500/15 text-amber-500 dark:text-amber-400 border border-amber-500/30 shrink-0">
-                        <TrendingUp className="size-3 shrink-0" />
+                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-amber-500/15 text-amber-400 border border-amber-500/30 shrink-0">
+                        <TrendingUp className="size-3.5 shrink-0" />
                         <span>Near limit</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30 shrink-0">
-                        <Check className="size-3 shrink-0" />
+                      <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
+                        <Check className="size-3.5 shrink-0" />
                         <span>Healthy</span>
                       </span>
                     )}
                   </div>
 
-                  {/* Percentage on Right */}
+                  {/* Percentage on Right in Clean Bold Sans-Serif */}
                   <span
-                    className={`text-sm font-bold font-mono tabular-nums shrink-0 ${
+                    className={`text-base font-bold font-sans shrink-0 ${
                       isOver
-                        ? 'text-rose-500 dark:text-rose-400'
+                        ? 'text-rose-400'
                         : isNear
-                        ? 'text-amber-500 dark:text-amber-400'
-                        : 'text-emerald-500 dark:text-emerald-400'
+                        ? 'text-amber-400'
+                        : 'text-emerald-400'
                     }`}
                   >
                     {env.percent}%
@@ -154,27 +154,23 @@ export const BudgetEnvelopesSection: React.FC<BudgetEnvelopesSectionProps> = ({
                 </div>
 
                 {/* Middle Row: Progress Bar Track */}
-                <div className="h-2 w-full rounded-full bg-theme-card-subtle overflow-hidden">
+                <div className="h-2.5 w-full rounded-full bg-slate-800/80 overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ease-out ${
                       isOver
                         ? 'bg-rose-500'
                         : isNear
-                        ? 'bg-amber-500'
-                        : 'bg-emerald-500'
+                        ? 'bg-amber-400'
+                        : 'bg-emerald-400'
                     }`}
-                    style={{ width: `${Math.min(100, Math.max(2, env.percent))}%` }}
+                    style={{ width: `${Math.min(100, Math.max(3, env.percent))}%` }}
                   />
                 </div>
 
-                {/* Bottom Row: Monospace Spent of Limit */}
-                <div className="flex items-center justify-between text-xs text-theme-muted font-medium">
-                  <span className="font-mono">
-                    {hideBalances ? '••••••' : formatCurrency(env.spent)}{' '}
-                    <span className="text-theme-muted/70 font-sans">
-                      of {formatCurrency(env.limit)} limit
-                    </span>
-                  </span>
+                {/* Bottom Row: Clean Sans-Serif Spent of Limit */}
+                <div className="text-xs text-slate-400 font-sans font-normal">
+                  {hideBalances ? '••••••' : formatCurrency(env.spent, undefined, false)}{' '}
+                  <span>of {formatCurrency(env.limit, undefined, false)} limit</span>
                 </div>
               </div>
             );
