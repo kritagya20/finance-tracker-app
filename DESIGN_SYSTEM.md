@@ -621,6 +621,7 @@ Empty states are **engagement opportunities**, not dead ends. Every empty state 
   - Provides instantaneous DOM class updates (`dark` class toggle) and `localStorage` persistence.
 - **Storage Metrics**: Transparent on-device statistics without exposing sensitive or intimidating technical jargon.
 - **Sign Out Action**: Labeled concisely as "Sign Out" with leading `LogOut` icon and trailing `ChevronRight`. Redundant or jargon-heavy labels such as "Lock Vault & Sign Out" or "Safely Locks On-Device Session" are strictly avoided in favor of clean, direct, universal UX copy.
+- **Sub-Screen Headers & Vocabulary**: Sub-screens like Categories (`CategoryListScreen.tsx`) and Payment Options (`PaymentAccountsScreen.tsx`) feature clean heading typography (`text-2xl font-bold tracking-tight text-theme-primary`) with single `ArrowLeft` navigation, strictly omitting redundant count pill badges from the header title area. Titles maintain 100% naming consistency across the app (using "Payment Options" everywhere).
 
 ## 28.2 Credential Modification Architecture (Change MPIN)
 In accordance with production fintech standards (CRED, Google Pay, Paytm):

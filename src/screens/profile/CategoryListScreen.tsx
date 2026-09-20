@@ -52,14 +52,9 @@ export const CategoryListScreen: React.FC<CategoryListScreenProps> = ({
           >
             <ArrowLeft className="size-5" />
           </button>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-theme-primary">
-              Categories
-            </h1>
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-theme-card-subtle border border-theme-border px-1.5 text-[11px] font-mono text-theme-muted">
-              {categories.length}
-            </span>
-          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-theme-primary">
+            Categories
+          </h1>
         </div>
 
         <button

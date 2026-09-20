@@ -48,14 +48,9 @@ export const PaymentAccountsScreen: React.FC<PaymentAccountsScreenProps> = ({
           >
             <ArrowLeft className="size-5" />
           </button>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-theme-primary">
-              Payment Accounts
-            </h1>
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-theme-card-subtle border border-theme-border px-1.5 text-[11px] font-mono text-theme-muted">
-              {accounts.length}
-            </span>
-          </div>
+          <h1 className="text-2xl font-bold tracking-tight text-theme-primary">
+            Payment Options
+          </h1>
         </div>
 
         <button
