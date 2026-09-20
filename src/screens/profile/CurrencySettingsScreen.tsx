@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ArrowLeft, Search, Check, X } from 'lucide-react';
+import { ArrowLeft, Check } from 'lucide-react';
+import { SearchInput } from '../../components/ui/SearchInput';
 import { useCurrency, NumberingSystem } from '../../context/CurrencyContext';
 import { cn } from '../../lib/utils';
 
@@ -157,27 +158,12 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
           Select Base Currency
         </span>
 
-        {/* Search Input with Debounce & Clear Action */}
-        <div className="relative group">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-theme-muted transition-colors group-focus-within:text-violet-400 pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search currency code or name..."
-            className="w-full h-11 rounded-xl border border-theme-border bg-theme-input pl-10 pr-9 text-xs text-theme-primary placeholder:text-theme-muted focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all duration-200 focus:scale-[1.005] shadow-xs"
-          />
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery('')}
-              aria-label="Clear search"
-              className="absolute right-3 top-1/2 -translate-y-1/2 size-5 flex items-center justify-center rounded-full bg-theme-muted/20 text-theme-secondary hover:text-theme-primary hover:bg-theme-muted/30 active:scale-90 transition-all"
-            >
-              <X className="size-3" />
-            </button>
-          )}
-        </div>
+        {/* Search Input */}
+        <SearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Search currency code or name..."
+        />
 
         {/* Currency List */}
         <div className="flex flex-col rounded-2xl border border-theme-border bg-theme-card/50 divide-y divide-theme-border overflow-hidden">

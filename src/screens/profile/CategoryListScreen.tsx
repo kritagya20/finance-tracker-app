@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Plus, Search, Trash2, Tag, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Tag, AlertTriangle } from 'lucide-react';
+import { SearchInput } from '../../components/ui/SearchInput';
 import { Category } from '../../domain/models/types';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
 import { AddCategoryDrawer } from './AddCategoryDrawer';
@@ -74,25 +75,11 @@ export const CategoryListScreen: React.FC<CategoryListScreenProps> = ({
       </header>
 
       {/* 2. Search Input */}
-      <div className="relative flex items-center">
-        <Search className="absolute left-3.5 size-4 text-theme-muted pointer-events-none" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search categories..."
-          className="w-full h-11 rounded-xl border border-theme-border bg-theme-input pl-10 pr-3.5 text-xs font-medium text-theme-primary placeholder:text-theme-muted focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all shadow-xs"
-        />
-        {searchQuery && (
-          <button
-            type="button"
-            onClick={() => setSearchQuery('')}
-            className="absolute right-3 text-xs text-theme-muted hover:text-theme-primary"
-          >
-            Clear
-          </button>
-        )}
-      </div>
+      <SearchInput
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Search categories..."
+      />
 
       {/* 3. Filter Tabs (Without counts) */}
       <div className="flex gap-2">
