@@ -932,7 +932,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
             <span className="text-sm font-bold text-theme-primary">Select Date</span>
           </div>
 
-          <div className="flex items-center justify-center">
+          <div className="flex items-center justify-center w-full">
             <CalendarPicker
               mode="single"
               selectedDate={selectedDate}

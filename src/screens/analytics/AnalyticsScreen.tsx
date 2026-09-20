@@ -263,7 +263,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                 className="fixed inset-0 z-40"
                 onClick={() => setIsDatePickerOpen(false)}
               />
-              <div className="absolute right-0 top-full z-50 mt-1.5">
+              <div className="absolute right-0 top-full z-50 mt-1.5 w-[328px] max-w-[calc(100vw-32px)]">
                 <CalendarPicker
                   mode="range"
                   selectedRange={customRange || undefined}

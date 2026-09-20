@@ -93,6 +93,10 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
   const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
   const daysInPrevMonth = new Date(viewYear, viewMonth, 0).getDate();
 
+  // Fixed 6-week layout (42 slots) to ensure 100% stable height and layout
+  const TOTAL_GRID_SLOTS = 42;
+  const nextMonthOverflowCount = TOTAL_GRID_SLOTS - (firstDayOfMonth + daysInMonth);
+
   const handleDayClick = (dayStr: string) => {
     if (mode === 'single') {
       onSelectDate?.(dayStr);
@@ -166,20 +170,20 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
   return (
     <div
       className={cn(
-        'w-full max-w-[340px] rounded-3xl border border-theme-border bg-theme-elevated p-4 shadow-xl text-theme-primary select-none',
+        'w-[328px] max-w-[calc(100vw-32px)] shrink-0 rounded-3xl border border-theme-border bg-theme-elevated p-4 shadow-xl text-theme-primary select-none',
         className
       )}
     >
       {/* Calendar Header: Month/Year navigation */}
       <div className="flex items-center justify-between pb-3 border-b border-theme-divider">
-        <div className="flex items-center gap-2">
-          <CalendarIcon className="size-4 text-violet-500" />
-          <h3 className="text-sm font-bold text-theme-primary">
+        <div className="flex items-center gap-2 min-w-0">
+          <CalendarIcon className="size-4 text-violet-500 shrink-0" />
+          <h3 className="text-sm font-bold text-theme-primary whitespace-nowrap">
             {monthName} <span className="text-theme-muted font-normal">{viewYear}</span>
           </h3>
         </div>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
             onClick={handleJumpToday}
@@ -276,22 +280,35 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
             </button>
           );
         })}
+
+        {/* Next Month Overflow Days (maintains 6-row layout stability) */}
+        {Array.from({ length: Math.max(0, nextMonthOverflowCount) }).map((_, i) => {
+          const nextDayNum = i + 1;
+          return (
+            <div
+              key={`next-${i}`}
+              className="flex size-8 mx-auto items-center justify-center text-[11px] font-mono text-theme-muted opacity-40"
+            >
+              {nextDayNum}
+            </div>
+          );
+        })}
       </div>
 
       {/* Quick Presets Strip */}
       {showPresets && mode === 'range' && (
-        <div className="mt-4 pt-3 border-t border-theme-divider space-y-1.5">
+        <div className="mt-4 pt-3 border-t border-theme-divider space-y-2">
           <span className="text-[10px] font-semibold uppercase tracking-wider text-theme-muted">
             Quick Presets
           </span>
-          <div className="flex flex-wrap gap-1.5">
+          <div className="grid grid-cols-2 gap-1.5">
             <button
               type="button"
               onClick={() => handleApplyRangePreset('THIS_MONTH')}
               className={cn(
-                'rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
+                'rounded-lg border px-2.5 py-1.5 text-center text-[11px] font-medium transition-colors',
                 activePreset === 'THIS_MONTH'
-                  ? 'border-violet-500 bg-violet-600 text-white'
+                  ? 'border-violet-500 bg-violet-600 text-white font-semibold'
                   : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
               )}
             >
@@ -301,9 +318,9 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
               type="button"
               onClick={() => handleApplyRangePreset('LAST_MONTH')}
               className={cn(
-                'rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
+                'rounded-lg border px-2.5 py-1.5 text-center text-[11px] font-medium transition-colors',
                 activePreset === 'LAST_MONTH'
-                  ? 'border-violet-500 bg-violet-600 text-white'
+                  ? 'border-violet-500 bg-violet-600 text-white font-semibold'
                   : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
               )}
             >
@@ -313,9 +330,9 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
               type="button"
               onClick={() => handleApplyRangePreset('LAST_30_DAYS')}
               className={cn(
-                'rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
+                'rounded-lg border px-2.5 py-1.5 text-center text-[11px] font-medium transition-colors',
                 activePreset === 'LAST_30_DAYS'
-                  ? 'border-violet-500 bg-violet-600 text-white'
+                  ? 'border-violet-500 bg-violet-600 text-white font-semibold'
                   : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
               )}
             >
@@ -325,9 +342,9 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
               type="button"
               onClick={() => handleApplyRangePreset('ALL')}
               className={cn(
-                'rounded-lg border px-2.5 py-1 text-[11px] font-medium transition-colors',
+                'rounded-lg border px-2.5 py-1.5 text-center text-[11px] font-medium transition-colors',
                 activePreset === 'ALL'
-                  ? 'border-violet-500 bg-violet-600 text-white'
+                  ? 'border-violet-500 bg-violet-600 text-white font-semibold'
                   : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
               )}
             >

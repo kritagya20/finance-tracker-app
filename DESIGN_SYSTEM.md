@@ -670,6 +670,22 @@ In accordance with production fintech standards (CRED, Google Pay, Paytm):
   - If the SMTP relay endpoint is unreachable or offline, the report is securely serialized and queued in encrypted local storage (`localStorage.getItem('app_bug_reports')`), guaranteeing zero data loss.
 - **Multi-Stage Completion**: Upon successful dispatch, transitions to an emerald checkmark confirmation stage displaying the reference ID and a full-width "Done" button to dismiss the drawer.
 
+## 28.5 Calendar Picker Dimension & Layout Stability Standards (`CalendarPicker`)
+- **Strict Width Lock**: The calendar card root is locked to `w-[328px] max-w-[calc(100vw-32px)] shrink-0`. This completely prevents intrinsic shrink-wrap jitter and guarantees that changing between short month names (e.g., "May", 3 letters) and long month names (e.g., "September", 9 letters) never alters the card width or shifts adjacent controls.
+- **Fixed 6-Row Grid (42 Slots)**:
+  - Standardizes the days grid to exactly 42 slots (6 weeks × 7 days).
+  - Renders previous month overflow days (`firstDayOfMonth`) and next month trailing overflow days (`42 - (firstDayOfMonth + daysInMonth)`) with `opacity-40 text-theme-muted`.
+  - Guarantees the calendar height and row alignment remain 100% constant across 28, 29, 30, and 31-day months.
+- **Anchored Header Navigation**:
+  - Left title cluster: `CalendarIcon` (`size-4 shrink-0 text-violet-500`) and `<h3 className="whitespace-nowrap truncate">{monthName} {viewYear}</h3>`.
+  - Right action controls: "Today" jump button and `ChevronLeft` / `ChevronRight` navigation buttons pinned to the right edge with `shrink-0`.
+  - Space variations between different month lengths absorb cleanly in the center without moving buttons or resizing the container.
+- **Symmetrical 2×2 Presets Grid**: Quick presets in range mode use `grid grid-cols-2 gap-1.5` (`This Month`, `Last Month`, `Last 30 Days`, `All Time`), ensuring balanced touch targets and eliminating awkward single-button line wraps.
+- **Modal & Popover Placement**:
+  - In `AnalyticsScreen.tsx`, the popover container specifies `w-[328px] max-w-[calc(100vw-32px)]`.
+  - In `ActivityScreen.tsx`, `CalendarPicker` centers directly on the modal backdrop, avoiding nested duplicate card containers.
+  - In transaction drawers (`AddTransactionDrawer.tsx`, `EditTransactionDrawer.tsx`), centered within `w-full flex items-center justify-center`.
+
 ---
 
 # Part IX — Accessibility Requirements

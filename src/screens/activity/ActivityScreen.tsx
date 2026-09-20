@@ -537,29 +537,17 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
       {/* Custom Date Range Picker Modal */}
       {showCustomCalendar && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-sm rounded-2xl border border-theme-border bg-theme-card p-4 shadow-xl">
-            <div className="flex items-center justify-between pb-3 border-b border-theme-border mb-3">
-              <h3 className="text-sm font-semibold text-theme-primary">Custom Date Range</h3>
-              <button
-                type="button"
-                onClick={() => setShowCustomCalendar(false)}
-                className="text-xs text-theme-muted hover:text-theme-primary font-medium"
-              >
-                Close
-              </button>
-            </div>
-            <CalendarPicker
-              mode="range"
-              selectedRange={customRange || undefined}
-              onSelectRange={(range) => {
-                setCustomRange(range);
-                setDateFilter('CUSTOM');
-                setShowCustomCalendar(false);
-              }}
-              showPresets={false}
-              onClose={() => setShowCustomCalendar(false)}
-            />
-          </div>
+          <CalendarPicker
+            mode="range"
+            selectedRange={customRange || undefined}
+            onSelectRange={(range) => {
+              setCustomRange(range);
+              setDateFilter('CUSTOM');
+              setShowCustomCalendar(false);
+            }}
+            showPresets={false}
+            onClose={() => setShowCustomCalendar(false)}
+          />
         </div>
       )}
     </div>
