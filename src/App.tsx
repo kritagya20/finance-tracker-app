@@ -15,6 +15,7 @@ import { ProfileScreen } from './screens/profile/ProfileScreen';
 import { CategoryListScreen } from './screens/profile/CategoryListScreen';
 import { PaymentAccountsScreen } from './screens/profile/PaymentAccountsScreen';
 import { ProfileSetupScreen } from './screens/profile/ProfileSetupScreen';
+import { CurrencySettingsScreen } from './screens/profile/CurrencySettingsScreen';
 import { resetMockDatabase } from './data/data';
 import { Transaction } from './domain/models/types';
 
@@ -24,7 +25,8 @@ if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
 }
 
 type AuthView = 'login' | 'signup' | 'forgot_password' | 'profile_setup';
-type SubViewMode = 'none' | 'categories' | 'accounts' | 'setup';
+type SubViewMode = 'none' | 'categories' | 'accounts' | 'setup' | 'currency';
+
 
 export function App() {
   const {
@@ -221,6 +223,11 @@ export function App() {
             }}
             onSkip={() => setSubView('none')}
           />
+        ) : subView === 'currency' ? (
+          /* Currency & Numbering Settings Screen */
+          <CurrencySettingsScreen
+            onBack={() => setSubView('none')}
+          />
         ) : (
           /* Authenticated Application Views */
           <div className="flex flex-col gap-5">
@@ -288,10 +295,12 @@ export function App() {
                 onNavigateToCategories={() => setSubView('categories')}
                 onNavigateToAccounts={() => setSubView('accounts')}
                 onNavigateToSetup={() => setSubView('setup')}
+                onNavigateToCurrency={() => setSubView('currency')}
               />
             )}
           </div>
         )}
+
       </main>
 
       {/* Fixed Bottom Navigation (Only visible when authenticated and not inside subviews) */}

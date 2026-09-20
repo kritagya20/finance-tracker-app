@@ -29,7 +29,9 @@ import { AboutModal } from './AboutModal';
 import { EditAccountDetailsDrawer } from './EditAccountDetailsDrawer';
 import { ChangeMpinDrawer } from './ChangeMpinDrawer';
 import { useTheme } from '../../context/ThemeContext';
+import { useCurrency } from '../../context/CurrencyContext';
 import { Switch } from '../../components/ui/Switch';
+import { ThemeToggle } from '../../components/ui/ThemeToggle';
 import { cn } from '../../lib/utils';
 
 interface ProfileScreenProps {
@@ -39,12 +41,14 @@ interface ProfileScreenProps {
   onNavigateToCategories: () => void;
   onNavigateToAccounts: () => void;
   onNavigateToSetup: () => void;
+  onNavigateToCurrency?: () => void;
   hideBalances?: boolean;
   onToggleHideBalances?: () => void;
   onUpdateProfile?: (updates: Partial<UserProfile>) => Promise<UserProfile | void>;
   onResetData?: () => void;
   onLogout?: () => void;
 }
+
 
 interface CarouselSlide {
   id: string;
@@ -61,6 +65,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onNavigateToCategories,
   onNavigateToAccounts,
   onNavigateToSetup,
+  onNavigateToCurrency,
   hideBalances,
   onToggleHideBalances,
   onUpdateProfile,
@@ -68,7 +73,9 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   onLogout,
 }) => {
   const { effectiveTheme, setThemePreference } = useTheme();
+  const { currency, currencySymbol, currencyConfig, numberingSystem } = useCurrency();
   const [activeSlide, setActiveSlide] = useState(0);
+
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isEditAccountOpen, setIsEditAccountOpen] = useState(false);
@@ -322,17 +329,17 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
               </div>
               <div className="flex flex-col">
                 <span className="text-xs font-semibold text-theme-primary">
-                  Dark Mode
+                  Theme
                 </span>
                 <span className="text-[11px] text-theme-secondary mt-0.5">
                   {effectiveTheme === 'dark' ? 'Dark Mode Active' : 'Light Mode Active'}
                 </span>
               </div>
             </div>
-            <Switch
-              checked={effectiveTheme === 'dark'}
-              onCheckedChange={(isDark) => setThemePreference(isDark ? 'dark' : 'light')}
-              ariaLabel="Toggle Dark and Light Theme"
+            <ThemeToggle
+              isDark={effectiveTheme === 'dark'}
+              onToggle={(isDark) => setThemePreference(isDark ? 'dark' : 'light')}
+              ariaLabel="Toggle Light and Dark Theme"
             />
           </div>
 
@@ -386,25 +393,33 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             />
           </div>
 
-          {/* Currency Standard */}
-          <div className="flex items-center justify-between p-4">
+          {/* Currency & Numbering Standard */}
+          <button
+            type="button"
+            onClick={onNavigateToCurrency}
+            className="flex w-full items-center justify-between p-4 text-left hover:bg-theme-card-hover/40 transition-colors group"
+          >
             <div className="flex items-center gap-3">
               <div className="flex size-8 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400">
                 <Globe className="size-4" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-semibold text-theme-primary">
+                <span className="text-xs font-semibold text-theme-primary group-hover:text-violet-400 transition-colors">
                   Currency & Numbering
                 </span>
                 <span className="text-[11px] text-theme-secondary mt-0.5">
-                  Indian Rupee (₹) • Lakhs & Crores Grouping
+                  {currencyConfig.name} ({currencySymbol}) • {numberingSystem === 'indian' ? 'Lakhs & Crores' : 'Millions & Billions'}
                 </span>
               </div>
             </div>
-            <span className="rounded-full bg-theme-card-subtle border border-theme-border px-2.5 py-1 text-[10px] font-mono text-theme-secondary">
-              INR (₹)
-            </span>
-          </div>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-theme-card-subtle border border-theme-border px-2.5 py-1 text-[11px] font-mono font-semibold text-theme-primary shadow-2xs">
+                {currency} ({currencySymbol})
+              </span>
+              <ChevronRight className="size-4 text-theme-muted group-hover:text-theme-primary transition-colors" />
+            </div>
+          </button>
+
         </div>
       </section>
 

@@ -22,8 +22,9 @@ export const BudgetProgressBar: React.FC<BudgetProgressBarProps> = ({
           <p className="text-sm font-semibold font-mono text-theme-primary">{percent}% used</p>
         </div>
         <p className="text-xs font-medium font-mono text-theme-secondary tabular-nums">
-          {hideBalances ? '•••• left' : `${formatCurrency(remaining, 'INR', false)} left`}
+          {hideBalances ? '•••• left' : `${formatCurrency(remaining, undefined, false)} left`}
         </p>
+
       </div>
 
       <div

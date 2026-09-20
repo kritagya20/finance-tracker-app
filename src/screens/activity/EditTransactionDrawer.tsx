@@ -24,6 +24,7 @@ import { CategoryIcon } from '../../components/common/CategoryIcon';
 import { parseKeypadToPaise, paiseToRupees } from '../../domain/engine/moneyUtils';
 import { CalendarPicker } from '../../components/common/CalendarPicker';
 import { CategorySplitEditor } from '../logger/CategorySplitEditor';
+import { useCurrency } from '../../context/CurrencyContext';
 import { cn } from '../../lib/utils';
 
 interface EditTransactionDrawerProps {
@@ -53,6 +54,8 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
   onDelete,
   onClose,
 }) => {
+  const { currencySymbol, numberingSystem } = useCurrency();
+
   const [isRendered, setIsRendered] = useState(isOpen);
   const [isAnimatingIn, setIsAnimatingIn] = useState(false);
 
@@ -264,10 +267,11 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
         newErrors.splitBalance = true;
         const diff = paiseAmount - allocatedPaise;
         if (diff > 0) {
-          missing.push(`remaining ₹${paiseToRupees(diff)} to allocate`);
+          missing.push(`remaining ${currencySymbol}${paiseToRupees(diff)} to allocate`);
         } else {
-          missing.push(`reduce overage of ₹${paiseToRupees(Math.abs(diff))}`);
+          missing.push(`reduce overage of ${currencySymbol}${paiseToRupees(Math.abs(diff))}`);
         }
+
       }
     } else {
       const effectiveCatId = selectedCategoryId || (splits.length === 1 ? splits[0].categoryId : '');
@@ -333,12 +337,16 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
     ? 'Today'
     : selectedDate === yesterdayStr
     ? 'Yesterday'
-    : new Date(selectedDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    : new Date(selectedDate).toLocaleDateString(numberingSystem === 'indian' ? 'en-IN' : 'en-US', { day: 'numeric', month: 'short' });
 
   const activeAmount = parseKeypadToPaise(amountStr);
-  const formattedRupees = (activeAmount / 100).toLocaleString('en-IN', {
-    maximumFractionDigits: 2,
-  });
+  const formattedRupees = (activeAmount / 100).toLocaleString(
+    numberingSystem === 'indian' ? 'en-IN' : 'en-US',
+    {
+      maximumFractionDigits: 2,
+    }
+  );
+
 
   const isSplit = splits.length > 1 && type === 'EXPENSE';
 
@@ -407,7 +415,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
             </span>
 
             <div className="flex items-baseline justify-center gap-1.5 select-none">
-              <span className="text-2xl font-semibold text-theme-muted font-mono">₹</span>
+              <span className="text-2xl font-semibold text-theme-muted font-mono">{currencySymbol}</span>
               <span className="text-5xl font-light tracking-tight tabular-nums text-theme-primary font-mono">
                 {amountStr}
               </span>
@@ -423,7 +431,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
                   onClick={() => handleQuickAdd(amt)}
                   className="rounded-full bg-theme-card-subtle px-3 py-1.5 text-xs font-medium font-mono text-theme-secondary hover:text-theme-primary hover:bg-theme-card active:scale-[0.95] transition-all shadow-xs"
                 >
-                  +₹{amt.toLocaleString('en-IN')}
+                  +{currencySymbol}{amt.toLocaleString(numberingSystem === 'indian' ? 'en-IN' : 'en-US')}
                 </button>
               ))}
             </div>
@@ -462,9 +470,10 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
               disabled={activeAmount <= 0}
               className="flex w-full h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-violet-500 hover:brightness-110 disabled:opacity-[0.38] disabled:cursor-not-allowed shadow-lg shadow-violet-900/30 active:scale-[0.97] transition-all"
             >
-              <span>Done editing amount (₹{formattedRupees})</span>
+              <span>Done editing amount ({currencySymbol}{formattedRupees})</span>
             </button>
           </div>
+
         </div>
       )}
 
@@ -526,11 +535,12 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
               </div>
 
               <div className="flex items-baseline justify-center gap-1 select-none">
-                <span className="text-2xl font-semibold text-theme-muted font-mono">₹</span>
+                <span className="text-2xl font-semibold text-theme-muted font-mono">{currencySymbol}</span>
                 <span className="text-4xl font-bold tracking-tight text-theme-primary font-mono tabular-nums">
                   {formattedRupees}
                 </span>
               </div>
+
 
               <div className="mt-2.5 flex justify-center">
                 <button
@@ -729,8 +739,9 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
                 {isSubmitting
                   ? 'Updating...'
                   : isSplit
-                  ? `Update Split Expense ₹${formattedRupees}`
-                  : `Update Transaction ₹${formattedRupees}`}
+                  ? `Update Split Expense ${currencySymbol}${formattedRupees}`
+                  : `Update Transaction ${currencySymbol}${formattedRupees}`}
+
               </span>
             </button>
           </div>

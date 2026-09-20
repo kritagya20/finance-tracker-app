@@ -608,7 +608,10 @@ Empty states are **engagement opportunities**, not dead ends. Every empty state 
 - For critical deletions (account deletion, data wipe): Require **typed confirmation** (e.g., "Type DELETE to confirm").
 
 ## 28.1 Settings & Appearance Standards
-- **Appearance Selection**: Clean toggle switch between **Light Mode** and **Dark Mode** via app-native `<Switch checked={effectiveTheme === 'dark'} />`. Displays Moon/Sun icon and active mode subtitle. Avoid confusing multi-tier dropdowns.
+- **Theme Selection**: Renamed to "Theme". Uses dedicated app-native dual-icon switcher (`<ThemeToggle />`).
+  - Contains permanent Sun icon on the left (`#fbbf24`) and Moon icon on the right (`#818cf8`).
+  - Sliding thumb (`translate-x-0` in light mode vs `translate-x-8` in dark mode) with contextual glowing ring (amber for Sun, violet for Moon).
+  - Provides instantaneous DOM class updates (`dark` class toggle) and `localStorage` persistence.
 - **Storage Metrics**: Transparent on-device statistics without exposing sensitive or intimidating technical jargon.
 
 ## 28.2 Credential Modification Architecture (Change MPIN)
@@ -619,6 +622,24 @@ In accordance with production fintech standards (CRED, Google Pay, Paytm):
   2. **Stage 2 (Enter New MPIN)**: 6-box discrete cell entry via `MpinInput` with strength checks rejecting sequential (`123456`) or repetitive (`000000`, `111111`) codes.
   3. **Stage 3 (Confirm New MPIN)**: 6-box confirmation with equality check and shake animation on mismatch.
   4. **Stage 4 (Success Confirmation)**: Emerald security badge animation, confirmation of local key re-encryption, and Done dismiss action.
+
+## 28.3 Currency & Numbering Architecture (`CurrencySettingsScreen`)
+- **Default Standards**: Default currency is Indian Rupee `INR (₹)` with Indian numbering format (`1,23,456.78`).
+- **Profile Listing Badge**: The "Currency & Numbering" row in Profile must display an interactive, styled badge `{currency} ({currencySymbol})` (e.g., `INR (₹)`) and a `ChevronRight` navigation arrow.
+- **Global Currency Propagation**: Changes to currency immediately reflect across all screens:
+  - Top header net balance and privacy mask peek.
+  - Dashboard Net Worth, Income (+), Expense (-) cards, and Budget progress bars.
+  - Activity feed list items and transaction filter summary cards.
+  - Outflow envelopes and spending velocity charts in Analytics.
+  - Numeric touch keypads and quick chip increments in Add/Edit transaction flows (`AddTransactionDrawer.tsx`, `EditTransactionDrawer.tsx`).
+- **Grouping Systems**:
+  - **Indian System**: Formatted via `en-IN` locale (`12,34,567.89`).
+  - **International System**: Formatted via `en-US` locale (`1,234,567.89`).
+- **Decimal Precision**:
+  - **Smart Auto**: Clean whole integers omit `.00` (e.g. `₹500`), while fractional amounts display 2 decimal places (e.g. `₹500.50`).
+  - **Always 2 Decimals**: Enforces fixed 2 decimal places for strict tabular alignment.
+  - **Non-Decimal Currencies**: Currencies such as Japanese Yen (`JPY`) force 0 decimals regardless of user mode.
+- **Navigation Invariant**: Sub-screen uses a single `ArrowLeft` top back button and a Reset action. Conflicting `X` icons are strictly prohibited.
 
 
 ---
