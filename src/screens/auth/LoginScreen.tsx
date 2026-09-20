@@ -28,7 +28,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
   const [hasSubmitted, setHasSubmitted] = useState(false);
 
   const validation = validateLoginIdentifier(identifier);
-  const mpinValidation = validateMpin(mpin);
+  const mpinValidation = validateMpin(mpin, { enforceStrength: false });
   const detectedType = detectIdentifierType(identifier);
 
   const showIdentifierError = (identifierTouched || hasSubmitted) && identifier.trim().length > 0 && !validation.isValid;

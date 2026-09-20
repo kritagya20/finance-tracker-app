@@ -16,6 +16,7 @@ import {
 import { MpinInput } from '../../components/ui/MpinInput';
 import { validateMpin } from '../../lib/authValidation';
 import { cn } from '../../lib/utils';
+import { useDrawerDragToDismiss } from '../../hooks/useDrawerDragToDismiss';
 
 interface ChangeMpinDrawerProps {
   isOpen: boolean;
@@ -36,6 +37,11 @@ export const ChangeMpinDrawer: React.FC<ChangeMpinDrawerProps> = ({
   // Stage Flow State
   const [stage, setStage] = useState<Stage>('VERIFY');
   const [verifyMethod, setVerifyMethod] = useState<VerifyMethod>('BIOMETRIC');
+
+  const { dragHandleProps, sheetStyle, backdropStyle } = useDrawerDragToDismiss({
+    onClose,
+    enabled: stage !== 'SUCCESS',
+  });
 
   // Verification State
   const [isAuthenticating, setIsAuthenticating] = useState(false);
@@ -168,6 +174,7 @@ export const ChangeMpinDrawer: React.FC<ChangeMpinDrawerProps> = ({
           if (stage !== 'SUCCESS') onClose();
         }}
         aria-hidden="true"
+        style={backdropStyle}
         className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity"
       />
 
@@ -176,42 +183,48 @@ export const ChangeMpinDrawer: React.FC<ChangeMpinDrawerProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="change-mpin-title"
+        style={sheetStyle}
         className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[390px] rounded-t-3xl bg-theme-elevated border-t border-theme-border shadow-2xl max-h-[92vh] flex flex-col overflow-hidden select-none animate-in slide-in-from-bottom duration-300"
       >
-        {/* Pull Handle */}
-        <div className="w-9 h-1 rounded-full bg-slate-600/40 mx-auto my-2.5 shrink-0" />
+        {/* Drag Area (Pull Handle & Navigation Bar) */}
+        <div {...dragHandleProps} className="touch-none select-none cursor-grab active:cursor-grabbing shrink-0">
+          {/* Pull Handle */}
+          <div className="w-full pt-2.5 pb-1 flex items-center justify-center">
+            <div className="w-9 h-1 rounded-full bg-slate-600/40 shrink-0" />
+          </div>
 
-        {/* Drawer Header with Single ArrowLeft (Navigation Invariant) */}
-        <div className="flex items-center justify-between px-5 pb-3 border-b border-theme-border/40 shrink-0">
-          {stage !== 'SUCCESS' ? (
-            <button
-              type="button"
-              onClick={() => {
-                if (stage === 'CONFIRM_NEW') {
-                  setStage('ENTER_NEW');
-                } else if (stage === 'ENTER_NEW') {
-                  setStage('VERIFY');
-                } else {
-                  onClose();
-                }
-              }}
-              aria-label="Back"
-              className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
-            >
-              <ArrowLeft className="size-5" />
-            </button>
-          ) : (
-            <div className="size-9" />
-          )}
+          {/* Drawer Header with Single ArrowLeft (Navigation Invariant) */}
+          <div className="flex items-center justify-between px-5 pb-3 border-b border-theme-border/40">
+            {stage !== 'SUCCESS' ? (
+              <button
+                type="button"
+                onClick={() => {
+                  if (stage === 'CONFIRM_NEW') {
+                    setStage('ENTER_NEW');
+                  } else if (stage === 'ENTER_NEW') {
+                    setStage('VERIFY');
+                  } else {
+                    onClose();
+                  }
+                }}
+                aria-label="Back"
+                className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+              >
+                <ArrowLeft className="size-5" />
+              </button>
+            ) : (
+              <div className="size-9" />
+            )}
 
-          <span id="change-mpin-title" className="text-sm font-bold text-theme-primary">
-            {stage === 'VERIFY' && 'Verify Identity'}
-            {stage === 'ENTER_NEW' && 'Set New MPIN'}
-            {stage === 'CONFIRM_NEW' && 'Confirm New MPIN'}
-            {stage === 'SUCCESS' && 'Security Updated'}
-          </span>
+            <span id="change-mpin-title" className="text-sm font-bold text-theme-primary pointer-events-none">
+              {stage === 'VERIFY' && 'Verify Identity'}
+              {stage === 'ENTER_NEW' && 'Set New MPIN'}
+              {stage === 'CONFIRM_NEW' && 'Confirm New MPIN'}
+              {stage === 'SUCCESS' && 'Security Updated'}
+            </span>
 
-          <div className="size-9" />
+            <div className="size-9 pointer-events-none" />
+          </div>
         </div>
 
         {/* Multi-Stage Content Body */}

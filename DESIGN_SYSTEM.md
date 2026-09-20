@@ -482,7 +482,13 @@ Haptic feedback provides physical confirmation for digital actions. Use sparingl
 - **Sheet**: `fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[390px] rounded-t-3xl bg-theme-elevated border-t border-theme-border shadow-2xl max-h-[92vh] flex flex-col`.
   - Animation: Slide up from `translateY(100%)` to `translateY(0)`, 400ms `ease-emphasized-decel`.
   - Dismiss: Slide down 200ms `ease-emphasized-accel`.
-- **Pull Handle**: 36px × 4px, `rounded-full bg-slate-600/40 mx-auto my-2.5`.
+- **Pull Handle & Drag-to-Dismiss Gesture Physics (`useDrawerDragToDismiss`)**:
+  - Pull Handle: 36px × 4px, `rounded-full bg-slate-600/40 mx-auto my-2.5`.
+  - Touch Target & Cursor: Wrapper provides 48px touch target with `touch-none select-none cursor-grab active:cursor-grabbing`.
+  - Drag Tracking: Dragging down translates the sheet smoothly in real-time (`translateY(${dragOffset}px)`).
+  - Dissipation Threshold: Crossing 75px downward pull triggers smooth exit dissipation animation and calls `onClose()`.
+  - Spring-Back: Releasing below threshold springs back to rest (`200ms cubic-bezier(0.2, 0, 0, 1)`).
+  - Dynamic Backdrop Dissipation: Backdrop opacity dims proportionally as drawer is dragged down (`opacity: max(0.15, 1 - offset / 300)`).
 - **Header**: `px-5 py-3 border-b border-theme-border/40 flex items-center justify-between`.
 - **Scroll**: Internal `overflow-y-auto` with `-webkit-overflow-scrolling: touch`.
 - **Edit Transaction Architecture (App-Native Fintech Standard)**:
@@ -620,9 +626,13 @@ In accordance with production fintech standards (CRED, Google Pay, Paytm):
 - **Separation of Concerns**: General profile editing (`EditAccountDetailsDrawer.tsx`) must strictly manage identity attributes (Full Name, Email, read-only Mobile). Security credentials must NEVER be edited inside general profile forms.
 - **Dedicated 4-Stage State Machine (`ChangeMpinDrawer.tsx`)**:
   1. **Stage 1 (Identity Challenge)**: Step-up authentication challenge requiring user to validate identity via **Biometrics** (1-tap passkey scan) OR **SMS OTP** (6-digit OTP with 30s resend timer).
-  2. **Stage 2 (Enter New MPIN)**: 6-box discrete cell entry via `MpinInput` with strength checks rejecting sequential (`123456`) or repetitive (`000000`, `111111`) codes.
+  2. **Stage 2 (Enter New MPIN)**: 6-box discrete cell entry via `MpinInput` with strict bank-grade anti-pattern checks:
+     - **All Identical Digits**: Strictly rejected (e.g. `000000`, `111111`, `999999`). Error: *"All digits cannot be the same (e.g. 111111)."*
+     - **Sequential Numbers**: Ascending and descending sequences strictly rejected (e.g. `123456`, `234567`, `987654`, `654321`). Error: *"Sequential numbers are not allowed (e.g. 123456 or 654321)."*
+     - **Repetitive Patterns**: Repeated pairs/triplets rejected (e.g. `121212`, `123123`). Error: *"Repetitive patterns are not allowed (e.g. 121212)."*
   3. **Stage 3 (Confirm New MPIN)**: 6-box confirmation with equality check and shake animation on mismatch.
   4. **Stage 4 (Success Confirmation)**: Emerald security badge animation, confirmation of local key re-encryption, and Done dismiss action.
+- **Gesture Dismissal**: Supports both top `ArrowLeft` back navigation and downward drag gesture on pull handle (`useDrawerDragToDismiss`).
 
 ## 28.3 Currency & Numbering Architecture (`CurrencySettingsScreen`)
 - **Default Standards**: Default currency is Indian Rupee `INR (₹)` with Indian numbering format (`1,23,456.78`).
@@ -638,7 +648,7 @@ In accordance with production fintech standards (CRED, Google Pay, Paytm):
   - Consistent section headers: Standardized to heading-only uppercase tracking-wider typography (`text-[11px] font-semibold uppercase tracking-wider text-theme-muted px-1`) without mismatched leading icons.
   - Unified card grouping: Both "Numbering & Grouping Format" and "Select Base Currency" sections utilize identical unified containers (`rounded-2xl border border-theme-border bg-theme-card/50 divide-y divide-theme-border overflow-hidden`) with full-width responsive items, violet active states (`bg-violet-500/10`), and radio checkmark badges.
   - Top-positioned "Numbering & Grouping Format": Features `Indian System (Lakhs & Crores)` and `International System (Millions & Billions)` with instant toast confirmation.
-  - Debounced Base Currency Search: Real-time search with 180ms debounce, subtle focus zoom (`focus:scale-[1.005]`), and 1-tap tactile clear button (`X`).
+  - Debounced Base Currency Search: Real-time search with 180ms debounce, semantic input background token (`bg-theme-input`), subtle focus zoom (`focus:scale-[1.005]`), and 1-tap tactile clear button (`X`).
   - Excluded: Heavy live format preview hero card, Reset button, and decimal precision section to keep the UI clean, lightweight, and focused.
 - **Navigation Invariant**: Sub-screen uses a single `ArrowLeft` top back button. Conflicting `X` icons are strictly prohibited.
 

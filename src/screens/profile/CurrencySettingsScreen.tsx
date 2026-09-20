@@ -159,13 +159,13 @@ export const CurrencySettingsScreen: React.FC<CurrencySettingsScreenProps> = ({
 
         {/* Search Input with Debounce & Clear Action */}
         <div className="relative group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-theme-muted transition-colors group-focus-within:text-violet-400" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-theme-muted transition-colors group-focus-within:text-violet-400 pointer-events-none" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search currency code or name..."
-            className="w-full rounded-xl border border-theme-border bg-theme-card/70 py-2.5 pl-9 pr-9 text-xs text-theme-primary placeholder:text-theme-muted focus:border-violet-500 focus:outline-none focus:ring-1 focus:ring-violet-500 transition-all duration-200 focus:scale-[1.005]"
+            className="w-full h-11 rounded-xl border border-theme-border bg-theme-input pl-10 pr-9 text-xs text-theme-primary placeholder:text-theme-muted focus:border-violet-500 focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all duration-200 focus:scale-[1.005] shadow-xs"
           />
           {searchQuery && (
             <button

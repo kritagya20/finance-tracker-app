@@ -10,6 +10,7 @@ import {
 import { UserProfile } from '../../domain/models/types';
 import { isValidEmail } from '../../lib/authValidation';
 import { cn } from '../../lib/utils';
+import { useDrawerDragToDismiss } from '../../hooks/useDrawerDragToDismiss';
 
 interface EditAccountDetailsDrawerProps {
   isOpen: boolean;
@@ -24,35 +25,36 @@ export const EditAccountDetailsDrawer: React.FC<EditAccountDetailsDrawerProps> =
   profile,
   onSave,
 }) => {
+  const { dragHandleProps, sheetStyle, backdropStyle } = useDrawerDragToDismiss({
+    onClose,
+  });
+
   // Form State initialized from profile
   const [name, setName] = useState(profile?.name || '');
   const [email, setEmail] = useState(profile?.email || '');
   const phone = profile?.phone || '+91 98765 43210';
 
-  // Field Touched states for blur-only validation (Fintech UX rule)
   const [nameTouched, setNameTouched] = useState(false);
   const [emailTouched, setEmailTouched] = useState(false);
-  const [hasSubmitted, setHasSubmitted] = useState(false);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [generalError, setGeneralError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  // Validation logic
-  const isNameValid = name.trim().length > 0;
-  const isEmailValid = email.trim().length > 0 && isValidEmail(email.trim());
+  // Validation strictly on blur / submit
+  const isNameValid = name.trim().length >= 2;
+  const isEmailValid = isValidEmail(email.trim());
 
-  // Blur / Submission trigger conditions
-  const showNameError = (nameTouched || hasSubmitted) && !isNameValid;
-  const showEmailError = (emailTouched || hasSubmitted) && !isEmailValid;
+  const showNameError = nameTouched && !isNameValid;
+  const showEmailError = emailTouched && !isEmailValid;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setHasSubmitted(true);
+    setNameTouched(true);
+    setEmailTouched(true);
 
     if (!isNameValid) {
-      setGeneralError('Please enter your full name.');
+      setGeneralError('Please enter a valid full name (at least 2 characters).');
       return;
     }
 
@@ -61,20 +63,17 @@ export const EditAccountDetailsDrawer: React.FC<EditAccountDetailsDrawerProps> =
       return;
     }
 
-    try {
-      setIsSubmitting(true);
-      setGeneralError(null);
+    setGeneralError(null);
+    setIsSubmitting(true);
 
-      const updates: Partial<UserProfile> = {
+    try {
+      await onSave({
         name: name.trim(),
         email: email.trim(),
-      };
-
-      await onSave(updates);
+      });
       onClose();
     } catch (err) {
-      console.error('Failed to update account details:', err);
-      setGeneralError('Failed to save account changes. Please try again.');
+      setGeneralError('Failed to update account details. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -86,6 +85,7 @@ export const EditAccountDetailsDrawer: React.FC<EditAccountDetailsDrawerProps> =
       <div
         onClick={onClose}
         aria-hidden="true"
+        style={backdropStyle}
         className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity"
       />
 
@@ -94,27 +94,33 @@ export const EditAccountDetailsDrawer: React.FC<EditAccountDetailsDrawerProps> =
         role="dialog"
         aria-modal="true"
         aria-labelledby="edit-account-title"
+        style={sheetStyle}
         className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[390px] rounded-t-3xl bg-theme-elevated border-t border-theme-border shadow-2xl max-h-[92vh] flex flex-col overflow-hidden select-none animate-in slide-in-from-bottom duration-300"
       >
-        {/* Pull handle */}
-        <div className="w-9 h-1 rounded-full bg-slate-600/40 mx-auto my-2.5 shrink-0" />
+        {/* Drag Area (Pull Handle & Navigation Bar) */}
+        <div {...dragHandleProps} className="touch-none select-none cursor-grab active:cursor-grabbing shrink-0">
+          {/* Pull handle */}
+          <div className="w-full pt-2.5 pb-1 flex items-center justify-center">
+            <div className="w-9 h-1 rounded-full bg-slate-600/40 shrink-0" />
+          </div>
 
-        {/* Top Header with Single ArrowLeft (Navigation Invariant) */}
-        <div className="flex items-center justify-between px-5 pb-3 border-b border-theme-border/40 shrink-0">
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Back"
-            className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
-          >
-            <ArrowLeft className="size-5" />
-          </button>
+          {/* Top Header with Single ArrowLeft (Navigation Invariant) */}
+          <div className="flex items-center justify-between px-5 pb-3 border-b border-theme-border/40">
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Back"
+              className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
+            >
+              <ArrowLeft className="size-5" />
+            </button>
 
-          <span id="edit-account-title" className="text-sm font-bold text-theme-primary">
-            Edit Account Details
-          </span>
+            <span id="edit-account-title" className="text-sm font-bold text-theme-primary pointer-events-none">
+              Edit Account Details
+            </span>
 
-          <div className="size-9" />
+            <div className="size-9 pointer-events-none" />
+          </div>
         </div>
 
         {/* Form Body (Scrollable) */}

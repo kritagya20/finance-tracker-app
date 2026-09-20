@@ -87,8 +87,16 @@ export function validatePhoneNumber(value: string): { isValid: boolean; errorMes
 
 /**
  * Validates a 6-digit MPIN.
+ * Enforces bank-grade anti-pattern rules:
+ * 1. Must be exactly 6 digits.
+ * 2. Digits cannot all be identical (e.g. 000000, 111111).
+ * 3. Cannot be sequential numbers ascending or descending (e.g. 123456, 987654, 654321).
+ * 4. Cannot be repetitive patterns (e.g. 121212, 123123).
  */
-export function validateMpin(value: string): { isValid: boolean; errorMessage?: string } {
+export function validateMpin(
+  value: string,
+  options?: { enforceStrength?: boolean }
+): { isValid: boolean; errorMessage?: string } {
   const trimmed = value.trim();
   if (!trimmed) {
     return { isValid: false, errorMessage: 'Please enter your 6-digit MPIN.' };
@@ -99,6 +107,57 @@ export function validateMpin(value: string): { isValid: boolean; errorMessage?: 
   if (trimmed.length !== 6) {
     return { isValid: false, errorMessage: 'MPIN should be of 6 digits.' };
   }
+
+  // Enforce strength checks for new MPIN creation/updates
+  if (options?.enforceStrength !== false) {
+    // 1. All digits identical check (e.g. 111111, 000000)
+    const isAllSame = trimmed.split('').every((char) => char === trimmed[0]);
+    if (isAllSame) {
+      return {
+        isValid: false,
+        errorMessage: 'All digits cannot be the same (e.g. 111111).',
+      };
+    }
+
+    // 2. Sequential numbers check (ascending or descending)
+    const SEQUENTIAL_PATTERNS = [
+      '012345', '123456', '234567', '345678', '456789',
+      '987654', '876543', '765432', '654321', '543210',
+    ];
+    if (SEQUENTIAL_PATTERNS.includes(trimmed)) {
+      return {
+        isValid: false,
+        errorMessage: 'Sequential numbers are not allowed (e.g. 123456 or 654321).',
+      };
+    }
+
+    let isAsc = true;
+    let isDesc = true;
+    for (let i = 1; i < trimmed.length; i++) {
+      const prev = Number(trimmed[i - 1]);
+      const curr = Number(trimmed[i]);
+      if (curr !== prev + 1) isAsc = false;
+      if (curr !== prev - 1) isDesc = false;
+    }
+    if (isAsc || isDesc) {
+      return {
+        isValid: false,
+        errorMessage: 'Sequential numbers are not allowed (e.g. 123456 or 654321).',
+      };
+    }
+
+    // 3. Repetitive sequences check (e.g. 121212, 123123)
+    const REPETITIVE_PATTERNS = [
+      '121212', '212121', '123123', '321321', '112233', '001122',
+    ];
+    if (REPETITIVE_PATTERNS.includes(trimmed)) {
+      return {
+        isValid: false,
+        errorMessage: 'Repetitive patterns are not allowed (e.g. 121212).',
+      };
+    }
+  }
+
   return { isValid: true };
 }
 
