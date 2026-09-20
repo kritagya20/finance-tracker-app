@@ -806,6 +806,39 @@ Both `CategoryListScreen.tsx` and `PaymentAccountsScreen.tsx` strictly follow an
 - **Progress Track**: `h-2 rounded-full bg-theme-card-subtle overflow-hidden` with colored status bar.
 - **Limit Subtext**: `₹{spent} of ₹{limit} limit` in `font-mono text-xs text-theme-muted`.
 
+## 38. Home Dashboard & Total Balance Card Specification
+
+### 38.1 Total Balance Card Specification
+- **Outer Gradient Rim**:
+  - `relative p-[1.5px] rounded-[32px] bg-gradient-to-br from-violet-500/50 via-slate-800/20 to-emerald-500/40 shadow-2xl shadow-violet-950/20`.
+  - Inner dark card: `rounded-[30.5px] bg-white dark:bg-[#14151a] p-6 sm:p-7 transition-colors`.
+- **Top Header Label**:
+  - `text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-zinc-400`.
+  - Exact text: `TOTAL BALANCE`.
+- **Hero Balance Amount**:
+  - Font: Bold modern sans-serif (`font-sans font-bold text-3xl sm:text-[38px] tracking-tight text-slate-900 dark:text-white leading-none mt-2 mb-6`).
+  - Formatting: Strict 2 decimal places (`formatCurrency(total, undefined, true)` producing `₹1,42,850.00`).
+- **Dual Horizontal Cash-Flow Pills (Side-by-Side)**:
+  - 2-column grid (`grid grid-cols-2 gap-3 sm:gap-3.5`).
+  - **Income Pill**:
+    - Surface: `rounded-[20px] bg-emerald-500/10 dark:bg-[#122820] border border-emerald-500/20 dark:border-[#1a4336] p-3 sm:p-3.5 flex items-center gap-3`.
+    - Circular badge: `size-10 sm:size-11 rounded-full bg-emerald-500/15 dark:bg-[#1b4337] flex items-center justify-center shrink-0`.
+    - Inbound icon: `ArrowDownLeft` (`size-5 text-emerald-600 dark:text-[#34d399] stroke-[2.2]`).
+    - Label & Amount: Title case `Income` (`text-xs font-normal text-emerald-700 dark:text-[#34d399]/90`) and `₹85,000.00` (`font-sans font-bold text-[15px] sm:text-[17px] text-emerald-700 dark:text-[#34d399]`).
+  - **Spent Pill**:
+    - Surface: `rounded-[20px] bg-rose-500/10 dark:bg-[#28151e] border border-rose-500/20 dark:border-[#451f2e] p-3 sm:p-3.5 flex items-center gap-3`.
+    - Circular badge: `size-10 sm:size-11 rounded-full bg-rose-500/15 dark:bg-[#3f1c29] flex items-center justify-center shrink-0`.
+    - Outbound icon: `ArrowUpRight` (`size-5 text-rose-600 dark:text-[#fb7185] stroke-[2.2]`).
+    - Label & Amount: Title case `Spent` (`text-xs font-normal text-rose-700 dark:text-[#fca5a5]/90`) and `₹32,150.00` (`font-sans font-bold text-[15px] sm:text-[17px] text-rose-700 dark:text-[#fca5a5]`).
+
+### 38.2 Navigation Redundancy Elimination Invariant
+- **Rule**: Never place screen navigation shortcuts (e.g. `Activity`, `Analytics`, `Profile`) or transaction logging shortcuts on the body of the home screen when the bottom navigation bar permanently exposes identical routes.
+- **Home Screen Composition**: The home screen layout is strictly focused on financial intelligence:
+  1. `BalanceCard` (Net Liquidity & Cash Flow)
+  2. `BudgetProgressBar` (Monthly Budget Pacing)
+  3. `RecentActivity` (Real-Time Feed with "See All" drill-down)
+
+
 
 
 
