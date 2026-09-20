@@ -1,7 +1,8 @@
 import React from 'react';
 import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { FinanceSummary } from '../../domain/models/types';
-import { formatCurrency } from '../../domain/engine/moneyUtils';
+import { formatAdaptiveCardCurrency } from '../../domain/engine/moneyUtils';
+import { cn } from '../../lib/utils';
 
 interface BalanceCardProps {
   summary: FinanceSummary | null;
@@ -16,6 +17,21 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
   const income = summary?.monthlyIncome ?? 8500000;
   const spent = summary?.monthlySpent ?? 3215000;
 
+  const totalFormatted = formatAdaptiveCardCurrency(total, false);
+  const incomeFormatted = formatAdaptiveCardCurrency(income, true);
+  const spentFormatted = formatAdaptiveCardCurrency(spent, true);
+
+  const getSubCardFontSize = (formattedStr: string) => {
+    if (formattedStr.length > 12) return 'text-[14px] sm:text-[15px]';
+    if (formattedStr.length > 10) return 'text-[15px] sm:text-[16px]';
+    return 'text-[17px] sm:text-[18px]';
+  };
+
+  const getHeroFontSize = (formattedStr: string) => {
+    if (formattedStr.length > 14) return 'text-2xl sm:text-3xl';
+    return 'text-3xl sm:text-[38px]';
+  };
+
   return (
     <div className="relative p-[1.5px] rounded-[32px] bg-gradient-to-br from-violet-500/50 via-slate-800/20 to-emerald-500/40 shadow-2xl shadow-violet-950/20">
       <div className="rounded-[30.5px] bg-white dark:bg-[#14151a] p-6 sm:p-7 transition-colors">
@@ -25,11 +41,16 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
         </p>
 
         {/* Hero Balance Amount */}
-        <h1 className="mt-2 mb-6 text-3xl sm:text-[38px] font-bold font-sans tracking-tight text-slate-900 dark:text-white leading-none">
+        <h1
+          className={cn(
+            'mt-2 mb-6 font-bold font-sans tracking-tight text-slate-900 dark:text-white leading-none',
+            hideBalances ? 'text-3xl sm:text-[38px]' : getHeroFontSize(totalFormatted)
+          )}
+        >
           {hideBalances ? (
             <span className="text-slate-400 dark:text-zinc-600">₹ ••••••</span>
           ) : (
-            formatCurrency(total, undefined, true)
+            totalFormatted
           )}
         </h1>
 
@@ -45,8 +66,13 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                 <ArrowDownLeft className="size-4 stroke-[2.2]" />
               </div>
             </div>
-            <p className="text-[17px] sm:text-[18px] font-bold font-sans text-emerald-700 dark:text-[#34d399] tracking-tight truncate leading-tight">
-              {hideBalances ? '••••••' : formatCurrency(income, undefined, true)}
+            <p
+              className={cn(
+                'font-bold font-sans text-emerald-700 dark:text-[#34d399] tracking-tight truncate leading-tight',
+                hideBalances ? 'text-[17px] sm:text-[18px]' : getSubCardFontSize(incomeFormatted)
+              )}
+            >
+              {hideBalances ? '••••••' : incomeFormatted}
             </p>
           </div>
 
@@ -60,8 +86,13 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({
                 <ArrowUpRight className="size-4 stroke-[2.2]" />
               </div>
             </div>
-            <p className="text-[17px] sm:text-[18px] font-bold font-sans text-rose-700 dark:text-[#fca5a5] tracking-tight truncate leading-tight">
-              {hideBalances ? '••••••' : formatCurrency(spent, undefined, true)}
+            <p
+              className={cn(
+                'font-bold font-sans text-rose-700 dark:text-[#fca5a5] tracking-tight truncate leading-tight',
+                hideBalances ? 'text-[17px] sm:text-[18px]' : getSubCardFontSize(spentFormatted)
+              )}
+            >
+              {hideBalances ? '••••••' : spentFormatted}
             </p>
           </div>
         </div>

@@ -118,3 +118,99 @@ export function parseKeypadToPaise(input: string): IntegerMoney {
   if (isNaN(num)) return 0;
   return Math.round(num * 100);
 }
+
+/**
+ * Formats currency adaptively for dashboard cards and sub-cards:
+ * 1. Default / Standard values (< ₹1,00,000 / 1 Lakh for sub-cards; < ₹10,00,000 for hero):
+ *    Displays full 2 decimals (e.g. ₹85,000.00, ₹32,150.00, ₹1,42,850.00).
+ * 2. Large values (≥ ₹1,00,000 / 1 Lakh for sub-cards; ≥ ₹10,00,000 for hero):
+ *    Trims decimal pointers (.00) first to ensure the entire integer value
+ *    before the decimal is fully visible without clipping (e.g. ₹1,85,000, ₹12,50,000).
+ * 3. Extremely large values (≥ ₹1 Crore / 10M+ for sub-cards; ≥ ₹100 Crores for hero):
+ *    Falls back to compact representation (e.g. ₹1.5Cr, ₹25Cr) so the figure
+ *    fits cleanly within the container boundary.
+ */
+export function formatAdaptiveCardCurrency(
+  amount: IntegerMoney,
+  isSubCard = true,
+  currency?: string
+): string {
+  const effectiveCurrency = currency || getActiveCurrencyCode();
+  let numbering = 'indian';
+  try {
+    numbering =
+      localStorage.getItem('app_numbering_system') ||
+      (effectiveCurrency === 'INR' ? 'indian' : 'international');
+  } catch {
+    numbering = effectiveCurrency === 'INR' ? 'indian' : 'international';
+  }
+
+  const isNegative = amount < 0;
+  const absPaise = Math.abs(amount);
+  const absUnits = absPaise / 100;
+  const locale = numbering === 'indian' ? 'en-IN' : 'en-US';
+
+  let formatted = '';
+
+  if (isSubCard) {
+    // Extremely large: >= ₹1 Crore (10,000,000 rupees)
+    if (absUnits >= 10000000) {
+      formatted = new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: effectiveCurrency,
+        notation: 'compact',
+        maximumFractionDigits: 2,
+      }).format(absUnits);
+    }
+    // Large: >= ₹1 Lakh (100,000 rupees) -> Priority 1: Trim decimals, show full integer value
+    else if (absUnits >= 100000) {
+      formatted = new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: effectiveCurrency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(absUnits);
+    }
+    // Normal / Standard: Show full 2 decimals
+    else {
+      formatted = new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: effectiveCurrency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(absUnits);
+    }
+  } else {
+    // Hero Balance
+    // Extremely large: >= ₹100 Crores
+    if (absUnits >= 1000000000) {
+      formatted = new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: effectiveCurrency,
+        notation: 'compact',
+        maximumFractionDigits: 2,
+      }).format(absUnits);
+    }
+    // Large: >= ₹1 Crore -> Trim decimals
+    else if (absUnits >= 10000000) {
+      formatted = new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: effectiveCurrency,
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0,
+      }).format(absUnits);
+    }
+    // Normal: Show full 2 decimals (including ₹1,42,850.00)
+    else {
+      formatted = new Intl.NumberFormat(locale, {
+        style: 'currency',
+        currency: effectiveCurrency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(absUnits);
+    }
+  }
+
+  return isNegative ? `-${formatted}` : formatted;
+}
+

@@ -837,6 +837,18 @@ Both `CategoryListScreen.tsx` and `PaymentAccountsScreen.tsx` strictly follow an
   2. `BudgetProgressBar` (Monthly Budget Pacing)
   3. `RecentActivity` (Real-Time Feed with "See All" drill-down)
 
+### 38.3 Adaptive Currency Trimming & Large Number Invariant
+- **Philosophy**: When amounts become large, screen real estate constraints must not truncate whole digits.
+- **Priority Rules (`formatAdaptiveCardCurrency`)**:
+  1. **Standard Values (< ₹1,00,000 in sub-cards; < ₹10,00,000 in hero)**: Full 2 decimal places are displayed (`₹85,000.00`, `₹32,150.00`, `₹1,42,850.00`).
+  2. **Large Values (≥ ₹1,00,000 in sub-cards; ≥ ₹10,00,000 in hero)**:
+     - **Priority 1**: The decimal pointers (`.00`) are trimmed first.
+     - The entire integer figure before the decimal point is guaranteed full display without horizontal clipping (e.g. `₹1,85,000`, `₹12,50,000`, `₹99,99,999`).
+  3. **Extremely Large Values (≥ ₹1 Crore in sub-cards; ≥ ₹100 Crores in hero)**:
+     - Automated compact notation (e.g. `₹1.5Cr`, `₹15Cr`) is rendered to fit within card bounds.
+  4. **Dynamic Font Scaling**: Sub-card amounts dynamically scale font size based on character length (`text-[17px]` for $\le 10$ chars, `text-[15px]` for 11–12 chars, `text-[14px]` for $\ge 13$ chars).
+
+
 
 
 
