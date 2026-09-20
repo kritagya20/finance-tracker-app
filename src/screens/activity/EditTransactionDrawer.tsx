@@ -1,17 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import {
-  ArrowLeft,
-  Delete,
-  Calendar,
-  CreditCard,
-  ChevronDown,
-  Check,
-  AlertCircle,
-  Pencil,
-  Split,
-  Store,
-  FileText,
-} from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Category,
   Transaction,
@@ -20,14 +7,17 @@ import {
   SplitItem,
   TransactionEditLog,
 } from '../../domain/models/types';
-import { CategoryIcon } from '../../components/common/CategoryIcon';
 import { parseKeypadToPaise, paiseToRupees, formatCurrency } from '../../domain/engine/moneyUtils';
 import { CalendarPicker } from '../../components/common/CalendarPicker';
-import { CategorySplitEditor } from '../logger/CategorySplitEditor';
+import { DrawerShell } from '../../components/ui/DrawerShell';
+import { DrawerHeader } from '../../components/ui/DrawerHeader';
+import { AmountKeypad } from '../logger/AmountKeypad';
+import { TransactionFormFields } from '../logger/TransactionFormFields';
+import { CategoryPickerModal } from '../logger/CategoryPickerModal';
+import { AccountPickerModal, AccountOptionItem } from '../logger/AccountPickerModal';
 import { useCurrency } from '../../context/CurrencyContext';
-import { cn } from '../../lib/utils';
 
-interface EditTransactionDrawerProps {
+export interface EditTransactionDrawerProps {
   isOpen: boolean;
   transaction: Transaction | null;
   categories: Category[];
@@ -36,14 +26,18 @@ interface EditTransactionDrawerProps {
   onClose: () => void;
 }
 
-const DEFAULT_ACCOUNTS: { id: string; name: string; mask: string }[] = [
+const DEFAULT_ACCOUNTS: AccountOptionItem[] = [
   { id: 'acc_hdfc', name: 'HDFC Bank', mask: '4102' },
   { id: 'acc_icici', name: 'ICICI Amazon Card', mask: '8819' },
   { id: 'acc_cash', name: 'Cash Wallet', mask: 'CASH' },
 ];
 
-const QUICK_AMOUNTS = [100, 500, 1000, 2000];
-
+/**
+ * Standardized EditTransactionDrawer refactored with modular UI primitives:
+ * DrawerShell, DrawerHeader, AmountKeypad, TransactionFormFields, CategoryPickerModal,
+ * and AccountPickerModal.
+ * Enforces single ArrowLeft navigation, design system buttons, and maintains full edit history auditing.
+ */
 export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
   isOpen,
   transaction: tx,
@@ -53,9 +47,6 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
   onClose,
 }) => {
   const { currencySymbol, numberingSystem } = useCurrency();
-
-  const [isRendered, setIsRendered] = useState(isOpen);
-  const [isAnimatingIn, setIsAnimatingIn] = useState(false);
 
   // 2-Step Navigation (Defaults to Step 2 for editing details, can switch to Step 1 for Keypad)
   const [step, setStep] = useState<1 | 2>(2);
@@ -68,10 +59,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
   const [selectedCategoryId, setSelectedCategoryId] = useState('');
   const [selectedAccountId, setSelectedAccountId] = useState('');
   const [selectedDate, setSelectedDate] = useState<string>('');
-  
-  // Splits: if > 1 item, multi-category mode is active!
   const [splits, setSplits] = useState<SplitItem[]>([]);
-
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Validation State
@@ -87,79 +75,11 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
   // Active Sub-Sheet Picker ('category' | 'account' | 'date' | null)
   const [activePicker, setActivePicker] = useState<'category' | 'account' | 'date' | null>(null);
 
-  // Draggable bottom sheet physics
-  const [dragOffset, setDragOffset] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const isDraggingRef = useRef(false);
-  const startYRef = useRef(0);
-  const startTimeRef = useRef(0);
+  const accountOptions = useMemo(() => (accounts.length > 0 ? accounts : DEFAULT_ACCOUNTS), [accounts]);
 
-  const handleDragStart = useCallback((clientY: number) => {
-    isDraggingRef.current = true;
-    startYRef.current = clientY;
-    startTimeRef.current = Date.now();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragMove = useCallback((clientY: number) => {
-    if (!isDraggingRef.current) return;
-    const deltaY = clientY - startYRef.current;
-    if (deltaY > 0) {
-      setDragOffset(deltaY);
-    } else {
-      setDragOffset(deltaY * 0.2); // slight resistance when pulling up past top
-    }
-  }, []);
-
-  const handleDragEnd = useCallback((clientY: number) => {
-    if (!isDraggingRef.current) return;
-    isDraggingRef.current = false;
-    setIsDragging(false);
-
-    const deltaY = clientY - startYRef.current;
-    const elapsed = Math.max(1, Date.now() - startTimeRef.current);
-    const velocity = deltaY / elapsed;
-
-    if (velocity > 0.5 || deltaY > 150) {
-      onClose();
-      setDragOffset(0);
-    } else {
-      setDragOffset(0);
-    }
-  }, [onClose]);
-
+  // Initialize values when transaction changes or opens
   useEffect(() => {
-    if (!isDragging) return;
-
-    const onPointerMove = (e: PointerEvent) => handleDragMove(e.clientY);
-    const onPointerUp = (e: PointerEvent) => handleDragEnd(e.clientY);
-    const onTouchMove = (e: TouchEvent) => {
-      if (e.touches.length > 0) handleDragMove(e.touches[0].clientY);
-    };
-    const onTouchEnd = (e: TouchEvent) => {
-      if (e.changedTouches.length > 0) {
-        handleDragEnd(e.changedTouches[0].clientY);
-      } else {
-        handleDragEnd(startYRef.current);
-      }
-    };
-
-    window.addEventListener('pointermove', onPointerMove, { passive: true });
-    window.addEventListener('pointerup', onPointerUp, { passive: true });
-    window.addEventListener('touchmove', onTouchMove, { passive: true });
-    window.addEventListener('touchend', onTouchEnd, { passive: true });
-
-    return () => {
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
-      window.removeEventListener('touchmove', onTouchMove);
-      window.removeEventListener('touchend', onTouchEnd);
-    };
-  }, [isDragging, handleDragMove, handleDragEnd]);
-
-  // Initialize values when transaction changes
-  useEffect(() => {
-    if (tx) {
+    if (tx && isOpen) {
       setStep(2);
       setType(tx.type);
       const rupees = (tx.amount / 100).toString();
@@ -167,9 +87,9 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       setMerchantName(tx.merchantName || '');
       setNotes(tx.notes || '');
       setSelectedCategoryId(tx.categoryId);
-      setSelectedAccountId(tx.accountId || 'acc_hdfc');
+      setSelectedAccountId(tx.accountId || accountOptions[0]?.id || 'acc_hdfc');
       setSelectedDate(tx.date.slice(0, 10));
-      
+
       const hasSplits = Boolean(tx.isSplit && tx.splits && tx.splits.length > 0);
       setSplits(hasSplits ? tx.splits! : []);
       if (hasSplits) {
@@ -178,142 +98,47 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
 
       setErrors({});
       setErrorMessage(null);
-    }
-  }, [tx]);
-
-  // Handle enter / exit animation lifecycle
-  useEffect(() => {
-    if (isOpen) {
-      setIsRendered(true);
-      setDragOffset(0);
-      setStep(2);
-      setErrors({});
-      setErrorMessage(null);
-      const timer = requestAnimationFrame(() => {
-        setIsAnimatingIn(true);
-      });
-      return () => cancelAnimationFrame(timer);
-    } else {
-      setIsAnimatingIn(false);
-      setDragOffset(0);
-      const timer = setTimeout(() => {
-        setIsRendered(false);
-        setActivePicker(null);
-        setErrors({});
-        setErrorMessage(null);
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]);
-
-  if (!isRendered || !tx) return null;
-
-  const handleKeypadPress = (key: string) => {
-    if (errors.amount) {
-      setErrors((prev) => ({ ...prev, amount: false }));
-      setErrorMessage(null);
-    }
-
-    setAmountStr((prev) => {
-      if (key === 'BACKSPACE') {
-        return prev.length <= 1 ? '0' : prev.slice(0, -1);
-      }
-      if (key === '.') {
-        if (prev.includes('.')) return prev;
-        return prev + '.';
-      }
-      if (prev === '0') return key;
-      const parts = prev.split('.');
-      if (parts.length > 1 && parts[1].length >= 2) return prev;
-      return prev + key;
-    });
-  };
-
-  const handleQuickAdd = (rupeesToAdd: number) => {
-    if (errors.amount) {
-      setErrors((prev) => ({ ...prev, amount: false }));
-      setErrorMessage(null);
-    }
-    setAmountStr((prev) => {
-      const currentPaise = parseKeypadToPaise(prev);
-      const currentRupees = paiseToRupees(currentPaise);
-      const newRupees = currentRupees + rupeesToAdd;
-      return newRupees.toString();
-    });
-  };
-
-  const handleToggleCategoryInPicker = (catId: string) => {
-    if (errors.category) {
-      setErrors((prev) => ({ ...prev, category: false }));
-      setErrorMessage(null);
-    }
-
-    if (type !== 'EXPENSE') {
-      setSelectedCategoryId(catId);
-      setSplits([]);
       setActivePicker(null);
-      return;
     }
+  }, [tx, isOpen, accountOptions]);
 
-    const paiseAmount = parseKeypadToPaise(amountStr);
-
-    // If already splitting across multiple categories
-    if (splits.length > 1) {
-      const exists = splits.some((s) => s.categoryId === catId);
-      if (exists) {
-        const remaining = splits.filter((s) => s.categoryId !== catId);
-        if (remaining.length === 1) {
-          setSelectedCategoryId(remaining[0].categoryId);
-          setSplits([]);
-        } else {
-          setSplits(remaining);
-        }
-      } else {
-        const allocated = splits.reduce((sum, s) => sum + (s.amount || 0), 0);
-        const unallocated = Math.max(0, paiseAmount - allocated);
-        setSplits([
-          ...splits,
-          {
-            id: `split_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-            categoryId: catId,
-            amount: unallocated,
-            note: '',
-          },
-        ]);
-      }
-      return;
+  const filteredCategories = useMemo(() => {
+    if (type === 'INCOME') {
+      return categories.filter((c) => !!c.isIncome);
     }
-
-    // Currently single category or none selected
-    if (!selectedCategoryId) {
-      setSelectedCategoryId(catId);
-      setSplits([]);
-    } else if (selectedCategoryId === catId) {
-      // Tapped the same category - remain selected
-    } else {
-      // User tapped a SECOND category! Instantly initiate split!
-      const half1 = Math.floor(paiseAmount / 2);
-      const half2 = paiseAmount - half1;
-      setSplits([
-        {
-          id: `split_1_${Date.now()}`,
-          categoryId: selectedCategoryId,
-          amount: half1,
-          note: '',
-        },
-        {
-          id: `split_2_${Date.now()}`,
-          categoryId: catId,
-          amount: half2,
-          note: '',
-        },
-      ]);
-      setSelectedCategoryId('');
+    if (type === 'EXPENSE') {
+      return categories.filter((c) => !c.isIncome);
     }
-  };
+    return categories;
+  }, [categories, type]);
+
+  const currentAccount = accountOptions.find((a) => a.id === selectedAccountId);
+  const activeCategoryId = selectedCategoryId || (splits.length === 1 ? splits[0].categoryId : '');
+  const currentCategory = filteredCategories.find((c) => c.id === activeCategoryId);
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+  const dateDisplayLabel = !selectedDate
+    ? 'Select Date'
+    : selectedDate === todayStr
+    ? 'Today'
+    : selectedDate === yesterdayStr
+    ? 'Yesterday'
+    : new Date(selectedDate).toLocaleDateString(numberingSystem === 'indian' ? 'en-IN' : 'en-US', {
+        day: 'numeric',
+        month: 'short',
+      });
+
+  const activeAmount = parseKeypadToPaise(amountStr);
+  const formattedRupees = (activeAmount / 100).toLocaleString(
+    numberingSystem === 'indian' ? 'en-IN' : 'en-US',
+    { maximumFractionDigits: 2 }
+  );
+
+  const isSplit = splits.length > 1 && type === 'EXPENSE';
 
   const handleSave = async () => {
-    const paiseAmount = parseKeypadToPaise(amountStr);
+    if (!tx) return;
     const newErrors: {
       amount?: boolean;
       category?: boolean;
@@ -323,7 +148,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
     } = {};
     const missing: string[] = [];
 
-    if (paiseAmount <= 0) {
+    if (activeAmount <= 0) {
       newErrors.amount = true;
       missing.push('amount');
     }
@@ -336,19 +161,16 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       missing.push('date');
     }
 
-    const isSplit = splits.length > 1 && type === 'EXPENSE';
-
     if (isSplit) {
       const allocatedPaise = splits.reduce((sum, s) => sum + (s.amount || 0), 0);
-      if (allocatedPaise !== paiseAmount) {
+      if (allocatedPaise !== activeAmount) {
         newErrors.splitBalance = true;
-        const diff = paiseAmount - allocatedPaise;
+        const diff = activeAmount - allocatedPaise;
         if (diff > 0) {
           missing.push(`remaining ${currencySymbol}${paiseToRupees(diff)} to allocate`);
         } else {
           missing.push(`reduce overage of ${currencySymbol}${paiseToRupees(Math.abs(diff))}`);
         }
-
       }
     } else {
       const effectiveCatId = selectedCategoryId || (splits.length === 1 ? splits[0].categoryId : '');
@@ -374,15 +196,15 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       updatedDate.setHours(origDate.getHours(), origDate.getMinutes(), origDate.getSeconds());
 
       const effectiveCategoryId = isSplit
-        ? (splits[0]?.categoryId || tx.categoryId)
-        : (selectedCategoryId || (splits.length === 1 ? splits[0].categoryId : '') || tx.categoryId);
+        ? splits[0]?.categoryId || tx.categoryId
+        : selectedCategoryId || (splits.length === 1 ? splits[0].categoryId : '') || tx.categoryId;
       const effectiveMerchant = merchantName.trim() || tx.merchantName;
       const cleanNotes = notes.trim() ? notes.trim() : undefined;
 
       // Track human-readable change summaries for timeline
       const changes: string[] = [];
-      if (paiseAmount !== tx.amount) {
-        changes.push(`Amount changed to ${formatCurrency(paiseAmount, undefined, false)}`);
+      if (activeAmount !== tx.amount) {
+        changes.push(`Amount changed to ${formatCurrency(activeAmount, undefined, false)}`);
       }
       if (effectiveMerchant !== tx.merchantName) {
         changes.push(`Payee updated to "${effectiveMerchant}"`);
@@ -403,26 +225,24 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
         changes.push(isSplit ? 'Converted to multi-category bill split' : 'Removed bill split');
       }
 
-      const newLogs: TransactionEditLog[] = changes.length > 0
-        ? changes.map((summary) => ({
-            timestamp: Date.now(),
-            summary,
-          }))
-        : [
-            {
+      const newLogs: TransactionEditLog[] =
+        changes.length > 0
+          ? changes.map((summary) => ({
               timestamp: Date.now(),
-              summary: 'Transaction details reviewed & updated',
-            },
-          ];
+              summary,
+            }))
+          : [
+              {
+                timestamp: Date.now(),
+                summary: 'Transaction details reviewed & updated',
+              },
+            ];
 
-      const updatedHistory: TransactionEditLog[] = [
-        ...(tx.editHistory || []),
-        ...newLogs,
-      ];
+      const updatedHistory: TransactionEditLog[] = [...(tx.editHistory || []), ...newLogs];
 
       await onSave({
         type,
-        amount: paiseAmount,
+        amount: activeAmount,
         merchantName: effectiveMerchant,
         categoryId: effectiveCategoryId,
         accountId: selectedAccountId,
@@ -432,6 +252,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
         splits: isSplit ? splits : undefined,
         editHistory: updatedHistory,
       });
+
       onClose();
     } catch (err) {
       console.error('Failed to update transaction:', err);
@@ -441,720 +262,152 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
     }
   };
 
-  const filteredCategories = useMemo(() => {
-    if (type === 'INCOME') {
-      return categories.filter((c) => !!c.isIncome);
-    }
-    if (type === 'EXPENSE') {
-      return categories.filter((c) => !c.isIncome);
-    }
-    return categories;
-  }, [categories, type]);
-
-  const accountOptions = accounts.length > 0 ? accounts : DEFAULT_ACCOUNTS;
-  const currentAccount =
-    accountOptions.find((a) => a.id === selectedAccountId) || accountOptions[0];
-
-  const activeCategoryId = selectedCategoryId || (splits.length === 1 ? splits[0].categoryId : '');
-  const currentCategory =
-    filteredCategories.find((c) => c.id === activeCategoryId) || categories.find((c) => c.id === activeCategoryId) || filteredCategories[0] || categories[0];
-
-  const todayStr = new Date().toISOString().slice(0, 10);
-  const yesterdayStr = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-  const dateDisplayLabel = !selectedDate
-    ? 'Select Date'
-    : selectedDate === todayStr
-    ? 'Today'
-    : selectedDate === yesterdayStr
-    ? 'Yesterday'
-    : new Date(selectedDate).toLocaleDateString(numberingSystem === 'indian' ? 'en-IN' : 'en-US', { day: 'numeric', month: 'short' });
-
-  const activeAmount = parseKeypadToPaise(amountStr);
-  const formattedRupees = (activeAmount / 100).toLocaleString(
-    numberingSystem === 'indian' ? 'en-IN' : 'en-US',
-    {
-      maximumFractionDigits: 2,
-    }
-  );
-
-
-  const isSplit = splits.length > 1 && type === 'EXPENSE';
-
-  const sheetStyle: React.CSSProperties = {
-    transform: !isAnimatingIn
-      ? 'translateY(100%)'
-      : dragOffset !== 0
-      ? `translateY(${dragOffset}px)`
-      : 'translateY(0)',
-    transition: isDragging
-      ? 'none'
-      : 'transform 300ms cubic-bezier(0.16, 1, 0.3, 1)',
-  };
-
-  const backdropOpacity = !isAnimatingIn
-    ? 0
-    : dragOffset > 0
-    ? Math.max(0.1, 1 - dragOffset / 300)
-    : 1;
-
-  const backdropStyle: React.CSSProperties = {
-    opacity: backdropOpacity,
-    transition: isDragging ? 'none' : 'opacity 250ms ease-out',
-  };
+  if (!isOpen || !tx) return null;
 
   return (
-    <>
-      {/* 1. Backdrop */}
-      <div
-        onClick={onClose}
-        aria-hidden="true"
-        style={backdropStyle}
-        className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm transition-opacity select-none"
-      />
-
-      {/* 2. Bottom Sheet Container */}
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="edit-transaction-title"
-        style={sheetStyle}
-        className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[420px] h-[92vh] max-h-[92vh] rounded-t-3xl bg-theme-elevated border-t border-theme-border shadow-2xl flex flex-col overflow-hidden select-none"
-      >
-        {/* Generous Draggable Pull Handle Zone */}
-        <div
-          onPointerDown={(e) => {
-            if (e.button === 0) handleDragStart(e.clientY);
-          }}
-          onTouchStart={(e) => handleDragStart(e.touches[0].clientY)}
-          className="w-full pt-3 pb-1 flex flex-col items-center justify-center shrink-0 cursor-grab active:cursor-grabbing touch-none select-none group"
-          title="Drag down to close"
-        >
-          <div className="w-11 h-1.5 rounded-full bg-slate-400/50 dark:bg-slate-500/50 group-hover:bg-slate-500 dark:group-hover:bg-slate-400 group-active:scale-95 transition-all shadow-xs" />
-        </div>
-
-        {/* ------------------------------------------------------------------ */}
-        {/* STEP 1: AMOUNT KEYPAD (Full-Screen GPay-Inspired Minimal Flow)     */}
-        {/* ------------------------------------------------------------------ */}
-        {step === 1 && (
-          <div className="flex flex-col flex-1 min-h-0 justify-between px-5 pt-2 pb-8 animate-in fade-in duration-200">
-            {/* Top Bar: Back Arrow + Type Switcher */}
-            <div
-              onPointerDown={(e) => {
-                if (e.button === 0) handleDragStart(e.clientY);
-              }}
-              onTouchStart={(e) => handleDragStart(e.touches[0].clientY)}
-              className="flex items-center justify-between pb-2 shrink-0 touch-none select-none cursor-grab active:cursor-grabbing border-b border-theme-border/30"
-            >
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setStep(2);
-                }}
-                onPointerDown={(e) => e.stopPropagation()}
-                onTouchStart={(e) => e.stopPropagation()}
-                aria-label="Back to details"
-                className="flex size-9 items-center justify-center rounded-xl text-theme-muted hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
-              >
-                <ArrowLeft className="size-5" />
-              </button>
-
-            <div className="flex items-center rounded-full bg-theme-card-subtle p-0.5">
-              {(['EXPENSE', 'INCOME', 'TRANSFER'] as TransactionType[]).map((t) => {
-                const isSelected = type === t;
-                const label = t === 'EXPENSE' ? 'Expense' : t === 'INCOME' ? 'Income' : 'Transfer';
-                return (
-                  <button
-                    key={t}
-                    type="button"
-                    onClick={() => {
-                      if (type !== t) {
-                        setType(t);
-                        setSelectedCategoryId('');
-                        setSplits([]);
-                        setErrors((prev) => ({ ...prev, category: false, splitBalance: false }));
-                        setErrorMessage(null);
-                      }
-                    }}
-                    className={cn(
-                      'px-3.5 py-1.5 text-xs font-semibold rounded-full transition-all',
-                      isSelected
-                        ? 'bg-theme-card text-theme-primary shadow-xs'
-                        : 'text-theme-muted hover:text-theme-primary'
-                    )}
-                  >
-                    {label}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="size-9" />
-          </div>
-
-          {/* Error Message */}
-          {errorMessage && (
-            <div className="my-1 shrink-0 flex items-center justify-center gap-1.5 text-xs text-rose-500 transition-all">
-              <AlertCircle className="size-3.5" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
-
-          {/* Centered Hero: "Edit amount" + Large Amount */}
-          <div className="flex flex-col items-center justify-center py-4 shrink-0">
-            <span className="text-xs font-medium text-theme-muted tracking-wider uppercase mb-1">
-              Edit amount
-            </span>
-
-            <div className="flex items-baseline justify-center gap-1.5 select-none">
-              <span className="text-2xl font-semibold text-theme-muted font-mono">{currencySymbol}</span>
-              <span className="text-5xl font-light tracking-tight tabular-nums text-theme-primary font-mono">
-                {amountStr}
-              </span>
-              <span className="ml-0.5 h-8 w-0.5 animate-pulse rounded-full bg-violet-500" />
-            </div>
-
-            {/* Quick Increment Chips (Border-free) */}
-            <div className="mt-4 flex items-center gap-2">
-              {QUICK_AMOUNTS.map((amt) => (
-                <button
-                  key={amt}
-                  type="button"
-                  onClick={() => handleQuickAdd(amt)}
-                  className="rounded-full bg-theme-card-subtle px-3 py-1.5 text-xs font-medium font-mono text-theme-secondary hover:text-theme-primary hover:bg-theme-card active:scale-[0.95] transition-all shadow-xs"
-                >
-                  +{currencySymbol}{amt.toLocaleString(numberingSystem === 'indian' ? 'en-IN' : 'en-US')}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Flat, Spacious Keypad (Border-free) */}
-          <div className="py-3 flex-1 flex flex-col justify-center min-h-0">
-            <div className="grid grid-cols-3 gap-2.5 max-w-[340px] mx-auto w-full">
-              {['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'delete'].map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  onClick={() => handleKeypadPress(key)}
-                  className={cn(
-                    'flex h-14 items-center justify-center rounded-2xl text-xl font-medium font-mono text-theme-primary transition-all active:scale-[0.92] select-none',
-                    key === 'delete'
-                      ? 'text-theme-secondary hover:text-theme-primary'
-                      : 'hover:bg-theme-card-subtle/50'
-                  )}
-                >
-                  {key === 'delete' ? (
-                    <Delete className="size-6" />
-                  ) : (
-                    key
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Primary CTA */}
-          <div className="shrink-0 pt-3">
-            <button
-              type="button"
-              onClick={() => setStep(2)}
-              disabled={activeAmount <= 0}
-              className="flex w-full h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-violet-500 hover:brightness-110 disabled:opacity-[0.38] disabled:cursor-not-allowed shadow-lg shadow-violet-900/30 active:scale-[0.97] transition-all"
-            >
-              <span>Done editing amount ({currencySymbol}{formattedRupees})</span>
-            </button>
-          </div>
-
-        </div>
-      )}
-
-      {/* ------------------------------------------------------------------ */}
-      {/* STEP 2: DETAILS CANVAS (Full-Screen Dedicated Edit Screen)         */}
-      {/* ------------------------------------------------------------------ */}
-      {step === 2 && (
-        <div className="flex flex-col flex-1 min-h-0 animate-in fade-in duration-200">
-          {/* Top Bar: Back Arrow + Title + Delete */}
-          <div
-            onPointerDown={(e) => {
-              if (e.button === 0) handleDragStart(e.clientY);
-            }}
-            onTouchStart={(e) => handleDragStart(e.touches[0].clientY)}
-            className="flex items-center justify-between px-5 pt-1 pb-3 shrink-0 touch-none select-none cursor-grab active:cursor-grabbing border-b border-theme-border/30"
-          >
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onClose();
-              }}
-              onPointerDown={(e) => e.stopPropagation()}
-              onTouchStart={(e) => e.stopPropagation()}
-              aria-label="Back"
-              className="flex size-9 items-center justify-center rounded-xl text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
-            >
-              <ArrowLeft className="size-5" />
-            </button>
-
-            <span className="text-sm font-bold text-theme-primary uppercase tracking-wider">
-              Edit Transaction
-            </span>
-
-            <div className="size-9" />
-          </div>
-
-          {/* Scrollable Content Body */}
-          <div className="flex-1 overflow-y-auto no-scrollbar min-h-0 px-5 py-4 space-y-4">
-            {/* Error Message */}
-            {errorMessage && (
-              <div className="flex items-center justify-center gap-1.5 text-xs text-rose-500 transition-all">
-                <AlertCircle className="size-3.5" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
-
-            {/* Centered Hero: Amount + Edit Button */}
-            <div className="flex flex-col items-center justify-center pt-2 pb-3">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <span
-                  className={cn(
-                    'inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-semibold tracking-wider uppercase border',
-                    type === 'EXPENSE'
-                      ? 'bg-rose-500/10 text-rose-500 border-rose-500/20'
-                      : type === 'INCOME'
-                      ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
-                      : 'bg-sky-500/10 text-sky-500 border-sky-500/20'
-                  )}
-                >
-                  {isSplit ? 'Split Expense' : type}
-                </span>
-              </div>
-
-              <div className="flex items-baseline justify-center gap-1 select-none">
-                <span className="text-2xl font-semibold text-theme-muted font-mono">{currencySymbol}</span>
-                <span className="text-4xl font-bold tracking-tight text-theme-primary font-mono tabular-nums">
-                  {formattedRupees}
-                </span>
-              </div>
-
-
-              <div className="mt-2.5 flex justify-center">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setErrorMessage(null);
-                    setStep(1);
-                  }}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-theme-card-subtle hover:bg-theme-card border border-theme-border px-3.5 py-1.5 text-xs font-medium text-theme-secondary hover:text-theme-primary active:scale-95 transition-all shadow-xs"
-                  title="Change amount"
-                >
-                  <Pencil className="size-3 text-theme-muted" />
-                  <span>Edit amount</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Merchant / Payee Field */}
-            <div>
-              <label className="block text-xs font-medium text-theme-secondary mb-1.5">
-                Merchant / Payee
-              </label>
-              <div className="relative flex items-center">
-                <Store className="absolute left-3.5 size-4 text-theme-muted pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder="e.g. Starbucks, Amazon, Salary"
-                  value={merchantName}
-                  onChange={(e) => setMerchantName(e.target.value)}
-                  className="w-full h-12 rounded-xl border border-theme-border bg-theme-input pl-10 pr-3.5 text-sm font-medium text-theme-primary placeholder:text-theme-muted focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all shadow-xs"
-                />
-              </div>
-            </div>
-
-            {/* Unified Category Section */}
-            <div>
-              <label className="block text-xs font-medium text-theme-secondary mb-1.5">
-                {type === 'INCOME' ? 'Income Category' : 'Category'}
-              </label>
-              {isSplit ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between pb-1">
-                    <span className="text-xs font-semibold text-theme-secondary">
-                      Split into {splits.length} categories
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setActivePicker('category')}
-                      className="text-xs font-semibold text-violet-500 hover:text-violet-400 transition-colors"
-                    >
-                      Edit categories
-                    </button>
-                  </div>
-
-                  <CategorySplitEditor
-                    totalAmountPaise={activeAmount}
-                    splits={splits}
-                    categories={filteredCategories}
-                    onChange={(updated) => {
-                      if (updated.length === 1) {
-                        setSelectedCategoryId(updated[0].categoryId);
-                        setSplits([]);
-                      } else {
-                        setSplits(updated);
-                      }
-                    }}
-                    onAddCategoryClick={() => setActivePicker('category')}
-                    allowRemoveToSingle={true}
-                  />
-                </div>
-              ) : (
-                <div className="space-y-2">
-                  <button
-                    type="button"
-                    onClick={() => setActivePicker('category')}
-                    className={cn(
-                      'flex w-full items-center justify-between py-3 px-3.5 rounded-xl transition-all shadow-xs border text-left',
-                      errors.category
-                        ? 'bg-rose-500/10 text-rose-500 border-rose-500/40'
-                        : 'bg-theme-input hover:bg-theme-card text-theme-primary border-theme-border'
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div
-                        className={cn(
-                          'flex size-9 items-center justify-center rounded-lg text-white shadow-xs',
-                          currentCategory?.bgClass || 'bg-violet-600'
-                        )}
-                      >
-                        <CategoryIcon name={currentCategory?.iconName || 'Tag'} size={18} />
-                      </div>
-                      <div>
-                        <div className={cn('text-xs font-semibold', errors.category ? 'text-rose-500' : 'text-theme-primary')}>
-                          {currentCategory?.name || (type === 'INCOME' ? 'Choose income category' : 'Choose category')}
-                        </div>
-                        <div className="text-[11px] text-theme-muted">
-                          {currentCategory ? 'Tap to change' + (type === 'EXPENSE' ? ' or split' : '') : 'Tap to select'}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-theme-muted">
-                      <span>Change</span>
-                      <ChevronDown className="size-3.5" />
-                    </div>
-                  </button>
-
-                  {/* Subtle "+ Split with another category" button */}
-                  {type === 'EXPENSE' && (
-                    <button
-                      type="button"
-                      onClick={() => setActivePicker('category')}
-                      className="flex items-center gap-1.5 px-1 py-0.5 text-xs font-semibold text-violet-500 hover:text-violet-400 transition-colors"
-                    >
-                      <Split className="size-3.5" />
-                      <span>Split into multiple categories</span>
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Account & Date Row */}
-            <div className="grid grid-cols-2 gap-2.5">
-              <div>
-                <label className="block text-xs font-medium text-theme-secondary mb-1.5">
-                  Account
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setActivePicker('account')}
-                  className={cn(
-                    'flex w-full h-12 items-center justify-between px-3 rounded-xl border transition-all text-left shadow-xs',
-                    errors.account
-                      ? 'border-rose-500 bg-rose-500/10 text-rose-500'
-                      : 'border-theme-border bg-theme-input hover:bg-theme-card text-theme-primary'
-                  )}
-                >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <CreditCard className="size-4 text-theme-muted shrink-0" />
-                    <span className="truncate text-xs font-medium">{currentAccount.name}</span>
-                  </div>
-                  <ChevronDown className="size-3 text-theme-muted shrink-0 ml-1" />
-                </button>
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-theme-secondary mb-1.5">
-                  Date
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setActivePicker('date')}
-                  className={cn(
-                    'flex w-full h-12 items-center justify-between px-3 rounded-xl border transition-all text-left shadow-xs',
-                    errors.date
-                      ? 'border-rose-500 bg-rose-500/10 text-rose-500'
-                      : 'border-theme-border bg-theme-input hover:bg-theme-card text-theme-primary'
-                  )}
-                >
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <Calendar className="size-4 text-theme-muted shrink-0" />
-                    <span className="truncate text-xs font-medium font-mono">{dateDisplayLabel}</span>
-                  </div>
-                  <ChevronDown className="size-3 text-theme-muted shrink-0 ml-1" />
-                </button>
-              </div>
-            </div>
-
-            {/* Notes Field (Visible in Edit Screen Only) */}
-            <div>
-              <label className="block text-xs font-medium text-theme-secondary mb-1.5">
-                Notes (Optional)
-              </label>
-              <div className="relative flex items-center">
-                <FileText className="absolute left-3.5 size-4 text-theme-muted pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder="e.g. Home essentials, invoice number, etc."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full h-12 rounded-xl border border-theme-border bg-theme-input pl-10 pr-3.5 text-xs text-theme-primary placeholder:text-theme-muted focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all shadow-xs"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Pinned Sticky Bottom CTA Footer */}
-          <div className="shrink-0 px-5 pt-3 pb-8 bg-theme-elevated/95 backdrop-blur-xs border-t border-theme-border/50">
+    <DrawerShell
+      isOpen={isOpen}
+      onClose={onClose}
+      titleId="edit-transaction-title"
+      defaultSnap="full"
+      contentClassName="p-0 flex flex-col min-h-0 relative"
+      header={
+        step === 2 ? (
+          <DrawerHeader
+            title="Edit Transaction"
+            titleId="edit-transaction-title"
+            onBack={onClose}
+          />
+        ) : undefined
+      }
+      footer={
+        step === 2 ? (
+          <div className="shrink-0 px-5 pt-3 pb-8 bg-theme-elevated/95 border-t border-theme-border/40 backdrop-blur-xs select-none">
             <button
               type="button"
               disabled={isSubmitting}
               onClick={handleSave}
               className="flex w-full h-12 items-center justify-center gap-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-violet-600 to-violet-500 hover:brightness-110 disabled:opacity-[0.38] disabled:cursor-not-allowed shadow-lg shadow-violet-900/30 active:scale-[0.97] transition-all"
             >
-              <span>
-                {isSubmitting
-                  ? 'Updating...'
-                  : isSplit
-                  ? `Update Split Expense ${currencySymbol}${formattedRupees}`
-                  : `Update Transaction ${currencySymbol}${formattedRupees}`}
-
-              </span>
+              <span>{isSubmitting ? 'Saving changes...' : 'Save Changes'}</span>
             </button>
           </div>
-        </div>
+        ) : undefined
+      }
+    >
+      {step === 1 ? (
+        <AmountKeypad
+          type={type}
+          onTypeChange={(t) => {
+            if (type !== t) {
+              setType(t);
+              setSelectedCategoryId('');
+              setSplits([]);
+              setErrors((prev) => ({ ...prev, category: false, splitBalance: false }));
+              setErrorMessage(null);
+            }
+          }}
+          title="Edit Amount"
+          amountStr={amountStr}
+          onAmountChange={(val) => {
+            if (errors.amount) {
+              setErrors((prev) => ({ ...prev, amount: false }));
+              setErrorMessage(null);
+            }
+            setAmountStr(val);
+          }}
+          currencySymbol={currencySymbol}
+          numberingSystem={numberingSystem}
+          merchantName={merchantName}
+          onMerchantNameChange={setMerchantName}
+          showMerchantInput={false}
+          onProceed={() => setStep(2)}
+          onClose={() => setStep(2)}
+          proceedLabel={`Done editing amount (${currencySymbol}${formattedRupees})`}
+          errorMessage={errorMessage}
+        />
+      ) : (
+        <TransactionFormFields
+          type={type}
+          amountPaise={activeAmount}
+          formattedRupees={formattedRupees}
+          currencySymbol={currencySymbol}
+          merchantName={merchantName}
+          onMerchantNameChange={setMerchantName}
+          notes={notes}
+          onNotesChange={setNotes}
+          currentCategory={currentCategory}
+          currentAccount={currentAccount}
+          dateDisplayLabel={dateDisplayLabel}
+          selectedDate={selectedDate}
+          isSplit={isSplit}
+          splits={splits}
+          filteredCategories={filteredCategories}
+          errors={errors}
+          errorMessage={errorMessage}
+          onEditAmount={() => {
+            setErrorMessage(null);
+            setStep(1);
+          }}
+          onOpenCategoryPicker={() => setActivePicker('category')}
+          onOpenAccountPicker={() => setActivePicker('account')}
+          onOpenDatePicker={() => setActivePicker('date')}
+          onUpdateSplits={setSplits}
+          onSingleCategoryFromSplit={(catId) => {
+            setSelectedCategoryId(catId);
+            setSplits([]);
+          }}
+        />
       )}
 
-      {/* Quick Picker Sub-Sheet: Category (Uncluttered, Border-free, Multi-Category Splitting Built-In!) */}
-      {activePicker === 'category' && (
-        <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated animate-in fade-in duration-150">
-          {/* Top Bar */}
-          <div className="flex items-center gap-3 px-5 pt-4 pb-3 shrink-0">
-            <button
-              type="button"
-              onClick={() => setActivePicker(null)}
-              aria-label="Back"
-              className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
-            >
-              <ArrowLeft className="size-5" />
-            </button>
-            <div>
-              <span className="text-sm font-bold text-theme-primary">
-                {type === 'EXPENSE'
-                  ? 'Select Expense Category'
-                  : type === 'INCOME'
-                  ? 'Select Income Category'
-                  : 'Select Category'}
-              </span>
-              <p className="text-[11px] text-theme-muted">
-                {type === 'EXPENSE'
-                  ? splits.length > 1
-                    ? `${splits.length} categories selected • Split bill below`
-                    : 'Choose 1 category or tap multiple to split'
-                  : 'Choose 1 category'}
-              </p>
-            </div>
-          </div>
+      {/* Sub-Picker: Category Selection */}
+      <CategoryPickerModal
+        isOpen={activePicker === 'category'}
+        type={type}
+        categories={filteredCategories}
+        selectedCategoryId={selectedCategoryId}
+        splits={splits}
+        totalAmountPaise={activeAmount}
+        onSelectCategory={(catId) => {
+          setSelectedCategoryId(catId);
+          setErrors((prev) => ({ ...prev, category: false }));
+          setErrorMessage(null);
+        }}
+        onUpdateSplits={(updated) => {
+          setSplits(updated);
+          if (updated.length > 0) {
+            setErrors((prev) => ({ ...prev, category: false }));
+            setErrorMessage(null);
+          }
+        }}
+        onClose={() => setActivePicker(null)}
+      />
 
-          {/* Scrollable Canvas: Category Grid + Categorization Breakdown */}
-          <div className="flex-1 overflow-y-auto no-scrollbar min-h-0 px-5 py-4 space-y-4">
-            {/* Category Grid with Generous Spacing and No Harsh White Borders */}
-            <div className="grid grid-cols-4 gap-y-4 gap-x-2">
-              {filteredCategories.map((cat) => {
-                const isSelectedInSplit = splits.some((s) => s.categoryId === cat.id);
-                const isSingleSelected = !splits.length && selectedCategoryId === cat.id;
-                const isSelected = isSelectedInSplit || isSingleSelected;
+      {/* Sub-Picker: Account Selection */}
+      <AccountPickerModal
+        isOpen={activePicker === 'account'}
+        accounts={accountOptions}
+        selectedAccountId={selectedAccountId}
+        onSelectAccount={(accId) => {
+          setSelectedAccountId(accId);
+          setErrors((prev) => ({ ...prev, account: false }));
+          setErrorMessage(null);
+        }}
+        onClose={() => setActivePicker(null)}
+      />
 
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => handleToggleCategoryInPicker(cat.id)}
-                    className="flex flex-col items-center gap-1.5 p-1 rounded-2xl hover:bg-theme-card-hover active:scale-95 transition-all relative"
-                  >
-                    <div
-                      className={cn(
-                        'flex size-12 items-center justify-center rounded-2xl text-white transition-all relative shadow-xs',
-                        cat.bgClass,
-                        isSelected ? 'ring-2 ring-violet-500 scale-105 shadow-md' : ''
-                      )}
-                    >
-                      <CategoryIcon name={cat.iconName} size={20} />
-                      {isSelected && (
-                        <div className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-violet-600 text-white shadow-xs">
-                          <Check className="size-2.5 stroke-[3]" />
-                        </div>
-                      )}
-                    </div>
-                    <span
-                      className={cn(
-                        'text-center text-[11px] truncate w-full mt-1',
-                        isSelected ? 'font-bold text-theme-primary' : 'text-theme-secondary'
-                      )}
-                    >
-                      {cat.name}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {filteredCategories.length === 0 && (
-              <div className="py-8 text-center text-xs text-theme-muted">
-                No {type === 'EXPENSE' ? 'expense' : 'income'} categories available.
-              </div>
-            )}
-
-            {/* Whenever user clicks more than single category: Show Categorization Breakdown Right Here! */}
-            {type === 'EXPENSE' && splits.length > 1 && (
-              <div className="pt-4 border-t border-theme-divider animate-in fade-in duration-150">
-                <CategorySplitEditor
-                  totalAmountPaise={activeAmount}
-                  splits={splits}
-                  categories={filteredCategories}
-                  onChange={(updated) => {
-                    if (updated.length === 1) {
-                      setSelectedCategoryId(updated[0].categoryId);
-                      setSplits([]);
-                    } else {
-                      setSplits(updated);
-                    }
-                  }}
-                  allowRemoveToSingle={true}
-                />
-              </div>
-            )}
-          </div>
-
-          {/* Pinned Bottom Apply Button */}
-          <div className="shrink-0 px-5 pt-3 pb-8 bg-theme-elevated/95 backdrop-blur-xs">
-            <button
-              type="button"
-              onClick={() => {
-                if (selectedCategoryId || splits.length > 0) {
-                  setErrors((prev) => ({ ...prev, category: false }));
-                  setErrorMessage(null);
-                }
-                setActivePicker(null);
-              }}
-              className="flex w-full items-center justify-center gap-2 rounded-full py-4 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 shadow-lg active:scale-[0.99] transition-all"
-            >
-              <span>
-                {splits.length > 1
-                  ? `Apply Split (${splits.length} Categories)`
-                  : currentCategory
-                  ? `Apply ${currentCategory.name}`
-                  : 'Done'}
-              </span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Quick Picker Sub-Sheet: Account */}
-      {activePicker === 'account' && (
-        <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated p-5 animate-in fade-in duration-150">
-          <div className="flex items-center gap-3 pb-3 border-b border-theme-divider">
-            <button
-              type="button"
-              onClick={() => setActivePicker(null)}
-              aria-label="Back"
-              className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
-            >
-              <ArrowLeft className="size-5" />
-            </button>
-            <span className="text-sm font-bold text-theme-primary">Select Payment Account</span>
-          </div>
-          <div className="flex flex-col gap-2 py-4 overflow-y-auto no-scrollbar">
-            {accountOptions.map((acc) => {
-              const isSelected = selectedAccountId === acc.id;
-              const mask = 'maskNumber' in acc ? acc.maskNumber : ('mask' in acc ? acc.mask : '');
-              return (
-                <button
-                  key={acc.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedAccountId(acc.id);
-                    setErrors((prev) => {
-                      const next = { ...prev, account: false };
-                      if (!next.amount && !next.category && !next.date) {
-                        setErrorMessage(null);
-                      }
-                      return next;
-                    });
-                    setActivePicker(null);
-                  }}
-                  className={cn(
-                    'flex items-center justify-between p-3.5 rounded-2xl border transition-all text-left',
-                    isSelected
-                      ? 'border-violet-500/60 bg-violet-500/10 text-theme-primary shadow-xs'
-                      : 'border-theme-divider bg-theme-card-subtle hover:bg-theme-card text-theme-secondary'
-                  )}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex size-8 items-center justify-center rounded-full bg-theme-card text-theme-primary">
-                      <CreditCard className="size-4" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-semibold text-theme-primary">{acc.name}</div>
-                      <div className="text-[10px] text-theme-muted">···· {mask}</div>
-                    </div>
-                  </div>
-                  {isSelected && <Check className="size-4 text-violet-500" />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Quick Picker Sub-Sheet: Date */}
+      {/* Sub-Picker: Date Selection */}
       {activePicker === 'date' && (
-        <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated p-5 animate-in fade-in duration-150 overflow-y-auto no-scrollbar">
-          <div className="flex items-center gap-3 pb-3 border-b border-theme-divider mb-3">
-            <button
-              type="button"
-              onClick={() => setActivePicker(null)}
-              aria-label="Back"
-              className="flex size-9 items-center justify-center rounded-full text-theme-secondary hover:text-theme-primary hover:bg-theme-card-subtle transition-colors"
-            >
-              <ArrowLeft className="size-5" />
-            </button>
-            <span className="text-sm font-bold text-theme-primary">Select Date</span>
-          </div>
-
-          <div className="flex items-center justify-center w-full">
+        <div className="absolute inset-0 z-20 flex flex-col bg-theme-elevated animate-in fade-in duration-150 overflow-y-auto no-scrollbar select-none">
+          <DrawerHeader title="Select Date" onBack={() => setActivePicker(null)} />
+          <div className="flex items-center justify-center w-full p-4">
             <CalendarPicker
               mode="single"
               selectedDate={selectedDate}
               onSelectDate={(d) => {
                 setSelectedDate(d);
-                setErrors((prev) => {
-                  const next = { ...prev, date: false };
-                  if (!next.amount && !next.category && !next.account) {
-                    setErrorMessage(null);
-                  }
-                  return next;
-                });
+                setErrors((prev) => ({ ...prev, date: false }));
+                setErrorMessage(null);
                 setActivePicker(null);
               }}
               showPresets={false}
@@ -1163,7 +416,6 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
           </div>
         </div>
       )}
-    </div>
-  </>
-);
+    </DrawerShell>
+  );
 };
