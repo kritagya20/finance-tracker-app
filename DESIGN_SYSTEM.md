@@ -635,8 +635,8 @@ In accordance with production fintech standards (CRED, Google Pay, Paytm):
   - Numeric touch keypads and quick chip increments in Add/Edit transaction flows (`AddTransactionDrawer.tsx`, `EditTransactionDrawer.tsx`).
 - **Streamlined Screen Layout**:
   - Top header features the single `ArrowLeft` back button, title "Currency & Numbering", and subtitle "Configure global display formats".
-  - Dedicated "Select Base Currency" catalog with fast client-side search across 10 currencies displaying country flag, ISO code, currency name, and active radio checkmark.
-  - Bottom-positioned "Numbering & Grouping Format" section offering two clean, interactive cards: "Indian System (Lakhs & Crores)" and "International System (Millions & Billions)" with active violet indicator and toast feedback.
+  - Top-positioned "Numbering & Grouping Format" section offering two clean, interactive cards: "Indian System (Lakhs & Crores)" and "International System (Millions & Billions)" with active violet indicator and toast feedback.
+  - Dedicated "Select Base Currency" catalog positioned below numbering format, with fast client-side search across 10 currencies displaying country flag, ISO code, currency name, and active radio checkmark.
   - Excluded: Heavy live format preview hero card, Reset button, and decimal precision section to keep the UI clean, lightweight, and focused.
 - **Navigation Invariant**: Sub-screen uses a single `ArrowLeft` top back button. Conflicting `X` icons are strictly prohibited.
 
