@@ -1,16 +1,24 @@
 import React, { useState, useMemo } from 'react';
-import { ArrowLeft, Plus, Trash2, Tag, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Tag, AlertTriangle, ChevronRight } from 'lucide-react';
 import { SearchInput } from '../../components/ui/SearchInput';
-import { Category } from '../../domain/models/types';
+import { Category, Budget } from '../../domain/models/types';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
 import { AddCategoryDrawer } from './AddCategoryDrawer';
+import { EditCategoryDrawer } from './EditCategoryDrawer';
 import { EmptyState } from '../../components/common/EmptyState';
+import { formatCurrency } from '../../domain/engine/moneyUtils';
 import { cn } from '../../lib/utils';
 
 interface CategoryListScreenProps {
   categories: Category[];
+  budgets?: Budget[];
   onBack: () => void;
-  onAddCategory: (cat: Omit<Category, 'id'>) => Promise<void>;
+  onAddCategory: (cat: Omit<Category, 'id'>, monthlyLimitPaise?: number) => Promise<void>;
+  onUpdateCategory?: (
+    id: string,
+    updates: Partial<Category>,
+    monthlyLimitPaise?: number
+  ) => Promise<void>;
   onDeleteCategory?: (id: string) => Promise<void>;
 }
 
@@ -18,13 +26,16 @@ type TypeFilter = 'ALL' | 'EXPENSE' | 'INCOME';
 
 export const CategoryListScreen: React.FC<CategoryListScreenProps> = ({
   categories,
+  budgets = [],
   onBack,
   onAddCategory,
+  onUpdateCategory,
   onDeleteCategory,
 }) => {
   const [filter, setFilter] = useState<TypeFilter>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -144,19 +155,21 @@ export const CategoryListScreen: React.FC<CategoryListScreenProps> = ({
       ) : (
         <div className="flex flex-col rounded-2xl border border-theme-border bg-theme-card/50 divide-y divide-theme-border overflow-hidden">
           {filteredCategories.map((cat) => {
-            const isCustom =
-              cat.id.startsWith('cat_custom_') ||
-              !['cat_dining', 'cat_groceries', 'cat_fuel', 'cat_bills', 'cat_entertainment', 'cat_shopping', 'cat_salary', 'cat_freelance'].includes(cat.id);
+            const isCustom = !cat.isDefault;
+            const budget = budgets.find((b) => b.categoryId === cat.id);
 
             return (
               <div
                 key={cat.id}
-                className="flex items-center justify-between p-3.5 hover:bg-theme-card-hover/40 transition-colors"
+                role="button"
+                tabIndex={0}
+                onClick={() => setEditingCategory(cat)}
+                className="flex items-center justify-between p-3.5 hover:bg-theme-card-hover/40 transition-colors cursor-pointer group select-none"
               >
                 <div className="flex items-center gap-3 min-w-0 flex-1">
                   <div
                     className={cn(
-                      'flex size-10 shrink-0 items-center justify-center rounded-xl text-white shadow-xs',
+                      'flex size-10 shrink-0 items-center justify-center rounded-xl text-white shadow-xs transition-transform group-hover:scale-105',
                       cat.bgClass
                     )}
                   >
@@ -164,39 +177,60 @@ export const CategoryListScreen: React.FC<CategoryListScreenProps> = ({
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-theme-primary truncate">
-                      {cat.name}
-                    </p>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span
-                        className={cn(
-                          'inline-flex items-center rounded-md px-1.5 py-0.2 text-[9px] font-semibold uppercase tracking-wider',
-                          cat.isIncome
-                            ? 'bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/25'
-                            : 'bg-theme-card-subtle text-theme-muted border border-theme-border'
-                        )}
-                      >
-                        {cat.isIncome ? 'Income' : 'Expense'}
-                      </span>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs font-bold text-theme-primary truncate group-hover:text-violet-500 transition-colors">
+                        {cat.name}
+                      </p>
                       {isCustom && (
                         <span className="text-[9px] font-medium text-violet-500 dark:text-violet-400">
                           Custom
                         </span>
                       )}
                     </div>
+
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      <span
+                        className={cn(
+                          'inline-flex items-center rounded-md px-1.5 py-0.2 text-[9px] font-semibold uppercase tracking-wider',
+                          cat.isIncome
+                            ? 'bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/25'
+                            : 'bg-rose-500/15 text-rose-500 dark:text-rose-400 border border-rose-500/25'
+                        )}
+                      >
+                        {cat.isIncome ? 'Income' : 'Expense'}
+                      </span>
+
+                      {!cat.isIncome && (
+                        budget && budget.limitAmount > 0 ? (
+                          <span className="inline-flex items-center rounded-md px-1.5 py-0.2 text-[9px] font-mono font-semibold bg-violet-500/10 text-violet-500 dark:text-violet-400 border border-violet-500/20">
+                            Limit: {formatCurrency(budget.limitAmount, undefined, false)}/mo
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-sans text-theme-muted">
+                            No limit
+                          </span>
+                        )
+                      )}
+                    </div>
                   </div>
                 </div>
 
-                {isCustom && onDeleteCategory && (
-                  <button
-                    type="button"
-                    onClick={() => setCategoryToDelete(cat)}
-                    title="Delete custom category"
-                    className="flex size-8 shrink-0 items-center justify-center rounded-lg text-theme-muted hover:text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all ml-2"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
-                )}
+                <div className="flex items-center gap-1 shrink-0 ml-2">
+                  {isCustom && onDeleteCategory && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCategoryToDelete(cat);
+                      }}
+                      title="Delete custom category"
+                      className="flex size-8 shrink-0 items-center justify-center rounded-lg text-theme-muted hover:text-rose-500 hover:bg-rose-500/10 active:scale-90 transition-all mr-1"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  )}
+                  <ChevronRight className="size-4 text-theme-muted group-hover:text-theme-primary group-hover:translate-x-0.5 transition-all" />
+                </div>
               </div>
             );
           })}
@@ -220,6 +254,22 @@ export const CategoryListScreen: React.FC<CategoryListScreenProps> = ({
         isOpen={isAddOpen}
         onClose={() => setIsAddOpen(false)}
         onSave={onAddCategory}
+      />
+
+      {/* 8. Edit Category Drawer */}
+      <EditCategoryDrawer
+        isOpen={!!editingCategory}
+        onClose={() => setEditingCategory(null)}
+        category={editingCategory}
+        existingBudget={
+          editingCategory ? budgets.find((b) => b.categoryId === editingCategory.id) : null
+        }
+        onSave={async (id, updates, monthlyLimitPaise) => {
+          if (onUpdateCategory) {
+            await onUpdateCategory(id, updates, monthlyLimitPaise);
+          }
+        }}
+        onDelete={onDeleteCategory}
       />
 
       {/* 8. Delete Confirmation Modal Dialog */}

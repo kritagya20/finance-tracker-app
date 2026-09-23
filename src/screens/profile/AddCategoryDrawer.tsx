@@ -7,7 +7,7 @@ import { cn } from '../../lib/utils';
 interface AddCategoryDrawerProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (category: Omit<Category, 'id'>) => Promise<void>;
+  onSave: (category: Omit<Category, 'id'>, monthlyLimitPaise?: number) => Promise<void>;
 }
 
 const COLOR_PRESETS = [
@@ -23,6 +23,13 @@ const COLOR_PRESETS = [
   { id: 'cyan', hex: '#06b6d4', bgClass: 'bg-cyan-500/15', textClass: 'text-cyan-400', label: 'Cyan' },
 ];
 
+const BUDGET_PRESETS = [
+  { label: '₹2,000', value: 2000 },
+  { label: '₹5,000', value: 5000 },
+  { label: '₹10,000', value: 10000 },
+  { label: '₹25,000', value: 25000 },
+];
+
 export const AddCategoryDrawer: React.FC<AddCategoryDrawerProps> = ({
   isOpen,
   onClose,
@@ -32,10 +39,14 @@ export const AddCategoryDrawer: React.FC<AddCategoryDrawerProps> = ({
   const [isIncome, setIsIncome] = useState(false);
   const [selectedIcon, setSelectedIcon] = useState('ShoppingCart');
   const [selectedColor, setSelectedColor] = useState(COLOR_PRESETS[0]);
+  const [limitRupees, setLimitRupees] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  const parsedLimitRupees = parseFloat(limitRupees) || 0;
+  const parsedLimitPaise = Math.round(parsedLimitRupees * 100);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,15 +59,19 @@ export const AddCategoryDrawer: React.FC<AddCategoryDrawerProps> = ({
     try {
       setIsSubmitting(true);
       setError(null);
-      await onSave({
-        name: cleanName,
-        iconName: selectedIcon,
-        colorHex: selectedColor.hex,
-        bgClass: selectedColor.bgClass,
-        textClass: selectedColor.textClass,
-        isIncome,
-      });
+      await onSave(
+        {
+          name: cleanName,
+          iconName: selectedIcon,
+          colorHex: selectedColor.hex,
+          bgClass: selectedColor.bgClass,
+          textClass: selectedColor.textClass,
+          isIncome,
+        },
+        !isIncome && parsedLimitPaise > 0 ? parsedLimitPaise : undefined
+      );
       setName('');
+      setLimitRupees('');
       onClose();
     } catch (err) {
       console.error('Failed to create category:', err);
@@ -116,9 +131,18 @@ export const AddCategoryDrawer: React.FC<AddCategoryDrawerProps> = ({
               <p className="text-xs font-bold text-theme-primary truncate max-w-[150px]">
                 {name.trim() || 'Category Name'}
               </p>
-              <p className="text-[10px] text-theme-muted">
-                {isIncome ? 'Income Source' : 'Expense Category'}
-              </p>
+              <div className="mt-0.5">
+                <span
+                  className={cn(
+                    'inline-flex items-center rounded-md px-1.5 py-0.2 text-[9px] font-semibold uppercase tracking-wider',
+                    isIncome
+                      ? 'bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/25'
+                      : 'bg-rose-500/15 text-rose-500 dark:text-rose-400 border border-rose-500/25'
+                  )}
+                >
+                  {isIncome ? 'Income' : 'Expense'}
+                </span>
+              </div>
             </div>
           </div>
         </div>
@@ -159,7 +183,7 @@ export const AddCategoryDrawer: React.FC<AddCategoryDrawerProps> = ({
         {/* Category Name Input */}
         <div>
           <label className="block text-xs font-medium text-theme-secondary mb-1.5">
-            Category Name
+            Category Name <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>
           </label>
           <input
             type="text"
@@ -172,6 +196,62 @@ export const AddCategoryDrawer: React.FC<AddCategoryDrawerProps> = ({
             className="w-full h-12 rounded-xl border border-theme-border bg-theme-input px-3.5 text-sm font-medium text-theme-primary placeholder:text-theme-muted focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all shadow-xs"
           />
         </div>
+
+        {/* Monthly Expense Limit (Budget) Section */}
+        {!isIncome && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-medium text-theme-secondary">
+                Monthly Expense Limit
+              </label>
+              {parsedLimitPaise > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setLimitRupees('')}
+                  className="text-[11px] font-medium text-rose-500 hover:text-rose-400 transition-colors"
+                >
+                  Clear Limit
+                </button>
+              )}
+            </div>
+
+            <div className="relative">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-theme-muted font-mono font-bold text-sm">
+                ₹
+              </div>
+              <input
+                type="number"
+                min="0"
+                step="100"
+                value={limitRupees}
+                onChange={(e) => setLimitRupees(e.target.value)}
+                placeholder="No limit set"
+                className="w-full h-12 pl-8 pr-3.5 rounded-xl border border-theme-border bg-theme-input text-sm font-mono font-semibold text-theme-primary placeholder:text-theme-muted placeholder:font-sans placeholder:font-normal focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all shadow-xs"
+              />
+            </div>
+
+            <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+              {BUDGET_PRESETS.map((preset) => {
+                const isSelected = parsedLimitRupees === preset.value;
+                return (
+                  <button
+                    key={preset.label}
+                    type="button"
+                    onClick={() => setLimitRupees(preset.value.toString())}
+                    className={cn(
+                      'px-2.5 py-1 rounded-lg text-xs font-mono font-medium border transition-all active:scale-95',
+                      isSelected
+                        ? 'border-violet-500 bg-violet-600 text-white font-semibold shadow-xs'
+                        : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:text-theme-primary hover:bg-theme-card'
+                    )}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Color Palette Selector */}
         <div>
