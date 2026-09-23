@@ -96,6 +96,16 @@ Adapted from M3's five functional roles (Display, Headline, Title, Body, Label) 
 | **Right-Alignment** | All monetary amounts in lists must be **right-aligned** for vertical decimal scanning. | Tabular numbers align cleanly. |
 | **No Floating Point** | Internal storage is **integer paise** (₹100.50 = `10050`). Display layer converts. | Never compute with floats. |
 
+### 3.3 Date & Timestamp Formatting Rules (Strict Invariant)
+| Rule | Specification | Example |
+| :--- | :--- | :--- |
+| **Strict Date Format** | All dates across the entire application MUST be displayed strictly in `DD-MM-YYYY` format with two-digit day, two-digit month, and four-digit year. Never use `YYYY-MM-DD`, `MM/DD/YYYY`, or localized long-month text formats for date representations. | `23-09-2026` |
+| **Monospace Font** | All dates and timestamps MUST use `font-mono` to prevent layout shifts and preserve numeric alignment. | `font-mono font-medium text-xs` |
+| **Timestamp Format** | Full date-time stamps MUST be formatted strictly as `DD-MM-YYYY, hh:mm A` (12-hour format with uppercase AM/PM). | `23-09-2026, 04:30 PM` |
+| **Contextual Date Grouping** | When grouping transactions by relative days (e.g. today or yesterday), append the exact date in parentheses: `Today (DD-MM-YYYY)` or `Yesterday (DD-MM-YYYY)`. Older days simply display `DD-MM-YYYY`. | `Today (23-09-2026)`, `Yesterday (22-09-2026)` |
+| **Date Ranges** | Date ranges MUST be displayed as `DD-MM-YYYY – DD-MM-YYYY` separated by an en-dash. | `01-09-2026 – 30-09-2026` |
+| **Centralized Utility** | All date formatting MUST use `src/domain/engine/dateUtils.ts` (`formatDateDDMMYYYY`, `formatDateTimeDDMMYYYY`, `formatDateRangeDDMMYYYY`, `formatContextualDateDDMMYYYY`). Ad-hoc formatting strings are strictly forbidden. | Centralized DRY logic |
+
 ---
 
 # Part III — Color System
@@ -419,6 +429,9 @@ Haptic feedback provides physical confirmation for digital actions. Use sparingl
 - **Text**: 14px `font-medium text-theme-primary`.
 - **Placeholder**: `text-theme-muted`.
 - **Label** (above input): 12px `font-medium text-theme-secondary mb-1.5`.
+- **Mandatory Indicator**: Mandatory fields MUST be marked with a clean red asterisk: `<span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>`.
+- **Optional Fields Indicator**: Non-mandatory fields MUST be styled as normal plain labels with NO asterisk.
+- **Project-Wide Invariant**: The word `(optional)` or `(Optional)` MUST NEVER be used on any screen, form field label, placeholder, or helper text across the entire application.
 - **Error text**: 12px `font-medium text-rose-400 mt-1` — shown on blur only.
 - **Transition**: Border color 200ms `ease-standard`.
 
@@ -501,7 +514,7 @@ Haptic feedback provides physical confirmation for digital actions. Use sparingl
     - **Merchant / Payee**: Dedicated labeled field with `Store` icon prefix.
     - **Category**: Interactive category selector card with 36px category tint icon and split options.
     - **Account & Date**: 2-column grid row with `CreditCard` and `Calendar` icons.
-    - **Notes (Optional)**: Dedicated labeled field with `FileText` icon prefix where custom notes (e.g. "Home essentials (2 items)") are viewed and modified.
+    - **Notes**: Dedicated labeled field with `FileText` icon prefix where custom notes (e.g. "Home essentials (2 items)") are viewed and modified (non-mandatory, plain label).
 
 ## 23. Bottom Navigation Bar
 
@@ -574,7 +587,7 @@ Empty states are **engagement opportunities**, not dead ends. Every empty state 
    - Include progress percentage caption (`font-mono text-xs font-semibold`).
 4. **Step Breakdown**:
    - **Step 1: Your Identity**: Focused Name entry, autofocus, welcoming tone. Pinned bottom Next CTA (`h-12 rounded-xl`).
-   - **Step 2: Contact Details**: Mandatory 10-digit mobile number (Indian format starting with 6, 7, 8, 9) + optional Email address. Errors validated on blur only.
+   - **Step 2: Contact Details**: Mandatory 10-digit mobile number (Indian format starting with 6, 7, 8, 9, marked with red asterisk `*`) + Email address (non-mandatory plain label). Errors validated on blur only.
    - **Step 3: Security MPIN**: 6-digit discrete boxes (`MpinInput`), confirmation MPIN boxes, eye toggle for masking. Direct "Create Private Vault" CTA.
 5. **Back Navigation**:
    - Top-left single `ArrowLeft` icon button to effortlessly navigate back to the previous step. Never use `X` and `ArrowLeft` simultaneously.
@@ -663,7 +676,7 @@ In accordance with production fintech standards (CRED, Google Pay, Paytm):
 - **Form Fields & Validation Rules**:
   - **Feature / Screen Name**: Single-line text input specifying the area where the bug occurred. Maximum **50 characters**, minimum 2 characters.
   - **Remarks / Bug Details**: Multi-line textarea detailing reproduction steps or observed anomalies. Maximum **500 characters**, minimum 5 characters.
-  - **Screenshot Attachment (Optional)**: File uploader accepting images up to **5MB** (`5 * 1024 * 1024` bytes). Features an image thumbnail preview with file size badge (KB/MB) and a 1-tap remove action.
+  - **Screenshot Attachment**: File uploader accepting images up to **5MB** (`5 * 1024 * 1024` bytes). Features an image thumbnail preview with file size badge (KB/MB) and a 1-tap remove action.
   - **Defensive Validation**: Validation error alerts trigger **only on blur (`onBlur`) or form submission**, never while the user is actively typing. Live monospace character counters (`font-mono text-xs text-theme-muted`) provide clean visual feedback.
 - **SMTP Server Dispatch & Offline Resiliency**:
   - Submissions are dispatched through `BugReportService.submitBugReport` targeting an SMTP relay endpoint configured via `VITE_SMTP_REPORT_URL`.
@@ -687,6 +700,21 @@ In accordance with production fintech standards (CRED, Google Pay, Paytm):
   - In `AnalyticsScreen.tsx`, the popover container specifies `w-[328px] max-w-[calc(100vw-32px)]`.
   - In `ActivityScreen.tsx`, `CalendarPicker` centers directly on the modal backdrop, avoiding nested duplicate card containers.
   - In transaction drawers (`AddTransactionDrawer.tsx`, `EditTransactionDrawer.tsx`), centered within `w-full flex items-center justify-center`.
+
+## 28.6 Backup & Cloud Vault Architecture (`BackupScreen`)
+- **Single Source of Truth & Local-First Philosophy**:
+  - Financial data relies on device-first storage; cloud synchronization is an encrypted opt-in vault snapshot.
+- **Visual Boundary Aura & State Gradient Invariant**:
+  - **Backed Up State**:
+    - Status: Pulsating green dot (`bg-emerald-500 animate-pulse ring-4 ring-emerald-500/20`) + "Synced".
+    - Ambient Boundary: Entire screen enclosure features an emerald-teal glowing border gradient (`border-emerald-500/60 dark:border-emerald-500/40 shadow-emerald-500/10 dark:shadow-[0_0_40px_rgba(16,185,129,0.14)]`) with a top specular highlight hairline (`from-transparent via-emerald-400/70 to-transparent`).
+  - **Unbacked / Pending State**:
+    - Status: Crimson red warning dot (`bg-rose-500 ring-4 ring-rose-500/20`) + "Not Backed Up".
+    - Ambient Boundary: Entire screen enclosure features a rose-crimson warning border gradient (`border-rose-500/60 dark:border-rose-500/40 shadow-rose-500/10 dark:shadow-[0_0_40px_rgba(244,63,94,0.14)]`) with an ambient warning glow.
+- **Zero-Knowledge Cryptographic Transparency**:
+  - All figures, payload sizes, checksum hashes, and cipher algorithms MUST be displayed in `font-mono tabular-nums`.
+  - Clearly exposes AES-256-GCM encryption, Argon2id key derivation, and SHA-256 integrity verification.
+- **Navigation Invariant**: Top header features a single `ArrowLeft` button navigating back to Profile. No conflicting `X` or top back button violations.
 
 ---
 
@@ -936,6 +964,68 @@ Both `CategoryListScreen.tsx` and `PaymentAccountsScreen.tsx` strictly follow an
   - When `EXPENSE` is active: ONLY categories with `!cat.isIncome` are shown.
   - When `INCOME` is active: ONLY categories with `cat.isIncome === true` are shown.
   - Type switching immediately clears mismatched categories to prevent cross-contamination.
+
+## 44. Backup & Cloud Vault Visual Standards (`BackupScreen.tsx` & `ProfileScreen.tsx`)
+- **Profile Row Dot Invariant**:
+  - The "Backup Data" row on the Profile screen displays **only a single indicator dot** (with trailing `ChevronRight`).
+  - Never display any text tags, badges, or "Backed up" / "Not backed up" labels next to the dot on the profile list row.
+  - Green pulsating dot (`bg-emerald-500 animate-pulse`) when vault is backed up to server.
+  - Amber / warm yellow dot (`bg-amber-400`) when backup is pending.
+- **Color Palette & Calm Semantic Signals**:
+  - Use calming **Warm Amber** (`amber-500` / `amber-400`) for the pending / un-backed state instead of alarming red/rose tones.
+  - The master container border, ambient glow, and shield indicator transition between:
+    - **Backed Up (Synced)**: Radiant Emerald-Teal (`border-emerald-500/60`, `shadow-[0_0_40px_rgba(16,185,129,0.14)]`).
+    - **Pending (Device-Only)**: Warm Golden-Amber (`border-amber-500/60`, `shadow-[0_0_40px_rgba(245,158,11,0.14)]`).
+- **Clean Screen Header**:
+  - Screen header contains strictly the `ArrowLeft` back button, the title "Backup & Cloud Vault", and subtitle "Zero-knowledge server synchronization".
+  - Status pill is never placed in the screen header to prevent cramped wrapping or breaking on narrow viewports.
+- **Vault Sync Status Tag Placement**:
+  - The status tag (`Synced` with green pulse dot / `Pending Backup` with amber dot) is positioned at the top of the master vault enclosure card in a dedicated `Vault Sync Status` bar (`whitespace-nowrap shrink-0`).
+- **Capsule / Pill Single-Line Invariant**:
+  - All status capsules/chips on the backup screen MUST use `whitespace-nowrap shrink-0` and remain strictly on a single line on all viewport widths.
+  - Status copy for unbacked state is strictly `'Cloud Snapshot: Pending'` (never `'Missing'`).
+- **Privacy & Transparency**:
+  - Payload size information is hidden from the user to reduce cognitive load and avoid confusing technical metrics.
+  - Cryptographic grid displays Cipher (`AES-256-GCM`), Key Derivation (`Argon2id`), and Checksum Hash.
+
+## 45. Profile Screen Top Highlight Carousel (`ProfileScreen.tsx`)
+- **Top 3 Curated Management Tabs (Matching List Items)**:
+  1. **Categories**: Exact title "Categories", subtitle "Manage & Add Categories", with trailing `ChevronRight`.
+  2. **Payment Options**: Exact title "Payment Options", subtitle "Bank Accounts, Cards & Wallets", with trailing `ChevronRight`.
+  3. **Backup Data**: Exact title "Backup Data", subtitle "Zero-Knowledge Encrypted Server Backup", live status indicator dot, with trailing `ChevronRight`.
+  - All tabs in the lists below remain preserved as they are.
+- **Controls & Pagination**:
+  - Carousel avoids `< >` arrow icons for minimal, clutter-free aesthetics.
+  - Centered pagination dots indicate current active slide.
+- **Auto-Scroll Behavior & Gesture Rules**:
+  - Cycles smoothly across the 3 cards every 4.5 seconds when passive.
+  - **Auto-Scroll Cancellation Invariant**: Any manual swipe (left/right touch gesture), mouse wheel, or pagination dot selection immediately and permanently pauses auto-scroll to avoid taking focus away from an engaged user.
+  - Native horizontal scroll-snap (`overflow-x-auto snap-x snap-mandatory scroll-smooth`) with hidden scrollbars for fluid mobile performance.
+
+## 46. Category CRUD & Immutability Standards (`CategoryListScreen.tsx` & `EditCategoryDrawer.tsx`)
+- **System vs Custom Immutability**:
+  - Default core categories include `isDefault: true` in the data model and repository.
+  - Default categories cannot be renamed or deleted. Their name inputs and delete buttons are disabled or cleanly restricted.
+  - Monthly budget limit editing is fully enabled for both default and custom categories.
+  - User-created categories (`isDefault === false`) support full CRUD (rename, icon change, monthly budget limit, deletion).
+- **Subtle, Non-Intrusive Messaging**:
+  - Never display alarmist warnings or aggressive banners. Use understated captions and micro-badges (e.g. `Default Category`).
+- **Semantic Type Capsules**:
+  - Income type tag: Emerald Green (`bg-emerald-500/10 text-emerald-400 border-emerald-500/30`).
+  - Expense type tag: Rose/Red (`bg-rose-500/10 text-rose-400 border-rose-500/30`).
+
+## 47. Large Data Formats & Graph Inspection Standards (`CategoryDonutDial.tsx` & `SpendingVelocityCard.tsx`)
+- **Adaptive Currency Formatting**:
+  - Amounts exceeding standard thresholds must scale to compact Indian currency units via `formatAdaptiveCardCurrency` (`Cr`, `L`, `k`).
+  - Use `trimDecimals` to avoid trailing `.00` where horizontal space is constrained.
+- **Category Donut Breakdown Card**:
+  - Center metric dynamically scales typography (`text-lg` to `text-2xl`) to avoid colliding with circular dial geometry.
+  - Category legend list rows must use a clean 2-column layout: `[Color Dot + Name]` (left) and `[Percentage %] [ChevronRight]` (right). Currency totals are inspected inside the dial center and detail drawers to prevent mobile wrapping.
+- **Spending Velocity Card**:
+  - Card header uses a clean, single-line title with a stable `ChevronRight` (`>`) view all button. Never add variable-width badges to card headers.
+  - Y-axis SVG tick labels format dynamically (`1Cr`, `1L`, `10k`, `0`) within a 5-character boundary.
+  - Scrubbing / Click interaction: Single date-specific button below graph (`View transactions for DD-MM-YYYY (₹X.X)`) that appears only when the user taps a date point on the graph. Never render cluttered static inspection rails.
+
 
 
 
