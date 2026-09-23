@@ -12,6 +12,7 @@ import {
 import { Transaction, Category, Account } from '../../domain/models/types';
 import { CategoryIcon } from '../../components/common/CategoryIcon';
 import { formatCurrency } from '../../domain/engine/moneyUtils';
+import { formatDateDDMMYYYY, formatDateTimeDDMMYYYY } from '../../domain/engine/dateUtils';
 import { DrawerShell, SnapState } from '../../components/ui/DrawerShell';
 import { DrawerHeader } from '../../components/ui/DrawerHeader';
 import { cn } from '../../lib/utils';
@@ -67,7 +68,7 @@ export const TransactionDetailDrawer: React.FC<TransactionDetailDrawerProps> = (
   const handleCopySummary = async () => {
     if (!tx) return;
     try {
-      const formatted = `${tx.merchantName} • ${formatCurrency(tx.amount, undefined, false)} on ${new Date(tx.date).toLocaleDateString()}`;
+      const formatted = `${tx.merchantName} • ${formatCurrency(tx.amount, undefined, false)} on ${formatDateDDMMYYYY(tx.date)}`;
       await navigator.clipboard.writeText(formatted);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
@@ -80,14 +81,7 @@ export const TransactionDetailDrawer: React.FC<TransactionDetailDrawerProps> = (
 
   // Formatting helpers
   const txDate = new Date(tx.date);
-  const formattedFullDate = isNaN(txDate.getTime())
-    ? '—'
-    : txDate.toLocaleDateString('en-IN', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-      });
+  const formattedFullDate = formatDateDDMMYYYY(txDate);
   const formattedTime = isNaN(txDate.getTime())
     ? ''
     : txDate.toLocaleTimeString('en-IN', {
@@ -96,9 +90,7 @@ export const TransactionDetailDrawer: React.FC<TransactionDetailDrawerProps> = (
       });
 
   const formatTimestamp = (ts: number) => {
-    const d = new Date(ts);
-    if (isNaN(d.getTime())) return '—';
-    return `${d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, ${d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}`;
+    return formatDateTimeDDMMYYYY(ts);
   };
 
   const isIncome = tx.type === 'INCOME';

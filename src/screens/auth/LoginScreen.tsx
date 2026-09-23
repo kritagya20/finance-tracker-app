@@ -70,7 +70,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           {/* Email or Mobile Input */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-theme-secondary">
-              Email or Mobile Number
+              Email or Mobile Number <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>
             </label>
             <div className="relative">
               {detectedType === 'phone' ? (
@@ -126,7 +126,9 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
           <div className="space-y-1.5 pt-1">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <label className="text-xs font-medium text-theme-secondary">6-Digit MPIN</label>
+                <label className="text-xs font-medium text-theme-secondary">
+                  6-Digit MPIN <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>
+                </label>
                 <button
                   type="button"
                   onClick={() => setShowMpin(!showMpin)}

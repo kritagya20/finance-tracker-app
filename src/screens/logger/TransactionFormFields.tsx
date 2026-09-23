@@ -18,6 +18,7 @@ import {
 import { CategoryIcon } from '../../components/common/CategoryIcon';
 import { CategorySplitEditor } from './CategorySplitEditor';
 import { AccountOptionItem } from './AccountPickerModal';
+import { formatDateDDMMYYYY } from '../../domain/engine/dateUtils';
 import { cn } from '../../lib/utils';
 
 export interface TransactionFormFieldsProps {
@@ -138,16 +139,24 @@ export const TransactionFormFields: React.FC<TransactionFormFieldsProps> = ({
 
       {/* 1. Merchant / Payee Field */}
       <div>
-        <label className="block text-xs font-medium text-theme-secondary mb-1.5">
-          Merchant / Payee
-        </label>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-xs font-medium text-theme-secondary">
+            Merchant / Payee
+          </label>
+          {merchantName.length > 0 && (
+            <span className="text-[10px] font-mono text-theme-muted">
+              {merchantName.length}/256
+            </span>
+          )}
+        </div>
         <div className="relative flex items-center">
           <Store className="absolute left-3.5 size-4 text-theme-muted pointer-events-none" />
           <input
             type="text"
             placeholder="e.g. Starbucks, Amazon, Salary"
             value={merchantName}
-            onChange={(e) => onMerchantNameChange(e.target.value)}
+            maxLength={256}
+            onChange={(e) => onMerchantNameChange(e.target.value.slice(0, 256))}
             className="w-full h-12 rounded-xl border border-theme-border bg-theme-input pl-10 pr-3.5 text-sm font-medium text-theme-primary placeholder:text-theme-muted focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all shadow-xs"
           />
         </div>
@@ -157,6 +166,7 @@ export const TransactionFormFields: React.FC<TransactionFormFieldsProps> = ({
       <div>
         <label className="block text-xs font-medium text-theme-secondary mb-1.5">
           {type === 'INCOME' ? 'Income Category' : 'Category'}
+          <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>
         </label>
         {isSplit ? (
           <div className="space-y-2">
@@ -248,6 +258,7 @@ export const TransactionFormFields: React.FC<TransactionFormFieldsProps> = ({
       <div>
         <label className="block text-xs font-medium text-theme-secondary mb-1.5">
           Payment Account
+          <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>
         </label>
         <button
           type="button"
@@ -283,6 +294,7 @@ export const TransactionFormFields: React.FC<TransactionFormFieldsProps> = ({
       <div>
         <label className="block text-xs font-medium text-theme-secondary mb-1.5">
           Date
+          <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>
         </label>
         <button
           type="button"
@@ -303,7 +315,7 @@ export const TransactionFormFields: React.FC<TransactionFormFieldsProps> = ({
                 {dateDisplayLabel}
               </div>
               <div className="text-[11px] text-theme-muted font-mono">
-                {selectedDate ? selectedDate : 'Tap to select date'}
+                {selectedDate ? formatDateDDMMYYYY(selectedDate) : 'Tap to select date'}
               </div>
             </div>
           </div>
@@ -316,16 +328,24 @@ export const TransactionFormFields: React.FC<TransactionFormFieldsProps> = ({
 
       {/* 5. Notes Field */}
       <div>
-        <label className="block text-xs font-medium text-theme-secondary mb-1.5">
-          Notes (Optional)
-        </label>
+        <div className="flex items-center justify-between mb-1.5">
+          <label className="block text-xs font-medium text-theme-secondary">
+            Notes
+          </label>
+          {notes.length > 0 && (
+            <span className="text-[10px] font-mono text-theme-muted">
+              {notes.length}/256
+            </span>
+          )}
+        </div>
         <div className="relative flex items-center">
           <FileText className="absolute left-3.5 size-4 text-theme-muted pointer-events-none" />
           <input
             type="text"
             placeholder="Add note, bill number or memo"
             value={notes}
-            onChange={(e) => onNotesChange(e.target.value)}
+            maxLength={256}
+            onChange={(e) => onNotesChange(e.target.value.slice(0, 256))}
             className="w-full h-12 rounded-xl border border-theme-border bg-theme-input pl-10 pr-3.5 text-sm font-medium text-theme-primary placeholder:text-theme-muted focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition-all shadow-xs"
           />
         </div>

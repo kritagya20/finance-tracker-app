@@ -37,7 +37,7 @@ export const SearchInput: React.FC<SearchInputProps> = ({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         autoFocus={autoFocus}
-        className="h-10 w-full pl-9 pr-9 rounded-xl bg-theme-card-subtle/80 border border-theme-border/60 text-xs text-theme-primary placeholder:text-theme-muted focus:outline-none focus:border-violet-500/60 focus:ring-1 focus:ring-violet-500/20 transition-all font-sans"
+        className="h-10 w-full pl-9 pr-9 rounded-xl bg-theme-input dark:bg-slate-800 border border-theme-border dark:border-slate-700/60 text-xs text-theme-primary placeholder:text-theme-muted focus:outline-none focus:border-violet-500 focus:ring-1 focus:ring-violet-500/20 transition-all font-sans"
       />
       {value.length > 0 && (
         <button

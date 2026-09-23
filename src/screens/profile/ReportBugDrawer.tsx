@@ -224,7 +224,7 @@ export const ReportBugDrawer: React.FC<ReportBugDrawerProps> = ({
                     htmlFor="bug-feature"
                     className="block text-xs font-medium text-theme-secondary"
                   >
-                    Feature / Screen Name <span className="text-rose-400">*</span>
+                    Feature / Screen Name <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                   </label>
                   <span className="text-[10px] font-mono text-theme-muted">
                     {featureName.length}/{MAX_FEATURE_LENGTH}
@@ -267,7 +267,7 @@ export const ReportBugDrawer: React.FC<ReportBugDrawerProps> = ({
                     htmlFor="bug-remarks"
                     className="block text-xs font-medium text-theme-secondary"
                   >
-                    Remarks / Bug Details <span className="text-rose-400">*</span>
+                    Remarks / Bug Details <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                   </label>
                   <span className="text-[10px] font-mono text-theme-muted">
                     {remarks.length}/{MAX_REMARKS_LENGTH}
@@ -301,11 +301,11 @@ export const ReportBugDrawer: React.FC<ReportBugDrawerProps> = ({
                 )}
               </div>
 
-              {/* Optional Screenshot Attachment */}
+              {/* Screenshot Attachment */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-medium text-theme-secondary">
-                    Screenshot <span className="text-theme-muted">(Optional — Max 5MB)</span>
+                    Screenshot <span className="text-theme-muted">(Max 5MB)</span>
                   </label>
                   {screenshotFile && (
                     <span className="text-[10px] font-mono text-theme-muted">

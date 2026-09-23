@@ -3,6 +3,7 @@ import { ChevronRight, Split } from 'lucide-react';
 import { Category, Transaction } from '../../domain/models/types';
 import { getCategoryById } from '../../domain/engine/categories';
 import { formatCurrency } from '../../domain/engine/moneyUtils';
+import { formatDateTimeDDMMYYYY } from '../../domain/engine/dateUtils';
 import { CategoryIcon } from './CategoryIcon';
 import { cn } from '../../lib/utils';
 
@@ -41,14 +42,7 @@ export const TransactionRow: React.FC<TransactionRowProps> = ({
   const cat = propCategory || getCategoryById(item.categoryId);
 
   const formattedDate = React.useMemo(() => {
-    const d = new Date(item.date);
-    if (isNaN(d.getTime())) return '—';
-    return d.toLocaleDateString('en-IN', {
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDateTimeDDMMYYYY(item.date);
   }, [item.date]);
 
   return (

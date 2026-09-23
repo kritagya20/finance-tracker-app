@@ -72,7 +72,7 @@ export const ForgotPasswordScreen: React.FC<ForgotPasswordScreenProps> = ({
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-theme-secondary">
-                  Registered Email or Mobile Number
+                  Registered Email or Mobile Number <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                 </label>
                 <div className="relative">
                   {detectedType === 'phone' ? (

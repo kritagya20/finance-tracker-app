@@ -18,6 +18,7 @@ import {
 import { Transaction, Category } from '../../domain/models/types';
 import { getCategoryById } from '../../domain/engine/categories';
 import { formatCurrency } from '../../domain/engine/moneyUtils';
+import { formatDateDDMMYYYY } from '../../domain/engine/dateUtils';
 import { cn } from '../../lib/utils';
 
 // Icon Map providing rich visual icons for transaction categories
@@ -86,12 +87,12 @@ function formatTimestamp(
     const txDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
     const diffDays = Math.round((today.getTime() - txDay.getTime()) / 86400000);
 
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    if (diffDays === 0) return `Today (${formatDateDDMMYYYY(d)})`;
+    if (diffDays === 1) return `Yesterday (${formatDateDDMMYYYY(d)})`;
+    return formatDateDDMMYYYY(d);
   }
 
-  const datePart = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+  const datePart = formatDateDDMMYYYY(d);
   const timePart = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
   return `${datePart} • ${timePart}`;
 }
@@ -351,7 +352,7 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
             return (
               <div
                 key={s.id || idx}
-                className="flex items-center justify-between py-1 px-2.5 rounded-lg bg-theme-card-subtle/80 border border-theme-border/50 text-xs"
+                className="flex items-center justify-between py-1 px-2.5 rounded-lg bg-theme-card-subtle dark:bg-slate-800/80 border border-theme-border dark:border-slate-700/50 text-xs"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <span

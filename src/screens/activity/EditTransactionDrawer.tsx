@@ -8,6 +8,7 @@ import {
   TransactionEditLog,
 } from '../../domain/models/types';
 import { parseKeypadToPaise, paiseToRupees, formatCurrency } from '../../domain/engine/moneyUtils';
+import { formatDateDDMMYYYY } from '../../domain/engine/dateUtils';
 import { CalendarPicker } from '../../components/common/CalendarPicker';
 import { DrawerShell } from '../../components/ui/DrawerShell';
 import { DrawerHeader } from '../../components/ui/DrawerHeader';
@@ -121,13 +122,10 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
   const dateDisplayLabel = !selectedDate
     ? 'Select Date'
     : selectedDate === todayStr
-    ? 'Today'
+    ? `Today (${formatDateDDMMYYYY(selectedDate)})`
     : selectedDate === yesterdayStr
-    ? 'Yesterday'
-    : new Date(selectedDate).toLocaleDateString(numberingSystem === 'indian' ? 'en-IN' : 'en-US', {
-        day: 'numeric',
-        month: 'short',
-      });
+    ? `Yesterday (${formatDateDDMMYYYY(selectedDate)})`
+    : formatDateDDMMYYYY(selectedDate);
 
   const activeAmount = parseKeypadToPaise(amountStr);
   const formattedRupees = (activeAmount / 100).toLocaleString(
@@ -198,8 +196,8 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       const effectiveCategoryId = isSplit
         ? splits[0]?.categoryId || tx.categoryId
         : selectedCategoryId || (splits.length === 1 ? splits[0].categoryId : '') || tx.categoryId;
-      const effectiveMerchant = merchantName.trim() || tx.merchantName;
-      const cleanNotes = notes.trim() ? notes.trim() : undefined;
+      const effectiveMerchant = (merchantName.trim() || tx.merchantName).slice(0, 256);
+      const cleanNotes = notes.trim() ? notes.trim().slice(0, 256) : undefined;
 
       // Track human-readable change summaries for timeline
       const changes: string[] = [];
@@ -272,7 +270,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
       defaultSnap="full"
       contentClassName="p-0 flex flex-col min-h-0 relative"
       header={
-        step === 2 ? (
+        step === 2 && !activePicker ? (
           <DrawerHeader
             title="Edit Transaction"
             titleId="edit-transaction-title"
@@ -281,7 +279,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
         ) : undefined
       }
       footer={
-        step === 2 ? (
+        step === 2 && !activePicker ? (
           <div className="shrink-0 px-5 pt-3 pb-8 bg-theme-elevated/95 border-t border-theme-border/40 backdrop-blur-xs select-none">
             <button
               type="button"
@@ -319,7 +317,7 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
           currencySymbol={currencySymbol}
           numberingSystem={numberingSystem}
           merchantName={merchantName}
-          onMerchantNameChange={setMerchantName}
+          onMerchantNameChange={(val) => setMerchantName(val.slice(0, 256))}
           showMerchantInput={false}
           onProceed={() => setStep(2)}
           onClose={() => setStep(2)}
@@ -333,9 +331,9 @@ export const EditTransactionDrawer: React.FC<EditTransactionDrawerProps> = ({
           formattedRupees={formattedRupees}
           currencySymbol={currencySymbol}
           merchantName={merchantName}
-          onMerchantNameChange={setMerchantName}
+          onMerchantNameChange={(val) => setMerchantName(val.slice(0, 256))}
           notes={notes}
-          onNotesChange={setNotes}
+          onNotesChange={(val) => setNotes(val.slice(0, 256))}
           currentCategory={currentCategory}
           currentAccount={currentAccount}
           dateDisplayLabel={dateDisplayLabel}

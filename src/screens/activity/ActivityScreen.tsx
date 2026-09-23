@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { Transaction, Category, Account, DatePreset } from '../../domain/models/types';
 import { formatCurrency } from '../../domain/engine/moneyUtils';
+import { formatDateDDMMYYYY } from '../../domain/engine/dateUtils';
 import { TransactionItem } from '../../components/common/TransactionItem';
 import { Dropdown } from '../../components/ui/Dropdown';
 import { CalendarPicker, DateRange } from '../../components/common/CalendarPicker';
@@ -213,13 +214,13 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
 
       if (d.getTime() === today.getTime()) {
         groupKey = 'today';
-        groupTitle = 'Today';
+        groupTitle = `Today (${formatDateDDMMYYYY(d)})`;
       } else if (d.getTime() === yesterday.getTime()) {
         groupKey = 'yesterday';
-        groupTitle = 'Yesterday';
+        groupTitle = `Yesterday (${formatDateDDMMYYYY(d)})`;
       } else {
         groupKey = d.toISOString();
-        groupTitle = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'long' });
+        groupTitle = formatDateDDMMYYYY(d);
       }
 
       if (!map.has(groupKey)) {
@@ -270,7 +271,7 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
 
   const dateLabel =
     dateFilter === 'CUSTOM' && customRange
-      ? `Last: ${new Date(customRange.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} - ${new Date(customRange.endDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`
+      ? `Last: ${formatDateDDMMYYYY(customRange.startDate)} - ${formatDateDDMMYYYY(customRange.endDate)}`
       : dateFilter === 'LAST_7_DAYS'
       ? 'Last: 7 Days'
       : dateFilter === 'LAST_15_DAYS'
@@ -307,7 +308,7 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
   const handleExportCSV = () => {
     const headers = ['Date', 'Merchant', 'Category', 'Type', 'Amount (INR)', 'Source', 'Notes'];
     const rows = filtered.map((tx) => [
-      new Date(tx.date).toLocaleDateString('en-IN'),
+      formatDateDDMMYYYY(tx.date),
       `"${tx.merchantName.replace(/"/g, '""')}"`,
       `"${categories.find((c) => c.id === tx.categoryId)?.name || 'Other'}"`,
       tx.type,
@@ -353,7 +354,7 @@ export const ActivityScreen: React.FC<ActivityScreenProps> = ({
             placeholder="Search merchant, category, or note..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-12 rounded-xl border border-theme-border bg-theme-input pl-10 pr-4 text-sm font-medium text-theme-primary placeholder:text-theme-muted focus:border-2 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm transition-all outline-none"
+            className="w-full h-12 rounded-xl border border-theme-border dark:border-slate-700/60 bg-theme-input dark:bg-slate-800 pl-10 pr-4 text-sm font-medium text-theme-primary placeholder:text-theme-muted focus:border-2 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 shadow-sm transition-all outline-none"
           />
         </div>
 

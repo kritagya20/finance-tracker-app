@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, RotateCcw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 export type CalendarMode = 'single' | 'range';
@@ -80,12 +80,6 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
     } else {
       setViewMonth((m) => m + 1);
     }
-  };
-
-  const handleJumpToday = () => {
-    const now = new Date();
-    setViewYear(now.getFullYear());
-    setViewMonth(now.getMonth());
   };
 
   // Days calculations for the month view
@@ -184,15 +178,6 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
-          <button
-            type="button"
-            onClick={handleJumpToday}
-            title="Jump to current month"
-            className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-500/10 transition-colors"
-          >
-            <RotateCcw className="size-3" />
-            <span>Today</span>
-          </button>
           <button
             type="button"
             onClick={handlePrevMonth}

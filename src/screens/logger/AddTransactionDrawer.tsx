@@ -7,6 +7,7 @@ import {
   SplitItem,
 } from '../../domain/models/types';
 import { parseKeypadToPaise, paiseToRupees } from '../../domain/engine/moneyUtils';
+import { formatDateDDMMYYYY } from '../../domain/engine/dateUtils';
 import { CalendarPicker } from '../../components/common/CalendarPicker';
 import { DrawerShell } from '../../components/ui/DrawerShell';
 import { DrawerHeader } from '../../components/ui/DrawerHeader';
@@ -113,13 +114,10 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
   const dateDisplayLabel = !selectedDate
     ? 'Select Date'
     : selectedDate === todayStr
-    ? 'Today'
+    ? `Today (${formatDateDDMMYYYY(selectedDate)})`
     : selectedDate === yesterdayStr
-    ? 'Yesterday'
-    : new Date(selectedDate).toLocaleDateString(numberingSystem === 'indian' ? 'en-IN' : 'en-US', {
-        day: 'numeric',
-        month: 'short',
-      });
+    ? `Yesterday (${formatDateDDMMYYYY(selectedDate)})`
+    : formatDateDDMMYYYY(selectedDate);
 
   const activeAmount = parseKeypadToPaise(amountStr);
   const formattedRupees = (activeAmount / 100).toLocaleString(
@@ -199,7 +197,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
         ? splits[0]?.categoryId || fallbackCatId
         : selectedCategoryId || (splits.length === 1 ? splits[0].categoryId : '') || fallbackCatId;
       const effectiveMerchant =
-        merchantName.trim() ||
+        merchantName.trim().slice(0, 256) ||
         (isSplit
           ? 'Multi-Category Expense'
           : type === 'EXPENSE'
@@ -215,7 +213,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
         merchantName: effectiveMerchant,
         categoryId: effectiveCategoryId,
         accountId: selectedAccountId,
-        notes: notes.trim() || undefined,
+        notes: notes.trim() ? notes.trim().slice(0, 256) : undefined,
         date: new Date(selectedDate).toISOString(),
         source: 'MANUAL',
         isSplit,
@@ -239,7 +237,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
       defaultSnap="full"
       contentClassName="p-0 flex flex-col min-h-0 relative"
       header={
-        step === 2 ? (
+        step === 2 && !activePicker ? (
           <DrawerHeader
             title={
               type === 'EXPENSE'
@@ -257,7 +255,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
         ) : undefined
       }
       footer={
-        step === 2 ? (
+        step === 2 && !activePicker ? (
           <div className="shrink-0 px-5 pt-3 pb-8 bg-theme-elevated/95 border-t border-theme-border/40 backdrop-blur-xs select-none">
             <button
               type="button"
@@ -300,7 +298,7 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
           currencySymbol={currencySymbol}
           numberingSystem={numberingSystem}
           merchantName={merchantName}
-          onMerchantNameChange={setMerchantName}
+          onMerchantNameChange={(val) => setMerchantName(val.slice(0, 256))}
           onProceed={handleProceedToDetails}
           onClose={onClose}
           errorMessage={errorMessage}
@@ -312,9 +310,9 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
           formattedRupees={formattedRupees}
           currencySymbol={currencySymbol}
           merchantName={merchantName}
-          onMerchantNameChange={setMerchantName}
+          onMerchantNameChange={(val) => setMerchantName(val.slice(0, 256))}
           notes={notes}
-          onNotesChange={setNotes}
+          onNotesChange={(val) => setNotes(val.slice(0, 256))}
           currentCategory={currentCategory}
           currentAccount={currentAccount}
           dateDisplayLabel={dateDisplayLabel}

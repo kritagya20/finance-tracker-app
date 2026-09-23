@@ -187,7 +187,7 @@ export const AddAccountDrawer: React.FC<AddAccountDrawerProps> = ({
         {/* Account / Institution Name */}
         <div>
           <label className="block text-xs font-medium text-theme-secondary mb-1.5">
-            Account / Card Name
+            Account / Card Name <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>
           </label>
           <input
             type="text"

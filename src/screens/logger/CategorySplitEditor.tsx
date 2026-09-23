@@ -46,7 +46,7 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
   };
 
   const handleNoteChange = (index: number, note: string) => {
-    const updated = splits.map((s, i) => (i === index ? { ...s, note } : s));
+    const updated = splits.map((s, i) => (i === index ? { ...s, note: note.slice(0, 256) } : s));
     onChange(updated);
   };
 
@@ -169,6 +169,7 @@ export const CategorySplitEditor: React.FC<CategorySplitEditorProps> = ({
                     type="text"
                     placeholder="Add a note..."
                     value={split.note || ''}
+                    maxLength={256}
                     onChange={(e) => handleNoteChange(index, e.target.value)}
                     className="bg-transparent text-[11px] text-theme-muted placeholder:text-theme-muted/50 focus:text-theme-primary focus:outline-none truncate"
                   />

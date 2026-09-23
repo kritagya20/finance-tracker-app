@@ -191,7 +191,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({
             <div className="mt-7 rounded-2xl border border-theme-border bg-theme-card p-5 shadow-xl space-y-3.5">
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-theme-secondary">
-                  Your Full Name <span className="text-rose-500">*</span>
+                  Your Full Name <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                 </label>
                 <div className="relative">
                   <User className="absolute left-3.5 top-4 size-4 text-theme-muted" />
@@ -271,7 +271,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({
                 Your contact details
               </h1>
               <p className="mt-1 text-xs text-theme-muted max-w-[290px]">
-                Mobile number is mandatory for local SMS detection. Email is completely optional.
+                Mobile number is required for local SMS detection.
               </p>
             </div>
 
@@ -280,7 +280,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({
               {/* Mobile Input */}
               <div className="space-y-1.5">
                 <label className="text-xs font-medium text-theme-secondary">
-                  Mobile Number <span className="text-rose-500">*</span>
+                  Mobile Number <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                 </label>
                 <div className="relative">
                   <Phone className="absolute left-3.5 top-4 size-4 text-theme-muted" />
@@ -322,14 +322,11 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({
                 )}
               </div>
 
-              {/* Optional Email Input */}
+              {/* Email Input */}
               <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-theme-secondary">
-                    Email Address
-                  </label>
-                  <span className="text-[11px] text-theme-muted">Optional</span>
-                </div>
+                <label className="text-xs font-medium text-theme-secondary block">
+                  Email Address
+                </label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-4 size-4 text-theme-muted" />
                   <input
@@ -409,7 +406,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-medium text-theme-secondary">
-                    Set 6-Digit MPIN <span className="text-rose-500">*</span>
+                    Set 6-Digit MPIN <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                   </label>
                   <button
                     type="button"
@@ -443,7 +440,7 @@ export const SignupScreen: React.FC<SignupScreenProps> = ({
               {/* Confirm MPIN */}
               <div className="space-y-1.5 pt-1">
                 <label className="text-xs font-medium text-theme-secondary">
-                  Confirm 6-Digit MPIN <span className="text-rose-500">*</span>
+                  Confirm 6-Digit MPIN <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>
                 </label>
                 <MpinInput
                   value={confirmMpin}

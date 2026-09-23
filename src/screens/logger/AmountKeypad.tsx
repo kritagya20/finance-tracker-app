@@ -170,17 +170,24 @@ export const AmountKeypad: React.FC<AmountKeypadProps> = ({
 
         {/* Optional Quick Payee/Merchant input in Step 1 */}
         {showMerchantInput && onMerchantNameChange && (
-          <div className="mt-3 flex items-center justify-center w-full max-w-[260px]">
+          <div className="mt-3 flex flex-col items-center justify-center w-full max-w-[260px]">
             <div className="relative flex items-center w-full">
               <Store className="absolute left-3.5 size-3.5 text-theme-muted pointer-events-none" />
               <input
                 type="text"
-                placeholder="Merchant or note (optional)"
+                placeholder="Merchant / Payee"
+                aria-label="Merchant / Payee"
                 value={merchantName || ''}
-                onChange={(e) => onMerchantNameChange(e.target.value)}
+                maxLength={256}
+                onChange={(e) => onMerchantNameChange(e.target.value.slice(0, 256))}
                 className="w-full rounded-full bg-theme-card-subtle pl-9 pr-4 py-2 text-xs text-center text-theme-primary placeholder:text-theme-muted focus:outline-none focus:ring-1 focus:ring-violet-500/40 transition-colors shadow-xs"
               />
             </div>
+            {merchantName && merchantName.length > 200 && (
+              <span className="mt-1 text-[10px] font-mono text-theme-muted">
+                {merchantName.length}/256
+              </span>
+            )}
           </div>
         )}
 

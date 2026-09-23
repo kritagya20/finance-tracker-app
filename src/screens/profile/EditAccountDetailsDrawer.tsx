@@ -141,7 +141,7 @@ export const EditAccountDetailsDrawer: React.FC<EditAccountDetailsDrawerProps> =
               htmlFor="acc-name"
               className="block text-xs font-medium text-theme-secondary"
             >
-              Full Name
+              Full Name <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>
             </label>
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-theme-muted">

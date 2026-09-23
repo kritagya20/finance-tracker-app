@@ -156,7 +156,7 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
           {/* Display Name */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-theme-secondary">
-              Preferred Name
+              Preferred Name <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>
             </label>
             <div className="relative">
               <User className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-theme-muted" />
@@ -175,7 +175,7 @@ export const ProfileSetupScreen: React.FC<ProfileSetupScreenProps> = ({
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium text-theme-secondary">
-                Monthly In-Hand Income
+                Monthly In-Hand Income <span className="text-rose-500 ml-0.5" aria-hidden="true">*</span>
               </label>
               <span className="text-[11px] text-theme-muted">After taxes</span>
             </div>

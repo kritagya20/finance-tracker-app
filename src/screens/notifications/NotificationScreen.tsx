@@ -16,6 +16,7 @@ import {
 import { AppNotification, NotificationType } from '../../domain/models/notifications';
 import { SAMPLE_SMS_TEMPLATES, parseBankSms } from '../../domain/parsers/smsParser';
 import { Transaction } from '../../domain/models/types';
+import { formatDateDDMMYYYY } from '../../domain/engine/dateUtils';
 import { cn } from '../../lib/utils';
 
 interface NotificationScreenProps {
@@ -43,7 +44,7 @@ function formatRelativeTime(isoString: string): string {
     if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
     if (diffSec < 86400 * 2) return 'Yesterday';
     if (diffSec < 86400 * 7) return `${Math.floor(diffSec / 86400)}d ago`;
-    return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+    return formatDateDDMMYYYY(d);
   } catch {
     return 'Recent';
   }
