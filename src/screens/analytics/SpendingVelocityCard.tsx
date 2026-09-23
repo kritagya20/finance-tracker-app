@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useRef } from 'react';
-import { Calendar, ChevronRight } from 'lucide-react';
-import { formatCurrency } from '../../domain/engine/moneyUtils';
+import { ChevronRight } from 'lucide-react';
+import { formatAdaptiveCardCurrency } from '../../domain/engine/moneyUtils';
+import { formatDateDDMMYYYY } from '../../domain/engine/dateUtils';
 import { Transaction } from '../../domain/models/types';
 import { VelocitySpendDrawer } from './VelocitySpendDrawer';
 
@@ -44,6 +45,8 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
   const svgRef = useRef<SVGSVGElement | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
+  const activePoint = hoveredPoint || selectedDayPoint;
+
   // 1. Calculate number of days in the period
   const totalDays = useMemo(() => {
     const diffTime = Math.abs(periodEnd.getTime() - periodStart.getTime());
@@ -81,7 +84,7 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
     for (let day = 1; day <= totalDays; day++) {
       const pointDate = new Date(periodStart);
       pointDate.setDate(periodStart.getDate() + (day - 1));
-      const dateStr = pointDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const dateStr = formatDateDDMMYYYY(pointDate);
 
       points.push({
         day,
@@ -214,15 +217,21 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
     return `${pathD} L ${last.x.toFixed(2)} ${bottomY} L ${first.x.toFixed(2)} ${bottomY} Z`;
   }, [curvePoints, pathD, paddingTop, plotHeight]);
 
-  // 6. Y-Axis Ticks (clean 5-tier grid)
+  // 6. Y-Axis Ticks (clean 5-tier grid with Cr, L, k scaling)
   const yTicks = useMemo(() => {
     const tiers = [1, 0.75, 0.5, 0.25, 0];
     return tiers.map((ratio) => {
       const value = maxScale * ratio;
       const y = paddingTop + plotHeight - ratio * plotHeight;
       const inRupees = value / 100;
-      let label = '0k';
-      if (inRupees >= 1000) {
+      let label = '0';
+      if (inRupees >= 10000000) {
+        const crVal = inRupees / 10000000;
+        label = crVal % 1 === 0 ? `${crVal}Cr` : `${crVal.toFixed(1)}Cr`;
+      } else if (inRupees >= 100000) {
+        const lVal = inRupees / 100000;
+        label = lVal % 1 === 0 ? `${lVal}L` : `${lVal.toFixed(1)}L`;
+      } else if (inRupees >= 1000) {
         const kVal = inRupees / 1000;
         label = kVal % 1 === 0 ? `${kVal}k` : `${kVal.toFixed(1)}k`;
       } else if (inRupees > 0) {
@@ -291,7 +300,7 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
       const day = Math.max(1, Math.min(totalDays, Math.round(1 + ratio * (totalDays - 1))));
       const d = new Date(periodStart);
       d.setDate(periodStart.getDate() + (day - 1));
-      const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const label = formatDateDDMMYYYY(d);
       ticks.push({
         day,
         label,
@@ -300,12 +309,6 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
     }
     return ticks;
   }, [timeframe, totalDays, periodStart, plotWidth, paddingLeft]);
-
-  // Daily velocity rate (burn rate)
-  const dailyAvg = useMemo(() => {
-    if (totalDays <= 0) return 0;
-    return Math.round(totalExpense / totalDays);
-  }, [totalExpense, totalDays]);
 
   // 7. Interactive Scrubber Event Handlers (Scrubbing only - no sudden drawer jumps!)
   const handleTouchOrMouse = (clientX: number) => {
@@ -320,7 +323,15 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
   };
 
   const handlePointClick = (clientX: number) => {
-    handleTouchOrMouse(clientX);
+    if (!svgRef.current || dataPoints.length === 0) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const relativeX = clientX - rect.left;
+    const clampedX = Math.max(paddingLeft, Math.min(paddingLeft + plotWidth, relativeX));
+    const ratio = (clampedX - paddingLeft) / plotWidth;
+    const targetDay = Math.round(ratio * (totalDays - 1)) + 1;
+    const found = dataPoints.find((p) => p.day === targetDay) || dataPoints[dataPoints.length - 1];
+    setHoveredPoint(found);
+    setSelectedDayPoint(found);
   };
 
   return (
@@ -331,39 +342,35 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
       {/* Top Hairline Specular Reflection */}
       <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/20 dark:via-white/10 to-transparent" />
 
-      {/* 1. Card Header: High-utility velocity indicator instead of static 'Cumulative expense' */}
+      {/* 1. Card Header: Clean title with view all chevron button */}
       <div className="flex items-center justify-between">
         <h2 className="text-base font-semibold tracking-tight text-slate-900 dark:text-white">
           Spending Velocity
         </h2>
-        {hoveredPoint ? (
-          hoveredPoint.daily > 0 ? (
-            <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-500 dark:text-rose-400 border border-rose-500/20">
-              +{formatCurrency(hoveredPoint.daily, undefined, false)} added
-            </span>
-          ) : (
-            <span className="text-xs font-mono font-medium px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              ₹0 spent
-            </span>
-          )
-        ) : (
-          <span className="text-xs font-mono font-medium px-2.5 py-1 rounded-full bg-slate-100 dark:bg-white/[0.06] text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-white/[0.08]">
-            Avg: {hideBalances ? '••••••' : `${formatCurrency(dailyAvg, undefined, false)}/day`}
-          </span>
-        )}
+        <button
+          type="button"
+          onClick={() => {
+            setSelectedDayPoint(null);
+            setIsDrawerOpen(true);
+          }}
+          aria-label="View all spending velocity details"
+          className="flex size-8 items-center justify-center rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-all active:scale-90"
+        >
+          <ChevronRight className="size-5" />
+        </button>
       </div>
 
-      {/* 2. Hero Spend vs Budget Metric with dynamic scrubbing */}
+      {/* 2. Hero Spend vs Budget Metric */}
       <div className="mt-3 flex items-baseline">
         <span className="text-3xl sm:text-[34px] font-bold font-mono tracking-tight text-slate-900 dark:text-white leading-none">
           {hideBalances
             ? '••••••'
-            : formatCurrency(hoveredPoint ? hoveredPoint.cumulative : totalExpense, undefined, false)}
+            : formatAdaptiveCardCurrency(activePoint ? activePoint.cumulative : totalExpense, true, undefined, true)}
         </span>
         <span className="ml-2.5 text-sm font-sans text-slate-500 dark:text-slate-400 font-normal truncate">
-          {hoveredPoint
-            ? `on ${hoveredPoint.dateStr}`
-            : `of ${formatCurrency(totalBudget, undefined, false)} budget`}
+          {activePoint
+            ? `on ${activePoint.dateStr}`
+            : `of ${formatAdaptiveCardCurrency(totalBudget, true, undefined, true)} budget`}
         </span>
       </div>
 
@@ -439,13 +446,13 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
           )}
 
           {/* Interactive Touch Scrubber Indicator */}
-          {hoveredPoint && (
+          {activePoint && (
             <g className="transition-all duration-150 ease-out">
               {/* Vertical inspection hairline */}
               <line
-                x1={getX(hoveredPoint.day)}
+                x1={getX(activePoint.day)}
                 y1={paddingTop}
-                x2={getX(hoveredPoint.day)}
+                x2={getX(activePoint.day)}
                 y2={paddingTop + plotHeight}
                 stroke="#a78bfa"
                 strokeWidth="1.5"
@@ -455,16 +462,16 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
 
               {/* Concentric glowing radar beacon */}
               <circle
-                cx={getX(hoveredPoint.day)}
-                cy={getY(hoveredPoint.cumulative)}
+                cx={getX(activePoint.day)}
+                cy={getY(activePoint.cumulative)}
                 r="8"
                 fill="#8b5cf6"
                 opacity="0.25"
                 className="animate-ping"
               />
               <circle
-                cx={getX(hoveredPoint.day)}
-                cy={getY(hoveredPoint.cumulative)}
+                cx={getX(activePoint.day)}
+                cy={getY(activePoint.cumulative)}
                 r="4.5"
                 fill="#a78bfa"
                 stroke="#ffffff"
@@ -474,19 +481,20 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
 
               {/* Floating micro-pill badge above/below scrubber point */}
               {(() => {
-                const ptX = getX(hoveredPoint.day);
-                const ptY = getY(hoveredPoint.cumulative);
+                const ptX = getX(activePoint.day);
+                const ptY = getY(activePoint.cumulative);
                 const isNearTop = ptY < paddingTop + 24;
                 const badgeY = isNearTop ? ptY + 16 : ptY - 14;
-                const badgeText = formatCurrency(hoveredPoint.cumulative, undefined, false);
-                const clampedBadgeX = Math.max(paddingLeft + 24, Math.min(paddingLeft + plotWidth - 24, ptX));
+                const badgeText = formatAdaptiveCardCurrency(activePoint.cumulative, true, undefined, true);
+                const badgeW = Math.max(50, badgeText.length * 7 + 12);
+                const clampedBadgeX = Math.max(paddingLeft + badgeW / 2, Math.min(paddingLeft + plotWidth - badgeW / 2, ptX));
 
                 return (
                   <g>
                     <rect
-                      x={clampedBadgeX - 26}
+                      x={clampedBadgeX - badgeW / 2}
                       y={badgeY - 8}
-                      width="52"
+                      width={badgeW}
                       height="16"
                       rx="4"
                       className="fill-slate-900 dark:fill-[#1e1f29] stroke-violet-500/40"
@@ -536,76 +544,26 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
         </svg>
       </div>
 
-      {/* 4. Inspection Rail */}
-      <div className="mt-4 pt-3.5 border-t border-slate-200/70 dark:border-white/[0.08]">
-        {hoveredPoint ? (
-          <div className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-50/90 dark:bg-white/[0.03] border border-slate-200/70 dark:border-white/[0.08] shadow-xs">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="flex size-7 items-center justify-center rounded-xl bg-violet-500/10 text-violet-500 shrink-0">
-                <Calendar className="size-4" />
-              </div>
-              <div className="flex flex-col min-w-0 text-left">
-                <span className="text-xs font-semibold text-slate-900 dark:text-white truncate">
-                  {hoveredPoint.dateStr}
-                </span>
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 font-sans">
-                  {hoveredPoint.daily > 0
-                    ? `${formatCurrency(hoveredPoint.daily, undefined, false)} spent`
-                    : '₹0 spent • No expenses'}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {hoveredPoint.daily > 0 ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedDayPoint(hoveredPoint);
-                    setIsDrawerOpen(true);
-                  }}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold active:scale-95 transition-all shadow-xs"
-                >
-                  <span>View expenses</span>
-                  <ChevronRight className="size-3.5" />
-                </button>
-              ) : (
-                <span className="text-xs font-medium text-slate-400 dark:text-slate-500 px-2.5 py-1 rounded-lg bg-slate-200/60 dark:bg-white/[0.05]">
-                  Zero spend
-                </span>
-              )}
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedDayPoint(null);
-                  setIsDrawerOpen(true);
-                }}
-                className="inline-flex items-center gap-0.5 text-xs font-medium text-slate-500 dark:text-slate-400 hover:text-violet-600 dark:hover:text-violet-400 px-1 py-1 transition-colors"
-                title="View all expenses for this period"
-              >
-                <span>All</span>
-                <ChevronRight className="size-3" />
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 px-1">
-            <span>Tap curve to inspect day</span>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedDayPoint(null);
-                setIsDrawerOpen(true);
-              }}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-violet-600 dark:text-violet-400 hover:underline active:opacity-75"
-            >
-              <span>View all expenses</span>
-              <ChevronRight className="size-3.5" />
-            </button>
-          </div>
-        )}
-      </div>
+      {/* 4. Single button appearing ONLY when user clicks on any date on the graph */}
+      {selectedDayPoint && (
+        <div className="mt-3.5 pt-3 border-t border-slate-200/70 dark:border-white/[0.08] animate-in fade-in slide-in-from-top-1 duration-200">
+          <button
+            type="button"
+            onClick={() => {
+              setIsDrawerOpen(true);
+            }}
+            className="w-full h-11 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-md shadow-violet-900/20 active:scale-[0.98] transition-all"
+          >
+            <span>
+              View transactions for {selectedDayPoint.dateStr}
+              {selectedDayPoint.daily > 0
+                ? ` (${formatAdaptiveCardCurrency(selectedDayPoint.daily, true, undefined, true)})`
+                : ''}
+            </span>
+            <ChevronRight className="size-4" />
+          </button>
+        </div>
+      )}
 
       {/* 5. Velocity Spend Drawer (Bottom Sheet) */}
       <VelocitySpendDrawer

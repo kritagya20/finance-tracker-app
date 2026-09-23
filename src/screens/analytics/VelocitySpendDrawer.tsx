@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Calendar, CheckCircle2 } from 'lucide-react';
 import { Transaction } from '../../domain/models/types';
-import { formatCurrency } from '../../domain/engine/moneyUtils';
+import { formatAdaptiveCardCurrency } from '../../domain/engine/moneyUtils';
 import { DrawerShell } from '../../components/ui/DrawerShell';
 import { DrawerHeader } from '../../components/ui/DrawerHeader';
 import { SearchInput } from '../../components/ui/SearchInput';
@@ -156,10 +156,11 @@ export const VelocitySpendDrawer: React.FC<VelocitySpendDrawerProps> = ({
               <p className="text-2xl font-bold font-mono text-theme-primary mt-0.5">
                 {hideBalances
                   ? '••••••'
-                  : formatCurrency(
+                  : formatAdaptiveCardCurrency(
                       dayPoint ? dayPoint.daily : totalExpense || totalSpentInView,
+                      true,
                       undefined,
-                      false
+                      true
                     )}
               </p>
             </div>
@@ -169,7 +170,7 @@ export const VelocitySpendDrawer: React.FC<VelocitySpendDrawerProps> = ({
                   Cumulative
                 </p>
                 <p className="text-lg font-bold font-mono text-theme-secondary mt-0.5">
-                  {hideBalances ? '••••••' : formatCurrency(dayPoint.cumulative, undefined, false)}
+                  {hideBalances ? '••••••' : formatAdaptiveCardCurrency(dayPoint.cumulative, true, undefined, true)}
                 </p>
               </div>
             )}

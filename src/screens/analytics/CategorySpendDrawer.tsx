@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Calendar, Receipt } from 'lucide-react';
 import { Transaction } from '../../domain/models/types';
-import { formatCurrency } from '../../domain/engine/moneyUtils';
+import { formatAdaptiveCardCurrency } from '../../domain/engine/moneyUtils';
 import { DrawerShell } from '../../components/ui/DrawerShell';
 import { DrawerHeader } from '../../components/ui/DrawerHeader';
 import { SearchInput } from '../../components/ui/SearchInput';
@@ -178,7 +178,7 @@ export const CategorySpendDrawer: React.FC<CategorySpendDrawerProps> = ({
                 Total Category Outflow
               </p>
               <p className="text-2xl sm:text-3xl font-bold font-mono text-theme-primary tracking-tight mt-0.5">
-                {hideBalances ? '••••••' : formatCurrency(computedTotal, undefined, false)}
+                {hideBalances ? '••••••' : formatAdaptiveCardCurrency(computedTotal, true, undefined, true)}
               </p>
             </div>
 
@@ -207,7 +207,7 @@ export const CategorySpendDrawer: React.FC<CategorySpendDrawerProps> = ({
                       : 'text-emerald-500 dark:text-emerald-400'
                   )}
                 >
-                  {budgetUsagePercent.toFixed(0)}% of {formatCurrency(budgetLimit, undefined, false)}
+                  {budgetUsagePercent.toFixed(0)}% of {formatAdaptiveCardCurrency(budgetLimit, true, undefined, true)}
                 </span>
               </div>
 

@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { Transaction } from '../../domain/models/types';
-import { formatCurrency } from '../../domain/engine/moneyUtils';
+import { formatAdaptiveCardCurrency } from '../../domain/engine/moneyUtils';
 import { cn } from '../../lib/utils';
 import { CategorySpendDrawer } from './CategorySpendDrawer';
 
@@ -336,9 +336,20 @@ export const CategoryDonutDial: React.FC<CategoryDonutDialProps> = ({
                     {activeItem.name}
                   </span>
                 </div>
-                <span className="mt-1 text-2xl sm:text-[26px] font-bold font-mono tracking-tight text-slate-900 dark:text-white leading-none">
-                  {hideBalances ? '••••••' : formatCurrency(activeItem.total, undefined, false)}
-                </span>
+                {(() => {
+                  const formatted = formatAdaptiveCardCurrency(activeItem.total, true, undefined, true);
+                  const fontClass =
+                    formatted.length > 10
+                      ? 'text-lg sm:text-xl'
+                      : formatted.length > 7
+                      ? 'text-xl sm:text-2xl'
+                      : 'text-2xl sm:text-[26px]';
+                  return (
+                    <span className={cn('mt-1 font-bold font-mono tracking-tight text-slate-900 dark:text-white leading-none', fontClass)}>
+                      {hideBalances ? '••••••' : formatted}
+                    </span>
+                  );
+                })()}
                 <span className="mt-1.5 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-violet-500/15 text-violet-600 dark:text-violet-300 border border-violet-500/25 group-hover:brightness-110 font-mono transition-all">
                   <span>{activeItem.percent}% of spent</span>
                   <ChevronRight className="size-3" />
@@ -349,9 +360,20 @@ export const CategoryDonutDial: React.FC<CategoryDonutDialProps> = ({
                 <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                   Total spent
                 </span>
-                <span className="mt-1 text-2xl sm:text-[28px] font-bold font-mono tracking-tight text-slate-900 dark:text-white leading-none">
-                  {hideBalances ? '••••••' : formatCurrency(totalExpense, undefined, false)}
-                </span>
+                {(() => {
+                  const formatted = formatAdaptiveCardCurrency(totalExpense, true, undefined, true);
+                  const fontClass =
+                    formatted.length > 10
+                      ? 'text-lg sm:text-xl'
+                      : formatted.length > 7
+                      ? 'text-xl sm:text-2xl'
+                      : 'text-2xl sm:text-[28px]';
+                  return (
+                    <span className={cn('mt-1 font-bold font-mono tracking-tight text-slate-900 dark:text-white leading-none', fontClass)}>
+                      {hideBalances ? '••••••' : formatted}
+                    </span>
+                  );
+                })()}
                 <span className="mt-1 text-[11px] text-slate-400 dark:text-slate-500 font-medium">
                   {arcPaths.length} categories
                 </span>
@@ -413,18 +435,17 @@ export const CategoryDonutDial: React.FC<CategoryDonutDialProps> = ({
                 </span>
               </div>
 
-              {/* Right: Percentage & Currency Amount + Chevron */}
-              <div className="flex items-center gap-2.5 shrink-0">
-                <span className="text-sm font-sans text-slate-400 font-normal w-9 text-right">
-                  {item.percent}%
-                </span>
+              {/* Right: Percentage + Chevron */}
+              <div className="flex items-center gap-2 shrink-0">
                 <span
                   className={cn(
-                    'text-sm font-mono text-right transition-colors',
-                    isSelected ? 'font-bold text-slate-900 dark:text-white' : 'font-semibold text-slate-700 dark:text-slate-200'
+                    'text-sm font-mono font-semibold transition-colors',
+                    isSelected
+                      ? 'text-slate-900 dark:text-white'
+                      : 'text-slate-600 dark:text-slate-300'
                   )}
                 >
-                  {hideBalances ? '••••••' : formatCurrency(item.total, undefined, false)}
+                  {item.percent}%
                 </span>
                 <ChevronRight className="size-4 text-slate-400 dark:text-slate-500 transition-transform group-hover:translate-x-0.5" />
               </div>

@@ -7,6 +7,7 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { SpendingVelocityCard } from './SpendingVelocityCard';
 import { CategoryDonutDial } from './CategoryDonutDial';
 import { BudgetEnvelopesSection } from './BudgetEnvelopesSection';
+import { formatDateDDMMYYYY } from '../../domain/engine/dateUtils';
 import { cn } from '../../lib/utils';
 
 interface AnalyticsScreenProps {
@@ -38,12 +39,8 @@ function getPeriodDetails(
   if (customRange) {
     const start = new Date(customRange.startDate + 'T00:00:00');
     const end = new Date(customRange.endDate + 'T23:59:59.999');
-    const startStr = start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const endStr = end.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: start.getFullYear() !== end.getFullYear() ? 'numeric' : undefined,
-    });
+    const startStr = formatDateDDMMYYYY(start);
+    const endStr = formatDateDDMMYYYY(end);
     const duration = end.getTime() - start.getTime();
     return {
       start,
@@ -67,12 +64,7 @@ function getPeriodDetails(
     end.setDate(start.getDate() + 6);
     end.setHours(23, 59, 59, 999);
 
-    const startMonth = start.toLocaleDateString('en-US', { month: 'short' });
-    const endMonth = end.toLocaleDateString('en-US', { month: 'short' });
-    const label =
-      startMonth === endMonth
-        ? `${startMonth} ${start.getDate()} – ${end.getDate()}`
-        : `${startMonth} ${start.getDate()} – ${endMonth} ${end.getDate()}`;
+    const label = `${formatDateDDMMYYYY(start)} – ${formatDateDDMMYYYY(end)}`;
 
     const prevStart = new Date(start);
     prevStart.setDate(start.getDate() - 7);
