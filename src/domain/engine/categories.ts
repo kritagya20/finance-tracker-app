@@ -8,6 +8,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
     colorHex: '#f59e0b',
     bgClass: 'bg-amber-500/15',
     textClass: 'text-amber-400',
+    isDefault: true,
   },
   {
     id: 'cat_groceries',
@@ -16,6 +17,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
     colorHex: '#10b981',
     bgClass: 'bg-emerald-500/15',
     textClass: 'text-emerald-400',
+    isDefault: true,
   },
   {
     id: 'cat_fuel',
@@ -24,6 +26,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
     colorHex: '#38bdf8',
     bgClass: 'bg-sky-500/15',
     textClass: 'text-sky-400',
+    isDefault: true,
   },
   {
     id: 'cat_bills',
@@ -32,6 +35,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
     colorHex: '#a855f7',
     bgClass: 'bg-violet-500/15',
     textClass: 'text-violet-400',
+    isDefault: true,
   },
   {
     id: 'cat_entertainment',
@@ -40,6 +44,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
     colorHex: '#ec4899',
     bgClass: 'bg-pink-500/15',
     textClass: 'text-pink-400',
+    isDefault: true,
   },
   {
     id: 'cat_shopping',
@@ -48,6 +53,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
     colorHex: '#f97316',
     bgClass: 'bg-orange-500/15',
     textClass: 'text-orange-400',
+    isDefault: true,
   },
   {
     id: 'cat_salary',
@@ -57,6 +63,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
     bgClass: 'bg-emerald-500/15',
     textClass: 'text-emerald-400',
     isIncome: true,
+    isDefault: true,
   },
   {
     id: 'cat_freelance',
@@ -66,6 +73,7 @@ export const DEFAULT_CATEGORIES: Category[] = [
     bgClass: 'bg-cyan-500/15',
     textClass: 'text-cyan-400',
     isIncome: true,
+    isDefault: true,
   },
 ];
 

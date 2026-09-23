@@ -122,6 +122,16 @@ export function useFinance() {
     [refreshData]
   );
 
+  const updateCategory = useCallback(
+    async (id: string, updates: Partial<Category>) => {
+      const repo = FinanceService.getRepo();
+      const updated = await repo.updateCategory(id, updates);
+      await refreshData();
+      return updated;
+    },
+    [refreshData]
+  );
+
   const deleteCategory = useCallback(
     async (id: string) => {
       const repo = FinanceService.getRepo();
@@ -130,6 +140,16 @@ export function useFinance() {
         await refreshData();
       }
       return success;
+    },
+    [refreshData]
+  );
+
+  const setCategoryBudget = useCallback(
+    async (categoryId: string, limitAmount: number) => {
+      const repo = FinanceService.getRepo();
+      const budget = await repo.setCategoryBudget(categoryId, limitAmount);
+      await refreshData();
+      return budget;
     },
     [refreshData]
   );
@@ -161,7 +181,9 @@ export function useFinance() {
     addAccount,
     deleteAccount,
     addCategory,
+    updateCategory,
     deleteCategory,
+    setCategoryBudget,
     updateProfile,
     refreshData,
   };

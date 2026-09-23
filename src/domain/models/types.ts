@@ -63,6 +63,7 @@ export interface Category {
   bgClass: string;              // Tailwind class (e.g. "bg-orange-500/15")
   textClass: string;            // Tailwind class (e.g. "text-orange-400")
   isIncome?: boolean;
+  isDefault?: boolean;
 }
 
 export interface Budget {

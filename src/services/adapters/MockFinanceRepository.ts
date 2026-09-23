@@ -99,6 +99,11 @@ export class MockFinanceRepository implements IFinanceRepository {
     return res.data;
   }
 
+  async updateCategory(id: string, updates: Partial<Category>): Promise<Category> {
+    const res = await MockApiClient.updateCategory(id, updates);
+    return res.data;
+  }
+
   async deleteCategory(id: string): Promise<boolean> {
     const res = await MockApiClient.deleteCategory(id);
     return res.success;
@@ -106,6 +111,11 @@ export class MockFinanceRepository implements IFinanceRepository {
 
   async getBudgets(): Promise<Budget[]> {
     const res = await MockApiClient.getBudgets();
+    return res.data;
+  }
+
+  async setCategoryBudget(categoryId: string, limitAmount: number): Promise<Budget | null> {
+    const res = await MockApiClient.setCategoryBudget(categoryId, limitAmount);
     return res.data;
   }
 

@@ -133,7 +133,8 @@ export function parseKeypadToPaise(input: string): IntegerMoney {
 export function formatAdaptiveCardCurrency(
   amount: IntegerMoney,
   isSubCard = true,
-  currency?: string
+  currency?: string,
+  trimDecimals = false
 ): string {
   const effectiveCurrency = currency || getActiveCurrencyCode();
   let numbering = 'indian';
@@ -149,6 +150,7 @@ export function formatAdaptiveCardCurrency(
   const absPaise = Math.abs(amount);
   const absUnits = absPaise / 100;
   const locale = numbering === 'indian' ? 'en-IN' : 'en-US';
+  const hasPaise = absPaise % 100 !== 0;
 
   let formatted = '';
 
@@ -171,19 +173,20 @@ export function formatAdaptiveCardCurrency(
         maximumFractionDigits: 0,
       }).format(absUnits);
     }
-    // Normal / Standard: Show full 2 decimals
+    // Normal / Standard: Show full 2 decimals, or 0 if whole number when trimDecimals is true
     else {
+      const decimals = trimDecimals && !hasPaise ? 0 : 2;
       formatted = new Intl.NumberFormat(locale, {
         style: 'currency',
         currency: effectiveCurrency,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
       }).format(absUnits);
     }
   } else {
     // Hero Balance
-    // Extremely large: >= ₹100 Crores
-    if (absUnits >= 1000000000) {
+    // Extremely large: >= ₹100 Crores (or >= ₹1 Crore when trimDecimals is true)
+    if (absUnits >= 1000000000 || (trimDecimals && absUnits >= 10000000)) {
       formatted = new Intl.NumberFormat(locale, {
         style: 'currency',
         currency: effectiveCurrency,
@@ -202,11 +205,12 @@ export function formatAdaptiveCardCurrency(
     }
     // Normal: Show full 2 decimals (including ₹1,42,850.00)
     else {
+      const decimals = trimDecimals && !hasPaise ? 0 : 2;
       formatted = new Intl.NumberFormat(locale, {
         style: 'currency',
         currency: effectiveCurrency,
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
       }).format(absUnits);
     }
   }

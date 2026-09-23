@@ -33,8 +33,10 @@ export interface IFinanceRepository {
   deleteAccount(id: string): Promise<boolean>;
   getCategories(): Promise<Category[]>;
   addCategory(category: Omit<Category, 'id'>): Promise<Category>;
+  updateCategory(id: string, updates: Partial<Category>): Promise<Category>;
   deleteCategory(id: string): Promise<boolean>;
   getBudgets(): Promise<Budget[]>;
+  setCategoryBudget(categoryId: string, limitAmount: number): Promise<Budget | null>;
   getProfile(): Promise<UserProfile>;
   updateProfile(updates: Partial<UserProfile>): Promise<UserProfile>;
 }

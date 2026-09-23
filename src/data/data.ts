@@ -459,6 +459,25 @@ export function getMockDatabase(): MockDatabaseState {
           parsed.accounts.push(defaultCash);
           saveMockDatabase(parsed);
         }
+
+        // Guarantee categories have isDefault properly assigned
+        const defaultIds = [
+          'cat_dining',
+          'cat_groceries',
+          'cat_fuel',
+          'cat_bills',
+          'cat_entertainment',
+          'cat_shopping',
+          'cat_salary',
+          'cat_freelance',
+        ];
+        if (parsed.categories) {
+          parsed.categories = parsed.categories.map((c) => ({
+            ...c,
+            isDefault: Boolean(c.isDefault || defaultIds.includes(c.id)),
+          }));
+        }
+
         return parsed;
       }
     }
@@ -548,6 +567,8 @@ export const MockApiClient = {
     const db = getMockDatabase();
     const newTx: Transaction = {
       ...tx,
+      merchantName: tx.merchantName ? tx.merchantName.slice(0, 256) : tx.merchantName,
+      notes: tx.notes ? tx.notes.slice(0, 256) : undefined,
       id: `tx_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       createdAt: Date.now(),
       updatedAt: Date.now(),
@@ -619,15 +640,54 @@ export const MockApiClient = {
     const newCategory: Category = {
       ...category,
       id: `cat_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+      isDefault: false,
     };
     db.categories.push(newCategory);
     saveMockDatabase(db);
     return createApiResponse(newCategory, undefined, 'Category added successfully', 201);
   },
 
+  async updateCategory(
+    id: string,
+    updates: Partial<Category>
+  ): Promise<ApiResponse<Category>> {
+    const db = getMockDatabase();
+    const idx = db.categories.findIndex((c) => c.id === id);
+    if (idx === -1) {
+      return createApiResponse({} as Category, undefined, 'Category not found', 404);
+    }
+    const isDefault = Boolean(
+      db.categories[idx].isDefault ||
+      DEFAULT_CATEGORIES.some((dc) => dc.id === id) ||
+      ['cat_dining', 'cat_groceries', 'cat_fuel', 'cat_bills', 'cat_entertainment', 'cat_shopping', 'cat_salary', 'cat_freelance'].includes(id)
+    );
+    const safeUpdates = { ...updates };
+    // Rule: User should not be able to edit the name or isDefault of default categories
+    if (isDefault) {
+      delete safeUpdates.name;
+      delete safeUpdates.isDefault;
+    }
+    db.categories[idx] = {
+      ...db.categories[idx],
+      ...safeUpdates,
+    };
+    saveMockDatabase(db);
+    return createApiResponse(db.categories[idx], undefined, 'Category updated successfully');
+  },
+
   async deleteCategory(id: string): Promise<ApiResponse<{ id: string }>> {
     const db = getMockDatabase();
+    const target = db.categories.find((c) => c.id === id);
+    const isDefault = Boolean(
+      target?.isDefault ||
+      DEFAULT_CATEGORIES.some((dc) => dc.id === id) ||
+      ['cat_dining', 'cat_groceries', 'cat_fuel', 'cat_bills', 'cat_entertainment', 'cat_shopping', 'cat_salary', 'cat_freelance'].includes(id)
+    );
+    if (isDefault) {
+      return createApiResponse({ id }, undefined, 'Default category cannot be deleted', 400);
+    }
     db.categories = db.categories.filter((c) => c.id !== id);
+    db.budgets = db.budgets.filter((b) => b.categoryId !== id);
     saveMockDatabase(db);
     return createApiResponse({ id }, undefined, 'Category deleted successfully');
   },
@@ -636,6 +696,42 @@ export const MockApiClient = {
   async getBudgets(): Promise<ApiResponse<Budget[]>> {
     const db = getMockDatabase();
     return createApiResponse(db.budgets);
+  },
+
+  async setCategoryBudget(
+    categoryId: string,
+    limitAmount: number
+  ): Promise<ApiResponse<Budget | null>> {
+    const db = getMockDatabase();
+    const existingIdx = db.budgets.findIndex((b) => b.categoryId === categoryId);
+
+    if (limitAmount <= 0) {
+      if (existingIdx !== -1) {
+        db.budgets.splice(existingIdx, 1);
+        saveMockDatabase(db);
+      }
+      return createApiResponse(null, undefined, 'Budget limit removed');
+    }
+
+    if (existingIdx !== -1) {
+      db.budgets[existingIdx] = {
+        ...db.budgets[existingIdx],
+        limitAmount,
+      };
+      saveMockDatabase(db);
+      return createApiResponse(db.budgets[existingIdx], undefined, 'Budget updated');
+    } else {
+      const newBudget: Budget = {
+        id: `b_${categoryId}_${Date.now()}`,
+        categoryId,
+        limitAmount,
+        period: 'MONTHLY',
+        alertThresholdPercent: 80,
+      };
+      db.budgets.push(newBudget);
+      saveMockDatabase(db);
+      return createApiResponse(newBudget, undefined, 'Budget created');
+    }
   },
 
   // --- Financial Insights ---
