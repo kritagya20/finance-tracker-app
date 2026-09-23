@@ -19,6 +19,7 @@ interface CategoryDonutDialProps {
   transactions: Transaction[];
   periodLabel?: string;
   hideBalances: boolean;
+  categoryDeltas?: Map<string, { deltaAmount: number; deltaPercent: number; isIncrease: boolean; isNew?: boolean }>;
 }
 
 // Exactly 4 vibrant, high-contrast colors matching category_breakdown_donut_reference.png
@@ -131,6 +132,7 @@ export const CategoryDonutDial: React.FC<CategoryDonutDialProps> = ({
   transactions,
   periodLabel,
   hideBalances,
+  categoryDeltas,
 }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
@@ -416,8 +418,8 @@ export const CategoryDonutDial: React.FC<CategoryDonutDialProps> = ({
                   : 'hover:bg-slate-50 dark:hover:bg-white/[0.04]'
               )}
             >
-              {/* Left: Indicator Dot & Name */}
-              <div className="flex items-center gap-3 min-w-0">
+              {/* Left: Indicator Dot & Name & Optional MoM Delta */}
+              <div className="flex items-center gap-2.5 min-w-0">
                 <span
                   className="size-2.5 rounded-full shrink-0 shadow-sm transition-transform duration-200"
                   style={{
@@ -433,6 +435,34 @@ export const CategoryDonutDial: React.FC<CategoryDonutDialProps> = ({
                 >
                   {item.name}
                 </span>
+
+                {/* MoM Delta Badge if available and significant */}
+                {(() => {
+                  const delta = categoryDeltas?.get(item.id);
+                  if (!delta) return null;
+                  if (delta.isNew) {
+                    return (
+                      <span className="px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-violet-500/10 text-violet-500 dark:text-violet-400 shrink-0">
+                        New
+                      </span>
+                    );
+                  }
+                  if (Math.abs(delta.deltaPercent) < 15) return null;
+
+                  return (
+                    <span
+                      className={cn(
+                        'px-1.5 py-0.5 rounded-md text-[10px] font-mono font-semibold shrink-0',
+                        delta.isIncrease
+                          ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                          : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                      )}
+                    >
+                      {delta.isIncrease ? '↑' : '↓'}{' '}
+                      {formatAdaptiveCardCurrency(Math.abs(delta.deltaAmount), true, '₹', true)}
+                    </span>
+                  );
+                })()}
               </div>
 
               {/* Right: Percentage + Chevron */}

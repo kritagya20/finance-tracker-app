@@ -12,6 +12,7 @@ interface BudgetEnvelopesSectionProps {
   transactions: Transaction[];
   periodLabel?: string;
   hideBalances: boolean;
+  categoryDeltas?: Map<string, { deltaAmount: number; deltaPercent: number; isIncrease: boolean; isNew?: boolean }>;
 }
 
 interface EnvelopeItem {
@@ -31,6 +32,7 @@ export const BudgetEnvelopesSection: React.FC<BudgetEnvelopesSectionProps> = ({
   transactions,
   periodLabel,
   hideBalances,
+  categoryDeltas,
 }) => {
   const [selectedEnvelope, setSelectedEnvelope] = useState<EnvelopeItem | null>(null);
 
@@ -124,11 +126,38 @@ export const BudgetEnvelopesSection: React.FC<BudgetEnvelopesSectionProps> = ({
             >
               {/* Card Body (2 Compact Tiers) */}
               <div className="p-3.5 sm:p-4 space-y-2">
-                {/* Top Row: Category Title & Percentage */}
+                {/* Top Row: Category Title & Delta Badge & Percentage */}
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white truncate">
-                    {env.categoryName}
-                  </span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm sm:text-base font-semibold text-slate-900 dark:text-white truncate">
+                      {env.categoryName}
+                    </span>
+                    {(() => {
+                      const delta = categoryDeltas?.get(env.categoryId);
+                      if (!delta) return null;
+                      if (delta.isNew) {
+                        return (
+                          <span className="px-1.5 py-0.5 rounded-md text-[10px] font-semibold bg-violet-500/10 text-violet-500 dark:text-violet-400 shrink-0">
+                            New
+                          </span>
+                        );
+                      }
+                      if (Math.abs(delta.deltaPercent) < 15) return null;
+
+                      return (
+                        <span
+                          className={`px-1.5 py-0.5 rounded-md text-[10px] font-mono font-semibold shrink-0 ${
+                            delta.isIncrease
+                              ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400'
+                              : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                          }`}
+                        >
+                          {delta.isIncrease ? '↑' : '↓'}{' '}
+                          {Math.abs(delta.deltaPercent)}%
+                        </span>
+                      );
+                    })()}
+                  </div>
 
                   {/* Percentage & Chevron on Right */}
                   <div className="flex items-center gap-1.5 shrink-0">
