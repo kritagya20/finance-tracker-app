@@ -87,10 +87,10 @@ export const CashFlowBarChart: React.FC<CashFlowBarChartProps> = ({
                   </span>
                   <div className="flex items-center gap-3 text-[11px]">
                     <span className="text-emerald-500 font-semibold">
-                      +{hideBalances ? '••••' : formatAdaptiveCardCurrency(item.income, true, '₹', true)}
+                      +{hideBalances ? '••••' : formatAdaptiveCardCurrency(item.income, true, undefined, true)}
                     </span>
                     <span className="text-rose-400 font-semibold">
-                      -{hideBalances ? '••••' : formatAdaptiveCardCurrency(item.expense, true, '₹', true)}
+                      -{hideBalances ? '••••' : formatAdaptiveCardCurrency(item.expense, true, undefined, true)}
                     </span>
                     <span
                       className={cn(
@@ -101,7 +101,7 @@ export const CashFlowBarChart: React.FC<CashFlowBarChartProps> = ({
                       )}
                     >
                       {isPositive ? '+' : ''}
-                      {hideBalances ? '••••' : formatAdaptiveCardCurrency(net, true, '₹', true)}
+                      {hideBalances ? '••••' : formatAdaptiveCardCurrency(net, true, undefined, true)}
                     </span>
                   </div>
                 </>

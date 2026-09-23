@@ -459,7 +459,7 @@ export const CategoryDonutDial: React.FC<CategoryDonutDialProps> = ({
                       )}
                     >
                       {delta.isIncrease ? '↑' : '↓'}{' '}
-                      {formatAdaptiveCardCurrency(Math.abs(delta.deltaAmount), true, '₹', true)}
+                      {formatAdaptiveCardCurrency(Math.abs(delta.deltaAmount), true, undefined, true)}
                     </span>
                   );
                 })()}

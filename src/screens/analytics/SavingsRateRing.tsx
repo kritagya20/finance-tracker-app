@@ -85,7 +85,7 @@ export const SavingsRateRing: React.FC<SavingsRateRingProps> = ({
 
   const formattedSaved = hideBalances
     ? '••••••'
-    : formatAdaptiveCardCurrency(Math.abs(netSaved), true, '₹', true);
+    : formatAdaptiveCardCurrency(Math.abs(netSaved), true, undefined, true);
 
   return (
     <div

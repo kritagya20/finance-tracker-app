@@ -13,6 +13,25 @@ const CURRENCY_SYMBOLS: Record<string, string> = {
   CHF: 'CHF',
 };
 
+const SYMBOL_TO_CODE: Record<string, string> = Object.entries(CURRENCY_SYMBOLS).reduce(
+  (acc, [code, sym]) => {
+    acc[sym] = code;
+    return acc;
+  },
+  {} as Record<string, string>
+);
+
+/**
+ * Normalizes any currency symbol or code to a valid 3-letter ISO currency code.
+ * Falls back to active currency code if undefined or unrecognized.
+ */
+export function normalizeCurrencyCode(currency?: string): string {
+  if (!currency) return getActiveCurrencyCode();
+  if (SYMBOL_TO_CODE[currency]) return SYMBOL_TO_CODE[currency];
+  if (/^[A-Za-z]{3}$/.test(currency)) return currency.toUpperCase();
+  return getActiveCurrencyCode();
+}
+
 /**
  * Returns the currently active currency ISO code (defaults to 'INR')
  */
@@ -46,7 +65,7 @@ export function formatCurrency(
   currency?: string,
   showDecimals: boolean | 'auto' = 'auto'
 ): string {
-  const effectiveCurrency = currency || getActiveCurrencyCode();
+  const effectiveCurrency = normalizeCurrencyCode(currency);
   let numbering = 'indian';
   try {
     numbering =
@@ -136,7 +155,7 @@ export function formatAdaptiveCardCurrency(
   currency?: string,
   trimDecimals = false
 ): string {
-  const effectiveCurrency = currency || getActiveCurrencyCode();
+  const effectiveCurrency = normalizeCurrencyCode(currency);
   let numbering = 'indian';
   try {
     numbering =

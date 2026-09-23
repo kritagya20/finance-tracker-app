@@ -73,11 +73,11 @@ export const SpendingPaceCard: React.FC<SpendingPaceCardProps> = ({
 
   const formattedPace = hideBalances
     ? '••••••'
-    : formatAdaptiveCardCurrency(dailyPace, true, '₹', true);
+    : formatAdaptiveCardCurrency(dailyPace, true, undefined, true);
 
   const formattedRemaining = hideBalances
     ? '••••••'
-    : formatAdaptiveCardCurrency(Math.abs(budgetRemaining), true, '₹', true);
+    : formatAdaptiveCardCurrency(Math.abs(budgetRemaining), true, undefined, true);
 
   return (
     <div className="relative rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-gradient-to-b dark:from-[#13151f] dark:to-[#0c0d14] p-4 sm:p-5 shadow-sm select-none overflow-hidden">

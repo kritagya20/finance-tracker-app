@@ -73,7 +73,7 @@ export const TopMerchantsCard: React.FC<TopMerchantsCardProps> = ({
           const widthPercent = Math.min(100, Math.max(8, Math.round((merchant.amount / maxAmount) * 100)));
           const formattedAmount = hideBalances
             ? '••••••'
-            : formatAdaptiveCardCurrency(merchant.amount, true, '₹', true);
+            : formatAdaptiveCardCurrency(merchant.amount, true, undefined, true);
 
           return (
             <div

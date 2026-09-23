@@ -164,7 +164,7 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
                 isSelected && 'ring-2 ring-white shadow-md scale-105 z-10',
                 !isFuture && 'hover:scale-105 active:scale-95 cursor-pointer'
               )}
-              title={`${dateKey}: ${amount > 0 ? formatAdaptiveCardCurrency(amount, true, '₹', true) : 'Zero Spend'}`}
+              title={`${dateKey}: ${amount > 0 ? formatAdaptiveCardCurrency(amount, true, undefined, true) : 'Zero Spend'}`}
             >
               <span>{day}</span>
               {isZeroSpend && (
@@ -188,7 +188,7 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
               ) : (
                 hideBalances
                   ? '••••••'
-                  : formatAdaptiveCardCurrency(dailySpending.get(selectedDateStr) || 0, true, '₹', true)
+                  : formatAdaptiveCardCurrency(dailySpending.get(selectedDateStr) || 0, true, undefined, true)
               )}
             </span>
           </div>
@@ -204,9 +204,9 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
 
             {/* Weekend vs Weekday Delta */}
             <div className="font-mono text-[10px] text-theme-muted flex items-center gap-2">
-              <span>Wkday: {hideBalances ? '••••' : formatAdaptiveCardCurrency(weekdayAvg, true, '₹', true)}</span>
+              <span>Wkday: {hideBalances ? '••••' : formatAdaptiveCardCurrency(weekdayAvg, true, undefined, true)}</span>
               <span>·</span>
-              <span className="text-amber-500/90">Wkend: {hideBalances ? '••••' : formatAdaptiveCardCurrency(weekendAvg, true, '₹', true)}</span>
+              <span className="text-amber-500/90">Wkend: {hideBalances ? '••••' : formatAdaptiveCardCurrency(weekendAvg, true, undefined, true)}</span>
             </div>
           </>
         )}

@@ -35,7 +35,7 @@ export const NeedsWantsCapsule: React.FC<NeedsWantsCapsuleProps> = ({
 
   // Formatting helper
   const formatAmt = (amt: IntegerMoney) =>
-    hideBalances ? '••••' : formatAdaptiveCardCurrency(amt, true, '₹', true);
+    hideBalances ? '••••' : formatAdaptiveCardCurrency(amt, true, undefined, true);
 
   // Behavioral verdict generator based on 50/30/20 standard
   let verdict = 'Balanced cash allocation across essentials and lifestyle.';
