@@ -1,16 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Pencil,
-  ArrowRight,
   ChevronRight,
   Tag,
   CreditCard,
   SlidersHorizontal,
   ShieldCheck,
-  Download,
   LogOut,
-  Sparkles,
-  Layers,
   LifeBuoy,
   Info,
   Sun,
@@ -22,6 +18,7 @@ import {
   UserCheck,
   RotateCcw,
   KeyRound,
+  Cloud,
 } from 'lucide-react';
 import { UserProfile, Account, Category } from '../../domain/models/types';
 import { SupportModal } from './SupportModal';
@@ -42,6 +39,7 @@ interface ProfileScreenProps {
   onNavigateToAccounts: () => void;
   onNavigateToSetup: () => void;
   onNavigateToCurrency?: () => void;
+  onNavigateToBackup?: () => void;
   hideBalances?: boolean;
   onToggleHideBalances?: () => void;
   onUpdateProfile?: (updates: Partial<UserProfile>) => Promise<UserProfile | void>;
@@ -49,23 +47,24 @@ interface ProfileScreenProps {
   onLogout?: () => void;
 }
 
-
 interface CarouselSlide {
   id: string;
-  badgeIcon: React.ReactNode;
+  icon: React.ReactNode;
   title: string;
-  ctaText: string;
+  subtitle: string;
+  trailing?: React.ReactNode;
   action: () => void;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({
   profile,
-  accounts,
-  categories,
+  accounts: _accounts,
+  categories: _categories,
   onNavigateToCategories,
   onNavigateToAccounts,
   onNavigateToSetup,
   onNavigateToCurrency,
+  onNavigateToBackup,
   hideBalances,
   onToggleHideBalances,
   onUpdateProfile,
@@ -74,7 +73,25 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
 }) => {
   const { effectiveTheme, setThemePreference } = useTheme();
   const { currency, currencySymbol, numberingSystem } = useCurrency();
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [isAutoScrollActive, setIsAutoScrollActive] = useState(true);
+  const userInteractedRef = useRef(false);
+  const isProgrammaticScrollRef = useRef(false);
+  const touchStartXRef = useRef(0);
+  const isDraggingRef = useRef(false);
+
+  const isVaultBackedUp = (() => {
+    try {
+      const saved = localStorage.getItem('vault_backup_status');
+      if (saved) {
+        return JSON.parse(saved).isBackedUp ?? true;
+      }
+    } catch {
+      // fallback
+    }
+    return true;
+  })();
 
   const [isSupportOpen, setIsSupportOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
@@ -90,64 +107,139 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  // Top 3 highest-priority profile management tabs matching below list content
   const slides: CarouselSlide[] = [
     {
-      id: 'vault',
-      badgeIcon: (
-        <div className="flex size-9 items-center justify-center rounded-xl bg-violet-500/15 border border-violet-500/30 text-violet-400">
-          <ShieldCheck className="size-5" />
+      id: 'categories',
+      icon: (
+        <div className="flex size-8 items-center justify-center rounded-xl bg-orange-500/10 text-orange-400 shrink-0">
+          <Tag className="size-4" />
         </div>
       ),
-      title: 'Zero-Knowledge Encrypted On-Device Vault',
-      ctaText: 'View Security Specs',
-      action: () => setIsSupportOpen(true),
-    },
-    {
-      id: 'insights',
-      badgeIcon: (
-        <div className="flex size-9 items-center justify-center rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-400">
-          <Sparkles className="size-5" />
-        </div>
-      ),
-      title: 'Smart Savings Target On Track This Month',
-      ctaText: 'View Financial Goals',
-      action: onNavigateToSetup,
+      title: 'Categories',
+      subtitle: 'Manage & Add Categories',
+      action: onNavigateToCategories,
     },
     {
       id: 'accounts',
-      badgeIcon: (
-        <div className="flex size-9 items-center justify-center rounded-xl bg-sky-500/15 border border-sky-500/30 text-sky-400">
-          <Layers className="size-5" />
+      icon: (
+        <div className="flex size-8 items-center justify-center rounded-xl bg-purple-500/10 text-purple-400 shrink-0">
+          <CreditCard className="size-4" />
         </div>
       ),
-      title: 'Payment Accounts Connected Securely',
-      ctaText: 'Manage Accounts',
+      title: 'Payment Options',
+      subtitle: 'Bank Accounts, Cards & Wallets',
       action: onNavigateToAccounts,
+    },
+    {
+      id: 'backup',
+      icon: (
+        <div className="flex size-8 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400 shrink-0">
+          <Cloud className="size-4" />
+        </div>
+      ),
+      title: 'Backup Data',
+      subtitle: 'Zero-Knowledge Encrypted Server Backup',
+      trailing: (
+        <span
+          className={cn(
+            'size-2.5 rounded-full shrink-0',
+            isVaultBackedUp ? 'bg-emerald-500 animate-pulse' : 'bg-amber-400'
+          )}
+          aria-label={isVaultBackedUp ? 'Vault backed up' : 'Backup pending'}
+        />
+      ),
+      action: () => onNavigateToBackup?.(),
     },
   ];
 
-  const handleExportData = () => {
-    try {
-      const data = {
-        profile,
-        accounts,
-        categories,
-        exportedAt: new Date().toISOString(),
-      };
-      const blob = new Blob([JSON.stringify(data, null, 2)], {
-        type: 'application/json',
-      });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `finance_tracker_backup_${Date.now()}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast('Data backup downloaded successfully');
-    } catch {
-      showToast('Export failed. Please try again.');
+  // Stop auto-scroll permanently when the user scrolls back/forward or interacts
+  const stopAutoScroll = () => {
+    if (!userInteractedRef.current) {
+      userInteractedRef.current = true;
+      setIsAutoScrollActive(false);
     }
   };
+
+  const scrollToSlide = (idx: number) => {
+    if (!scrollContainerRef.current) return;
+    const container = scrollContainerRef.current;
+    isProgrammaticScrollRef.current = true;
+    container.scrollTo({
+      left: idx * container.clientWidth,
+      behavior: 'smooth',
+    });
+    setActiveSlide(idx);
+    setTimeout(() => {
+      isProgrammaticScrollRef.current = false;
+    }, 600);
+  };
+
+  // Auto-scroll every 4.5 seconds until user scrolls or interacts
+  useEffect(() => {
+    if (!isAutoScrollActive) return;
+
+    const timer = setInterval(() => {
+      if (!scrollContainerRef.current) return;
+      const nextSlide = (activeSlide + 1) % slides.length;
+      scrollToSlide(nextSlide);
+    }, 4500);
+
+    return () => clearInterval(timer);
+  }, [isAutoScrollActive, activeSlide, slides.length]);
+
+  // Handle native scroll event to sync active dot and detect user touch/wheel scrolling
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return;
+    const container = scrollContainerRef.current;
+    const width = container.clientWidth;
+    if (width === 0) return;
+
+    const newIndex = Math.round(container.scrollLeft / width);
+    if (newIndex >= 0 && newIndex < slides.length && newIndex !== activeSlide) {
+      setActiveSlide(newIndex);
+    }
+
+    if (!isProgrammaticScrollRef.current) {
+      stopAutoScroll();
+    }
+  };
+
+  const handleDotClick = (idx: number) => {
+    stopAutoScroll();
+    scrollToSlide(idx);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+    isDraggingRef.current = false;
+    stopAutoScroll();
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (Math.abs(e.touches[0].clientX - touchStartXRef.current) > 8) {
+      isDraggingRef.current = true;
+      stopAutoScroll();
+    }
+  };
+
+  const handleWheel = () => {
+    stopAutoScroll();
+  };
+
+  // Keep scroll aligned on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (scrollContainerRef.current) {
+        scrollContainerRef.current.scrollTo({
+          left: activeSlide * scrollContainerRef.current.clientWidth,
+          behavior: 'instant',
+        });
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [activeSlide]);
 
   const handleResetSession = () => {
     if (window.confirm('Are you sure you want to reset demo session data?')) {
@@ -199,27 +291,56 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
         </button>
       </section>
 
-      {/* 3. Highlight Carousel Card */}
-      <section className="flex flex-col gap-2.5">
+      {/* 3. Highlight Carousel Card with Auto-Scroll & Swipe Support */}
+      <section className="flex flex-col gap-2">
         <div
-          onClick={slides[activeSlide].action}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && slides[activeSlide].action()}
-          className="group relative flex cursor-pointer items-center justify-between rounded-2xl border border-theme-border bg-theme-card/50 p-4 transition-all hover:bg-theme-card-hover"
+          ref={scrollContainerRef}
+          onScroll={handleScroll}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onWheel={handleWheel}
+          className="flex w-full overflow-x-auto snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          <div className="flex items-center gap-3.5">
-            {slides[activeSlide].badgeIcon}
-            <div className="flex flex-col">
-              <span className="text-xs font-normal text-theme-secondary">
-                {slides[activeSlide].title}
-              </span>
-              <div className="mt-1 flex items-center gap-1.5 text-xs font-medium text-theme-primary group-hover:text-violet-400 transition-colors">
-                <span>{slides[activeSlide].ctaText}</span>
-                <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" />
+          {slides.map((slide) => (
+            <div
+              key={slide.id}
+              className="w-full shrink-0 snap-center snap-always px-0.5"
+            >
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => {
+                  if (isDraggingRef.current) return;
+                  slide.action();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    slide.action();
+                  }
+                }}
+                className="group relative flex cursor-pointer items-center justify-between rounded-2xl border border-theme-border bg-theme-card/60 p-4 transition-all hover:bg-theme-card-hover shadow-xs"
+              >
+                <div className="flex items-center gap-3">
+                  {slide.icon}
+                  <div className="flex flex-col">
+                    <span className="text-xs font-semibold text-theme-primary group-hover:text-violet-400 transition-colors">
+                      {slide.title}
+                    </span>
+                    <span className="text-[11px] text-theme-secondary mt-0.5">
+                      {slide.subtitle}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 shrink-0">
+                  {slide.trailing}
+                  <ChevronRight className="size-4 text-theme-muted group-hover:text-theme-primary transition-colors shrink-0" />
+                </div>
               </div>
             </div>
-          </div>
+          ))}
         </div>
 
         {/* Pagination Dots */}
@@ -228,12 +349,12 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <button
               key={slide.id}
               type="button"
-              aria-label={`Slide ${idx + 1}`}
-              onClick={() => setActiveSlide(idx)}
+              aria-label={`Go to slide ${idx + 1}: ${slide.title}`}
+              onClick={() => handleDotClick(idx)}
               className={cn(
                 'h-1.5 rounded-full transition-all duration-300',
                 activeSlide === idx
-                  ? 'w-4 bg-theme-primary'
+                  ? 'w-5 bg-violet-500'
                   : 'w-1.5 bg-theme-muted hover:bg-theme-secondary'
               )}
             />
@@ -473,26 +594,37 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({
             <ChevronRight className="size-4 text-theme-muted group-hover:text-theme-primary transition-colors" />
           </button>
 
-          {/* Export Statement */}
+          {/* Backup Data */}
           <button
             type="button"
-            onClick={handleExportData}
+            onClick={onNavigateToBackup}
             className="flex w-full items-center justify-between p-4 text-left hover:bg-theme-card-hover/40 transition-colors group"
           >
             <div className="flex items-center gap-3">
               <div className="flex size-8 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-400">
-                <Download className="size-4" />
+                <Cloud className="size-4" />
               </div>
               <div className="flex flex-col">
                 <span className="text-xs font-semibold text-theme-primary group-hover:text-violet-400 transition-colors">
-                  Export Statement & Backup
+                  Backup Data
                 </span>
                 <span className="text-[11px] text-theme-secondary mt-0.5">
-                  Download Complete JSON Statement
+                  Zero-Knowledge Encrypted Server Backup
                 </span>
               </div>
             </div>
-            <ChevronRight className="size-4 text-theme-muted group-hover:text-theme-primary transition-colors" />
+            <div className="flex items-center gap-2.5 shrink-0">
+              <span
+                className={cn(
+                  'size-2.5 rounded-full shrink-0',
+                  isVaultBackedUp
+                    ? 'bg-emerald-500 animate-pulse'
+                    : 'bg-amber-400'
+                )}
+                aria-label={isVaultBackedUp ? 'Vault backed up' : 'Backup pending'}
+              />
+              <ChevronRight className="size-4 text-theme-muted group-hover:text-theme-primary transition-colors shrink-0" />
+            </div>
           </button>
 
           {/* Support & Guidance */}

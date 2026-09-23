@@ -16,6 +16,7 @@ import { CategoryListScreen } from './screens/profile/CategoryListScreen';
 import { PaymentAccountsScreen } from './screens/profile/PaymentAccountsScreen';
 import { ProfileSetupScreen } from './screens/profile/ProfileSetupScreen';
 import { CurrencySettingsScreen } from './screens/profile/CurrencySettingsScreen';
+import { BackupScreen } from './screens/profile/BackupScreen';
 import { resetMockDatabase } from './data/data';
 import { Transaction } from './domain/models/types';
 
@@ -25,7 +26,7 @@ if (typeof window !== 'undefined' && 'scrollRestoration' in window.history) {
 }
 
 type AuthView = 'login' | 'signup' | 'forgot_password' | 'profile_setup';
-type SubViewMode = 'none' | 'categories' | 'accounts' | 'setup' | 'currency';
+type SubViewMode = 'none' | 'categories' | 'accounts' | 'setup' | 'currency' | 'backup';
 
 
 export function App() {
@@ -44,7 +45,9 @@ export function App() {
     addAccount,
     deleteAccount,
     addCategory,
+    updateCategory,
     deleteCategory,
+    setCategoryBudget,
     updateProfile,
     refreshData,
   } = useFinance();
@@ -190,9 +193,21 @@ export function App() {
           /* Manage & Add Categories Screen */
           <CategoryListScreen
             categories={categories}
+            budgets={budgets}
             onBack={() => setSubView('none')}
-            onAddCategory={async (cat) => {
-              await addCategory(cat);
+            onAddCategory={async (cat, limitAmount) => {
+              const created = await addCategory(cat);
+              if (limitAmount) {
+                await setCategoryBudget(created.id, limitAmount);
+              }
+            }}
+            onUpdateCategory={async (id, updates, limitAmount) => {
+              if (Object.keys(updates).length > 0) {
+                await updateCategory(id, updates);
+              }
+              if (limitAmount !== undefined) {
+                await setCategoryBudget(id, limitAmount);
+              }
             }}
             onDeleteCategory={async (id) => {
               await deleteCategory(id);
@@ -228,6 +243,15 @@ export function App() {
           /* Currency & Numbering Settings Screen */
           <CurrencySettingsScreen
             onBack={() => setSubView('none')}
+          />
+        ) : subView === 'backup' ? (
+          /* Cloud Backup & Zero-Knowledge Vault Screen */
+          <BackupScreen
+            onBack={() => setSubView('none')}
+            transactions={transactions}
+            accounts={accounts}
+            categories={categories}
+            profile={profile}
           />
         ) : (
           /* Authenticated Application Views */
@@ -302,6 +326,7 @@ export function App() {
                 onNavigateToAccounts={() => setSubView('accounts')}
                 onNavigateToSetup={() => setSubView('setup')}
                 onNavigateToCurrency={() => setSubView('currency')}
+                onNavigateToBackup={() => setSubView('backup')}
               />
             )}
           </div>
