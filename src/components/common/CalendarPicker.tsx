@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -58,9 +58,15 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
   const [viewYear, setViewYear] = useState(initialDate.getFullYear());
   const [viewMonth, setViewMonth] = useState(initialDate.getMonth()); // 0-indexed
 
-  // Internal range selection tracking when in range mode
+  // Internal preset & range selection state tracking before "Done" is tapped
+  const [selectedPresetKey, setSelectedPresetKey] = useState<string | null>(activePreset || null);
   const [rangeStart, setRangeStart] = useState<string | null>(selectedRange?.startDate || null);
   const [rangeEnd, setRangeEnd] = useState<string | null>(selectedRange?.endDate || null);
+
+  // Sync selectedPresetKey if activePreset prop updates
+  useEffect(() => {
+    setSelectedPresetKey(activePreset || null);
+  }, [activePreset]);
 
   const todayYMD = formatDateToYMD(new Date());
 
@@ -91,7 +97,10 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
   const TOTAL_GRID_SLOTS = 42;
   const nextMonthOverflowCount = TOTAL_GRID_SLOTS - (firstDayOfMonth + daysInMonth);
 
+  // Day click handler
   const handleDayClick = (dayStr: string) => {
+    setSelectedPresetKey(null); // Clear preset selection when custom date is clicked
+
     if (mode === 'single') {
       onSelectDate?.(dayStr);
       onClose?.();
@@ -107,53 +116,45 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
       if (dayStr < rangeStart) {
         setRangeStart(dayStr);
         setRangeEnd(rangeStart);
-        onSelectRange?.({ startDate: dayStr, endDate: rangeStart });
       } else {
         setRangeEnd(dayStr);
-        onSelectRange?.({ startDate: rangeStart, endDate: dayStr });
       }
     }
   };
 
-  const handleApplyRangePreset = (presetKey: string) => {
-    const now = new Date();
-    let start = '';
-    let end = '';
+  // Preset pill click handler (selects preset without auto-closing)
+  const handlePresetClick = (presetKey: string) => {
+    setSelectedPresetKey(presetKey);
+    setRangeStart(null);
+    setRangeEnd(null);
+  };
 
-    if (presetKey === 'TODAY') {
-      start = formatDateToYMD(now);
-      end = start;
-    } else if (presetKey === 'YESTERDAY') {
-      const y = new Date(now.getTime() - 86400000);
-      start = formatDateToYMD(y);
-      end = start;
-    } else if (presetKey === 'THIS_WEEK') {
-      const day = now.getDay();
-      const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
-      const monday = new Date(now.setDate(diff));
-      start = formatDateToYMD(monday);
-      end = formatDateToYMD(new Date());
-    } else if (presetKey === 'THIS_MONTH') {
-      start = formatDateToYMD(new Date(now.getFullYear(), now.getMonth(), 1));
-      end = formatDateToYMD(new Date(now.getFullYear(), now.getMonth() + 1, 0));
-    } else if (presetKey === 'LAST_MONTH') {
-      start = formatDateToYMD(new Date(now.getFullYear(), now.getMonth() - 1, 1));
-      end = formatDateToYMD(new Date(now.getFullYear(), now.getMonth(), 0));
-    } else if (presetKey === 'LAST_30_DAYS') {
-      const past = new Date(now.getTime() - 30 * 86400000);
-      start = formatDateToYMD(past);
-      end = formatDateToYMD(now);
-    } else if (presetKey === 'ALL') {
-      onPresetSelect?.('ALL');
-      onClose?.();
-      return;
+  // Done button handler (confirms active selection)
+  const handleDone = () => {
+    if (selectedPresetKey) {
+      onPresetSelect?.(selectedPresetKey);
+    } else if (rangeStart && rangeEnd) {
+      onSelectRange?.({ startDate: rangeStart, endDate: rangeEnd });
     }
+    onClose?.();
+  };
 
-    if (start && end) {
-      setRangeStart(start);
-      setRangeEnd(end);
-      onSelectRange?.({ startDate: start, endDate: end });
-      onPresetSelect?.(presetKey);
+  // Touch swipe gesture handling for month navigation (Left = Next, Right = Prev)
+  const touchStartXRef = React.useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return;
+    const deltaX = e.changedTouches[0].clientX - touchStartXRef.current;
+    touchStartXRef.current = null;
+
+    if (deltaX < -40) {
+      handleNextMonth();
+    } else if (deltaX > 40) {
+      handlePrevMonth();
     }
   };
 
@@ -163,8 +164,10 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
 
   return (
     <div
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
       className={cn(
-        'w-[328px] max-w-[calc(100vw-32px)] shrink-0 rounded-3xl border border-theme-border bg-theme-elevated p-4 shadow-xl text-theme-primary select-none',
+        'w-[328px] max-w-[calc(100vw-32px)] shrink-0 rounded-3xl border border-theme-border bg-theme-elevated p-4 shadow-xl text-theme-primary select-none touch-pan-y',
         className
       )}
     >
@@ -266,7 +269,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
           );
         })}
 
-        {/* Next Month Overflow Days (maintains 6-row layout stability) */}
+        {/* Next Month Overflow Days */}
         {Array.from({ length: Math.max(0, nextMonthOverflowCount) }).map((_, i) => {
           const nextDayNum = i + 1;
           return (
@@ -280,72 +283,49 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
         })}
       </div>
 
-      {/* Quick Presets Strip */}
+      {/* Timeframe Presets Grid */}
       {showPresets && mode === 'range' && (
         <div className="mt-4 pt-3 border-t border-theme-divider space-y-2">
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-theme-muted">
-            Quick Presets
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-theme-muted block">
+            Timeframe Presets
           </span>
-          <div className="grid grid-cols-2 gap-1.5">
-            <button
-              type="button"
-              onClick={() => handleApplyRangePreset('THIS_MONTH')}
-              className={cn(
-                'rounded-lg border px-2.5 py-1.5 text-center text-[11px] font-medium transition-colors',
-                activePreset === 'THIS_MONTH'
-                  ? 'border-violet-500 bg-violet-600 text-white font-semibold'
-                  : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
-              )}
-            >
-              This Month
-            </button>
-            <button
-              type="button"
-              onClick={() => handleApplyRangePreset('LAST_MONTH')}
-              className={cn(
-                'rounded-lg border px-2.5 py-1.5 text-center text-[11px] font-medium transition-colors',
-                activePreset === 'LAST_MONTH'
-                  ? 'border-violet-500 bg-violet-600 text-white font-semibold'
-                  : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
-              )}
-            >
-              Last Month
-            </button>
-            <button
-              type="button"
-              onClick={() => handleApplyRangePreset('LAST_30_DAYS')}
-              className={cn(
-                'rounded-lg border px-2.5 py-1.5 text-center text-[11px] font-medium transition-colors',
-                activePreset === 'LAST_30_DAYS'
-                  ? 'border-violet-500 bg-violet-600 text-white font-semibold'
-                  : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
-              )}
-            >
-              Last 30 Days
-            </button>
-            <button
-              type="button"
-              onClick={() => handleApplyRangePreset('ALL')}
-              className={cn(
-                'rounded-lg border px-2.5 py-1.5 text-center text-[11px] font-medium transition-colors',
-                activePreset === 'ALL'
-                  ? 'border-violet-500 bg-violet-600 text-white font-semibold'
-                  : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover'
-              )}
-            >
-              All Time
-            </button>
+          <div className="grid grid-cols-3 gap-1.5">
+            {[
+              { key: 'THIS_WEEK', label: 'This Week' },
+              { key: 'THIS_MONTH', label: 'This Month' },
+              { key: 'LAST_MONTH', label: 'Last Month' },
+              { key: 'THIS_YEAR', label: 'This Year' },
+              { key: 'LAST_90_DAYS', label: 'Last 90 Days' },
+              { key: 'ALL', label: 'All Time' },
+            ].map((p) => {
+              const isActive = selectedPresetKey === p.key;
+              return (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => handlePresetClick(p.key)}
+                  className={cn(
+                    'rounded-xl border px-2 py-2 text-center text-[11px] font-medium transition-all duration-150',
+                    isActive
+                      ? 'border-violet-500 bg-gradient-to-r from-violet-600 to-violet-500 text-white font-bold shadow-md shadow-violet-900/30 scale-[1.02]'
+                      : 'border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover hover:text-theme-primary active:scale-95'
+                  )}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* Done / Close Button */}
+      {/* Done / Confirm Button */}
       {onClose && (
         <div className="mt-3 pt-2 flex justify-end">
           <button
             type="button"
-            onClick={onClose}
-            className="rounded-xl bg-violet-600 px-4 py-1.5 text-xs font-semibold text-white shadow-md shadow-violet-900/30 hover:bg-violet-500 transition-colors"
+            onClick={handleDone}
+            className="rounded-xl bg-violet-600 px-5 py-2 text-xs font-semibold text-white shadow-md shadow-violet-900/30 hover:bg-violet-500 active:scale-95 transition-all"
           >
             Done
           </button>

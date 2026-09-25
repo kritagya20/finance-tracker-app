@@ -14,7 +14,8 @@ import { SavingsRateRing } from './SavingsRateRing';
 import { CashFlowBarChart, MonthlyCashFlowPoint } from './CashFlowBarChart';
 import { TopMerchantsCard, MerchantSpendItem } from './TopMerchantsCard';
 import { SpendingCalendar } from './SpendingCalendar';
-import { formatDateDDMMYYYY } from '../../domain/engine/dateUtils';
+import { formatDateRangeDDMMYYYY } from '../../domain/engine/dateUtils';
+import { CardShell } from '../../components/ui/CardShell';
 import { cn } from '../../lib/utils';
 
 interface AnalyticsScreenProps {
@@ -47,13 +48,17 @@ function getPeriodDetails(
   if (customRange) {
     const start = new Date(customRange.startDate + 'T00:00:00');
     const end = new Date(customRange.endDate + 'T23:59:59.999');
-    const startStr = formatDateDDMMYYYY(start);
-    const endStr = formatDateDDMMYYYY(end);
     const duration = end.getTime() - start.getTime();
+
+    // Compact date label (e.g. '01/06 – 25/09')
+    const sDDMM = `${String(start.getDate()).padStart(2, '0')}/${String(start.getMonth() + 1).padStart(2, '0')}`;
+    const eDDMM = `${String(end.getDate()).padStart(2, '0')}/${String(end.getMonth() + 1).padStart(2, '0')}`;
+    const label = `${sDDMM} – ${eDDMM}`;
+
     return {
       start,
       end,
-      label: `${startStr} – ${endStr}`,
+      label,
       prevStart: new Date(start.getTime() - duration),
       prevEnd: new Date(start.getTime() - 1),
     };
@@ -72,7 +77,9 @@ function getPeriodDetails(
     end.setDate(start.getDate() + 6);
     end.setHours(23, 59, 59, 999);
 
-    const label = `${formatDateDDMMYYYY(start)} – ${formatDateDDMMYYYY(end)}`;
+    const sDDMM = `${String(start.getDate()).padStart(2, '0')}/${String(start.getMonth() + 1).padStart(2, '0')}`;
+    const eDDMM = `${String(end.getDate()).padStart(2, '0')}/${String(end.getMonth() + 1).padStart(2, '0')}`;
+    const label = `${sDDMM} – ${eDDMM}`;
 
     const prevStart = new Date(start);
     prevStart.setDate(start.getDate() - 7);
@@ -93,7 +100,7 @@ function getPeriodDetails(
     return { start, end, label, prevStart, prevEnd };
   }
 
-  // MONTH
+  // MONTH: E.g., 'Sep 2026'
   const start = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0);
   const end = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
   const label = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
@@ -125,6 +132,36 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
     () => getPeriodDetails(timeframe, customRange, referenceDate),
     [timeframe, customRange, referenceDate]
   );
+
+  // Active preset key computation for CalendarPicker active highlight
+  const activePresetKey = useMemo(() => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    if (customRange) {
+      const ninetyDaysAgoStr = new Date(Date.now() - 90 * 86400000).toISOString().slice(0, 10);
+      if (customRange.endDate === todayStr && customRange.startDate === ninetyDaysAgoStr) {
+        return 'LAST_90_DAYS';
+      }
+      return 'CUSTOM';
+    }
+
+    const now = new Date();
+    const refMonth = referenceDate.getMonth();
+    const refYear = referenceDate.getFullYear();
+    const nowMonth = now.getMonth();
+    const nowYear = now.getFullYear();
+
+    if (timeframe === 'WEEK') return 'THIS_WEEK';
+    if (timeframe === 'YEAR') return 'THIS_YEAR';
+    if (timeframe === 'MONTH') {
+      if (refYear === nowYear && refMonth === nowMonth) return 'THIS_MONTH';
+      const lastMonthDate = new Date(nowYear, nowMonth - 1, 1);
+      if (refYear === lastMonthDate.getFullYear() && refMonth === lastMonthDate.getMonth()) {
+        return 'LAST_MONTH';
+      }
+    }
+
+    return null;
+  }, [timeframe, customRange, referenceDate]);
 
   // Transactions belonging to active period
   const periodTransactions = useMemo(() => {
@@ -173,11 +210,14 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
     return Math.round(((prevTotalIncome - prevTotalExpense) / prevTotalIncome) * 100);
   }, [prevTotalIncome, prevTotalExpense]);
 
-  // Total Budget Ceiling: derived from "ALL" budget or sum of category limits, fallback to ₹35,000
+  // Total Budget Ceiling: derived from "ALL" budget or sum of category limits (returns 0 if unset)
   const totalBudget = useMemo(() => {
     const overall = budgets.find((b) => b.categoryId === 'ALL');
     if (overall && overall.limitAmount > 0) return overall.limitAmount;
-    return 3500000; // ₹35,000 (paise)
+    const categoryTotal = budgets
+      .filter((b) => b.categoryId !== 'ALL' && b.limitAmount > 0)
+      .reduce((sum, b) => sum + b.limitAmount, 0);
+    return categoryTotal;
   }, [budgets]);
 
   // Days Calculation for Daily Pace Card
@@ -277,11 +317,11 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
   const { needsAmount, wantsAmount, savingsAmount } = useMemo(() => {
     let needs = 0;
     let wants = 0;
-    let savings = 0;
+    let explicitSavings = 0;
 
     for (const t of periodTransactions) {
       if (t.type === 'TRANSFER') {
-        savings += t.amount;
+        explicitSavings += t.amount;
         continue;
       }
       if (t.type !== 'EXPENSE') continue;
@@ -306,37 +346,34 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
         catName.includes('saving') ||
         catName.includes('deposit')
       ) {
-        savings += t.amount;
+        explicitSavings += t.amount;
       } else {
         wants += t.amount;
       }
     }
 
-    // Also account for positive net savings from income
-    if (totalIncome > totalExpense) {
-      savings += (totalIncome - totalExpense);
-    }
+    // Unspent income surplus retained in current period
+    const netRetainedIncome = totalIncome > totalExpense ? (totalIncome - totalExpense) : 0;
+    const totalSavings = explicitSavings + netRetainedIncome;
 
     return {
       needsAmount: needs,
       wantsAmount: wants,
-      savingsAmount: savings,
+      savingsAmount: totalSavings,
     };
   }, [periodTransactions, categories, totalIncome, totalExpense]);
 
-  // Top Merchants Calculation
+  // Top Merchants Calculation (Clean merchant names without manual pre-truncation)
   const topMerchants = useMemo<MerchantSpendItem[]>(() => {
     const merchantMap = new Map<string, { amount: IntegerMoney; count: number }>();
 
     for (const t of periodTransactions) {
       if (t.type !== 'EXPENSE') continue;
-      const rawName = (t.merchantName || 'Unnamed').trim();
-      const name = rawName.length > 22 ? rawName.slice(0, 20) + '…' : rawName;
-
-      const current = merchantMap.get(name) || { amount: 0, count: 0 };
+      const rawName = (t.merchantName || 'Unnamed Expense').trim();
+      const current = merchantMap.get(rawName) || { amount: 0, count: 0 };
       current.amount += t.amount;
       current.count += 1;
-      merchantMap.set(name, current);
+      merchantMap.set(rawName, current);
     }
 
     return Array.from(merchantMap.entries())
@@ -354,7 +391,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
     const points: MonthlyCashFlowPoint[] = [];
 
     if (timeframe === 'WEEK') {
-      // Last 6 weeks
+      // Last 6 weeks with DD-MM – DD-MM date ranges
       const ref = new Date(period.start);
       for (let i = 5; i >= 0; i--) {
         const wStart = new Date(ref);
@@ -372,8 +409,36 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
             if (t.type === 'EXPENSE') expense += t.amount;
           }
         }
+        const sDay = String(wStart.getDate()).padStart(2, '0');
+        const sMonth = String(wStart.getMonth() + 1).padStart(2, '0');
+        const eDay = String(wEnd.getDate()).padStart(2, '0');
+        const eMonth = String(wEnd.getMonth() + 1).padStart(2, '0');
         points.push({
-          label: `W${6 - i}`,
+          label: `${sDay}/${sMonth}`,
+          fullLabel: `${sDay}/${sMonth}–${eDay}/${eMonth}`,
+          income,
+          expense,
+        });
+      }
+    } else if (timeframe === 'YEAR') {
+      // 12 months of the selected year
+      const yearNum = period.start.getFullYear();
+      for (let m = 0; m < 12; m++) {
+        const mStart = new Date(yearNum, m, 1, 0, 0, 0);
+        const mEnd = new Date(yearNum, m + 1, 0, 23, 59, 59);
+
+        let income = 0;
+        let expense = 0;
+        for (const t of transactions) {
+          const d = new Date(t.date);
+          if (d >= mStart && d <= mEnd) {
+            if (t.type === 'INCOME') income += t.amount;
+            if (t.type === 'EXPENSE') expense += t.amount;
+          }
+        }
+        points.push({
+          label: mStart.toLocaleDateString('en-US', { month: 'short' }),
+          fullLabel: formatDateRangeDDMMYYYY(mStart, mEnd),
           income,
           expense,
         });
@@ -397,6 +462,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
         }
         points.push({
           label: mStart.toLocaleDateString('en-US', { month: 'short' }),
+          fullLabel: formatDateRangeDDMMYYYY(mStart, mEnd),
           income,
           expense,
         });
@@ -460,25 +526,46 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                 <CalendarPicker
                   mode="range"
                   selectedRange={customRange || undefined}
+                  activePreset={activePresetKey || undefined}
                   onSelectRange={(range) => {
                     setCustomRange(range);
                     setIsDatePickerOpen(false);
                   }}
                   onPresetSelect={(preset) => {
-                    if (preset === 'THIS_MONTH') {
+                    const now = new Date();
+                    if (preset === 'THIS_WEEK') {
+                      setTimeframe('WEEK');
+                      setCustomRange(null);
+                      setReferenceDate(now);
+                    } else if (preset === 'THIS_MONTH') {
                       setTimeframe('MONTH');
                       setCustomRange(null);
-                      setReferenceDate(new Date());
+                      setReferenceDate(now);
                     } else if (preset === 'LAST_MONTH') {
                       setTimeframe('MONTH');
-                      const lastM = new Date();
-                      lastM.setMonth(lastM.getMonth() - 1);
+                      const lastM = new Date(now.getFullYear(), now.getMonth() - 1, 1);
                       setReferenceDate(lastM);
                       setCustomRange(null);
-                    } else if (preset === 'LAST_30_DAYS') {
-                      const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    } else if (preset === 'THIS_YEAR') {
+                      setTimeframe('YEAR');
+                      setCustomRange(null);
+                      setReferenceDate(now);
+                    } else if (preset === 'LAST_90_DAYS') {
+                      setTimeframe('MONTH');
+                      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
                       setCustomRange({
-                        startDate: thirtyDaysAgo.toISOString().slice(0, 10),
+                        startDate: ninetyDaysAgo.toISOString().slice(0, 10),
+                        endDate: now.toISOString().slice(0, 10),
+                      });
+                    } else if (preset === 'ALL') {
+                      setTimeframe('MONTH');
+                      let earliestDate = '2020-01-01';
+                      if (transactions && transactions.length > 0) {
+                        const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
+                        earliestDate = sorted[0].date.slice(0, 10);
+                      }
+                      setCustomRange({
+                        startDate: earliestDate,
                         endDate: now.toISOString().slice(0, 10),
                       });
                     }
@@ -504,25 +591,6 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
         onTabChange={(tab) => setActiveTab(tab as DomainTab)}
         size="md"
       />
-
-      {/* 3. Global Timeframe Selector (Week, Month, Year) */}
-      <div className="flex rounded-2xl bg-theme-card-subtle p-1 border border-theme-border">
-        {(['WEEK', 'MONTH', 'YEAR'] as const).map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => handleTimeframeChange(t)}
-            className={cn(
-              'flex-1 rounded-xl py-2 text-xs font-semibold transition-all capitalize',
-              timeframe === t && !customRange
-                ? 'bg-violet-600 text-white shadow-md'
-                : 'text-theme-secondary hover:text-theme-primary'
-            )}
-          >
-            {t.toLowerCase()}
-          </button>
-        ))}
-      </div>
 
       {/* 4. Tab 1: SPENDING DOMAIN */}
       {activeTab === 'spending' && (
@@ -677,7 +745,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
               />
 
               {/* Behavioral Insights Banner */}
-              <div className="rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-gradient-to-b dark:from-[#13151f] dark:to-[#0c0d14] p-4 shadow-sm select-none">
+              <CardShell padding="p-4" className="select-none">
                 <div className="flex items-center gap-2.5">
                   <div className="size-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
                     <TrendingUp className="size-4" />
@@ -689,7 +757,7 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                     </p>
                   </div>
                 </div>
-              </div>
+              </CardShell>
             </>
           )}
         </div>
