@@ -74,6 +74,25 @@ BEFORE implementing, modifying, or refactoring ANY screen, component, UI element
 - **Timeline & Audit Trail Invariants**:
   - Stepper timeline left rail must use strictly uniform dots (`size-2.5 rounded-full bg-violet-500 ring-4 ring-theme-elevated`). Do not mix and match disparate icons (`Pencil`, `Tag`, `Receipt`, etc.) on the rail.
   - The active top state is always titled **`Current State`**.
+- **Analytics Architecture & Navigation Invariants (Copilot Signature Model)**:
+  - Screen body MUST feature only ONE primary domain tab bar (`[ Spending | Income | Habits ]`). Secondary/stacked period filter bars (`PERIOD: [ Week | Month | Year ]`) below the domain tabs are strictly prohibited.
+  - All timeframe options (`This Week`, `This Month`, `Last Month`, `This Year`, `Last 90 Days`, `All Time`, and custom date ranges) MUST be housed inside the top-right header date capsule popover (`[ Sep 2026 ▾ ]`).
+  - Selecting a preset or custom date range in the calendar popover highlights the choice without auto-dismissing; the user MUST tap the **"Done"** button to confirm and apply the filter.
+  - When `This Year` (`timeframe === 'YEAR'`) is active, annual cash flow charts MUST display all 12 months (`Jan` through `Dec`) of the active year.
+  - Touch gesture month navigation: Swiping left (finger moves right-to-left) advances to the **Next Month**, while swiping right (finger moves left-to-right) returns to the **Previous Month**.
+- **Top Spending Destinations Minimalism Invariant**:
+  - Avoid double avatar noise (e.g. placing both `#1` rank badge AND `M` initial circle side by side).
+  - Use a single clean numeric rank pill (`1`, `2`, `3`, `4`, `5`) so merchant names get full width and NEVER truncate into ugly `Apartme...` strings.
+  - Omit cluttered subtitles (`(1 tx)` or `79% of top 5`) and mid-text background box clipping. Use a soft, subtle background fill (`bg-violet-500/[0.05]`) scaling with spend volume.
+- **Spending Calendar & Streaks Invariants**:
+  - Header date range labels (e.g. `01-09-2026 – 30-09-2026`) MUST use `whitespace-nowrap shrink-0` to prevent multi-line date wrapping.
+  - Footer metrics cycle every 4s through `Weekday Avg`, `Weekend Avg`, and `Daily Avg` with smooth vertical CSS translation (`translateY`), pausing on hover/touch.
+  - Averages MUST be ceiled (`Math.ceil`) to whole currency units without decimal points (e.g., `₹6,660` instead of `₹6,659.37`), with full word labels (`Weekday Avg`, `Weekend Avg`).
+- **Needs, Wants & Savings Breakdown Invariants**:
+  - Card title MUST be flexible **`Needs, Wants & Savings Breakdown`** (never hardcode `50 / 30 / 20 Rule Allocation` as the fixed title, as user targets vary).
+  - Recommended benchmark guidance MUST ALWAYS be placed on a dedicated, separate line 2 (`font-mono text-[11px] text-theme-muted`) with prefix **`Recommended benchmark:`**.
+  - Contextual background alert styling (`bg-rose-500/[0.08]`, `bg-amber-500/[0.08]`, `bg-emerald-500/[0.08]`) applies dynamically based on outflow ratios.
 - **Component Reusability & DRY Architecture**:
   - Always compose screens from standardized primitives (`DrawerShell`, `DrawerHeader`, `SortBar`, `SearchInput`, `TransactionRow`). Never hand-code duplicate gesture physics or drawer scaffolding.
+
 

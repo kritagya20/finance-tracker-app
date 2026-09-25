@@ -114,3 +114,29 @@ To deliver an elite, fluid, and uncluttered experience, we unify the screen into
    - Dynamic pacing chip (`✓ On Track`, `⚡ Caution`, `! Over Budget`) gives immediate peace of mind.
 5. **Interactive Touch Scrubber**:
    - Smooth Catmull-Rom cubic Bezier curve with touch scrub capability showing the precise date and cumulative spending on scrub.
+
+---
+
+## 5. Production Implementation & Refactorings (Session Highlights)
+
+### 5.1 Prototype 1 (Copilot Signature Architecture)
+- **Single Tab Bar Navigation**: Consolidated the main body to a single `[ Spending | Income | Habits ]` tab bar. Removed stacked/duplicate timeframe filter containers (`PERIOD: [ Week | Month | Year ]`) to prevent visual noise.
+- **Unified Header Date Capsule (`CalendarPicker`)**:
+  - Combined period granularity (`Week`, `Month`, `Year`) and quick presets (`This Week`, `This Month`, `Last Month`, `This Year`, `Last 90 Days`, `All Time`) into a single 3×2 pill grid inside the `[ Sep 2026 ▾ ]` header popover.
+  - **Confirm-on-Done Flow**: Preset selection highlights the pill immediately without auto-dismissing; user taps **"Done"** to confirm and trigger screen-wide re-renders.
+  - **Touch Gesture Navigation**: Swiping left ($\leftarrow$) advances to the **Next Month**, while swiping right ($\rightarrow$) returns to the **Previous Month**.
+  - **Annual Cash Flow View**: When `This Year` (`timeframe === 'YEAR'`) is selected, cash flow charts render all **12 months** (`Jan`–`Dec`) of the active year.
+
+### 5.2 Top Spending Destinations (Minimalist Architecture)
+- **Zero Truncation Guarantee**: Replaced dual rank + avatar badges (`#1` + `M`) with a single clean numeric rank pill (`1`, `2`, `3`, `4`, `5`), freeing ~35px of horizontal width so merchant titles (e.g. `Multi-Category Expenses`, `Apartment House Rent`) fit without truncation.
+- **Subtle Relative Spend Fill**: Omitted cluttered text subtitles (`(1 tx)` and `79% of top 5`). Uses a soft 5% background fill (`bg-violet-500/[0.05]`) scaling with relative spend volume.
+
+### 5.3 Spending Calendar & Streaks Ticker
+- **Single-Line Header Date Ranges**: Date ranges (e.g. `01-09-2026 – 30-09-2026`) use `whitespace-nowrap shrink-0` to guarantee zero multi-line wrapping.
+- **Vertical Auto-Rotating Ticker**: Footer metrics cycle every 4s through `Weekday Avg`, `Weekend Avg`, and `Daily Avg` with smooth vertical CSS translation (`translateY`), automatically pausing on hover/touch.
+- **Ceiled Integer Currency**: Averages are ceiled (`Math.ceil`) to whole rupees/currency units without decimal pointers (`₹6,660` instead of `₹6,659.37`) with full labels (`Weekday Avg`, `Weekend Avg`).
+
+### 5.4 Needs, Wants & Savings Breakdown
+- **Flexible Title**: Renamed section to **`Needs, Wants & Savings Breakdown`** (removing rigid `50 / 30 / 20 Rule` branding to accommodate custom user target ratios).
+- **Dedicated Second-Line Benchmark**: Guideline messaging is formatted as `Recommended benchmark: ~50% Needs · ~30% Wants · ~20% Savings` on a dedicated Line 2 with contextual background tinting (`bg-rose-500/[0.08]`, `bg-amber-500/[0.08]`, `bg-emerald-500/[0.08]`).
+
