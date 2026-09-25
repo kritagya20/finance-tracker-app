@@ -2,6 +2,8 @@ import React from 'react';
 import { Store, ChevronRight } from 'lucide-react';
 import { IntegerMoney } from '../../domain/models/types';
 import { formatAdaptiveCardCurrency } from '../../domain/engine/moneyUtils';
+import { CardShell } from '../../components/ui/CardShell';
+import { CardHeader } from '../../components/ui/CardHeader';
 import { cn } from '../../lib/utils';
 
 export interface MerchantSpendItem {
@@ -26,51 +28,39 @@ export const TopMerchantsCard: React.FC<TopMerchantsCardProps> = ({
   // Edge case: No merchant data
   if (!merchants || merchants.length === 0) {
     return (
-      <div
-        className={cn(
-          'relative rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-gradient-to-b dark:from-[#13151f] dark:to-[#0c0d14] p-5 shadow-sm select-none',
-          className
-        )}
-      >
+      <CardShell className={className}>
         <div className="flex items-center gap-3">
           <div className="size-10 rounded-2xl bg-violet-500/10 text-violet-500 flex items-center justify-center shrink-0">
             <Store className="size-5" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-theme-primary">Frequent Merchants</h3>
+            <h3 className="text-sm font-semibold text-theme-primary">Top Spending Destinations</h3>
             <p className="text-xs text-theme-muted mt-0.5">
-              Add merchant names to your transactions to see your top destinations.
+              Log merchant names on your transactions to discover your top spending destinations.
             </p>
           </div>
         </div>
-      </div>
+      </CardShell>
     );
   }
 
-  // Maximum spend to calculate proportional bar fill
+  // Calculate highest spend for subtle relative background bar fill
   const maxAmount = Math.max(...merchants.map((m) => m.amount), 1);
 
   return (
-    <div
-      className={cn(
-        'relative rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-gradient-to-b dark:from-[#13151f] dark:to-[#0c0d14] p-4 sm:p-5 shadow-sm select-none',
-        className
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold text-theme-primary">
-          Top Spending Destinations
-        </h3>
-        <span className="text-[11px] font-mono text-theme-muted">
-          Top {merchants.length}
-        </span>
-      </div>
+    <CardShell className={className}>
+      {/* Card Header Primitive */}
+      <CardHeader
+        title="Top Spending Destinations"
+        icon={Store}
+        badge={`Top ${merchants.length}`}
+      />
 
-      {/* Ranked List */}
-      <div className="mt-3 flex flex-col space-y-1.5">
+      {/* Ultra-Minimal List */}
+      <div className="mt-3 flex flex-col gap-1">
         {merchants.map((merchant, idx) => {
-          const widthPercent = Math.min(100, Math.max(8, Math.round((merchant.amount / maxAmount) * 100)));
+          const rank = idx + 1;
+          const relativeWidthPercent = Math.min(100, Math.max(6, Math.round((merchant.amount / maxAmount) * 100)));
           const formattedAmount = hideBalances
             ? '••••••'
             : formatAdaptiveCardCurrency(merchant.amount, true, undefined, true);
@@ -82,42 +72,39 @@ export const TopMerchantsCard: React.FC<TopMerchantsCardProps> = ({
               tabIndex={onSelectMerchant ? 0 : undefined}
               onClick={() => onSelectMerchant?.(merchant.name)}
               className={cn(
-                'relative flex items-center justify-between rounded-xl px-3 py-2.5 overflow-hidden transition-all duration-200 group',
+                'group relative flex items-center justify-between rounded-xl p-2.5 transition-all duration-150 overflow-hidden',
                 onSelectMerchant && 'cursor-pointer hover:bg-slate-50 dark:hover:bg-white/[0.04]'
               )}
             >
-              {/* Proportional Background Fill Bar */}
+              {/* Subtle relative spend background bar */}
               <div
-                style={{ width: `${widthPercent}%` }}
-                className="absolute inset-y-0 left-0 bg-violet-500/[0.07] dark:bg-violet-500/[0.12] rounded-xl pointer-events-none transition-all duration-500"
+                style={{ width: `${relativeWidthPercent}%` }}
+                className="absolute inset-y-0 left-0 bg-violet-500/[0.05] dark:bg-violet-500/[0.08] rounded-xl pointer-events-none transition-all duration-300"
               />
 
-              {/* Left: Rank & Merchant Name */}
-              <div className="relative flex items-center gap-2.5 min-w-0 pr-2 z-10">
-                <span className="font-mono text-xs font-semibold text-theme-muted w-4 shrink-0">
-                  {idx + 1}.
+              {/* Left: Rank Pill & Merchant Name */}
+              <div className="relative z-10 flex items-center gap-2.5 min-w-0 flex-1 pr-2">
+                <span className="text-xs font-mono font-bold text-theme-muted size-6 rounded-lg bg-slate-100 dark:bg-white/[0.06] flex items-center justify-center shrink-0">
+                  {rank}
                 </span>
-                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+                <span className="text-xs sm:text-sm font-medium text-theme-primary truncate">
                   {merchant.name}
-                </span>
-                <span className="font-mono text-[10px] text-theme-muted shrink-0">
-                  ({merchant.transactionCount}x)
                 </span>
               </div>
 
-              {/* Right: Amount & Optional Chevron */}
-              <div className="relative flex items-center gap-2 shrink-0 z-10">
-                <span className="font-mono text-xs font-bold text-slate-900 dark:text-white">
+              {/* Right: Amount & Navigation Chevron */}
+              <div className="relative z-10 flex items-center gap-2 shrink-0">
+                <span className="font-mono text-xs sm:text-sm font-bold text-theme-primary">
                   {formattedAmount}
                 </span>
                 {onSelectMerchant && (
-                  <ChevronRight className="size-3.5 text-slate-400 transition-transform group-hover:translate-x-0.5" />
+                  <ChevronRight className="size-4 text-theme-muted group-hover:translate-x-0.5 transition-transform" />
                 )}
               </div>
             </div>
           );
         })}
       </div>
-    </div>
+    </CardShell>
   );
 };

@@ -2,7 +2,8 @@ import React from 'react';
 import { TrendingUp, TrendingDown, HelpCircle } from 'lucide-react';
 import { IntegerMoney } from '../../domain/models/types';
 import { formatAdaptiveCardCurrency } from '../../domain/engine/moneyUtils';
-import { cn } from '../../lib/utils';
+import { CardShell } from '../../components/ui/CardShell';
+import { CardHeader } from '../../components/ui/CardHeader';
 
 interface SavingsRateRingProps {
   totalIncome: IntegerMoney;
@@ -26,13 +27,8 @@ export const SavingsRateRing: React.FC<SavingsRateRingProps> = ({
 
   if (!hasIncome) {
     return (
-      <div
-        className={cn(
-          'relative rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-gradient-to-b dark:from-[#13151f] dark:to-[#0c0d14] p-5 shadow-sm select-none',
-          className
-        )}
-      >
-        <div className="flex items-center gap-3">
+      <CardShell padding="p-5" className={className}>
+        <div className="flex items-center gap-3 select-none">
           <div className="size-10 rounded-2xl bg-violet-500/10 text-violet-500 flex items-center justify-center shrink-0">
             <HelpCircle className="size-5" />
           </div>
@@ -43,7 +39,7 @@ export const SavingsRateRing: React.FC<SavingsRateRingProps> = ({
             </p>
           </div>
         </div>
-      </div>
+      </CardShell>
     );
   }
 
@@ -88,24 +84,20 @@ export const SavingsRateRing: React.FC<SavingsRateRingProps> = ({
     : formatAdaptiveCardCurrency(Math.abs(netSaved), true, undefined, true);
 
   return (
-    <div
-      className={cn(
-        'relative rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-gradient-to-b dark:from-[#13151f] dark:to-[#0c0d14] p-5 shadow-sm select-none',
-        className
-      )}
-    >
-      <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold text-theme-primary">
-          Savings Rate & Retention
-        </h3>
-        {savingsTargetPercent && (
-          <span className="text-[11px] font-mono text-theme-muted">
-            Target: {savingsTargetPercent}%
-          </span>
-        )}
-      </div>
+    <CardShell padding="p-5" className={className}>
+      <CardHeader
+        title="Savings Rate & Retention"
+        className="mb-0 select-none"
+        action={
+          savingsTargetPercent ? (
+            <span className="text-[11px] font-mono text-theme-muted">
+              Target: {savingsTargetPercent}%
+            </span>
+          ) : undefined
+        }
+      />
 
-      <div className="mt-4 flex items-center justify-between gap-4">
+      <div className="mt-4 flex items-center justify-between gap-4 select-none">
         {/* Left: Interactive SVG Progress Ring */}
         <div className="relative size-[110px] shrink-0 flex items-center justify-center">
           <svg width={size} height={size} className="transform -rotate-90">
@@ -197,6 +189,6 @@ export const SavingsRateRing: React.FC<SavingsRateRingProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </CardShell>
   );
 };

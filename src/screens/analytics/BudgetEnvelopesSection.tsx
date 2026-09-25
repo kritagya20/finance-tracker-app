@@ -4,6 +4,7 @@ import { Budget, Category, Transaction } from '../../domain/models/types';
 import { formatCurrency } from '../../domain/engine/moneyUtils';
 import { CategorySpendItem } from './CategoryDonutDial';
 import { CategorySpendDrawer } from './CategorySpendDrawer';
+import { CardShell } from '../../components/ui/CardShell';
 
 interface BudgetEnvelopesSectionProps {
   categorySpending: CategorySpendItem[];
@@ -21,7 +22,7 @@ interface EnvelopeItem {
   spent: number;
   limit: number;
   percent: number;
-  status: 'HEALTHY' | 'NEAR_LIMIT' | 'OVER_BUDGET';
+  status: 'HEALTHY' | 'NEAR_LIMIT' | 'OVER_BUDGET' | 'UNSET';
   overAmount: number;
 }
 
@@ -52,29 +53,21 @@ export const BudgetEnvelopesSection: React.FC<BudgetEnvelopesSectionProps> = ({
         const spent = spendRecord ? spendRecord.total : 0;
         const configuredBudget = budgetMap.get(cat.id);
 
-        let limit = configuredBudget ? configuredBudget.limitAmount : 0;
-        if (!limit) {
-          if (cat.id === 'cat_dining' || cat.name.toLowerCase().includes('dining') || cat.name.toLowerCase().includes('food')) {
-            limit = 1500000; // ₹15,000
-          } else if (cat.id === 'cat_shopping' || cat.name.toLowerCase().includes('shopping')) {
-            limit = 500000; // ₹5,000
-          } else if (cat.id === 'cat_fuel' || cat.name.toLowerCase().includes('transport') || cat.name.toLowerCase().includes('travel')) {
-            limit = 800000; // ₹8,000
-          } else if (cat.id === 'cat_bills' || cat.name.toLowerCase().includes('bills')) {
-            limit = 600000; // ₹6,000
-          } else {
-            limit = Math.max(spent * 1.25, 500000);
-          }
-        }
+        const limit = configuredBudget ? configuredBudget.limitAmount : 0;
+        const hasLimit = limit > 0;
 
-        const percent = Math.round((spent / limit) * 100);
-        const overAmount = Math.max(0, spent - limit);
+        const percent = hasLimit ? Math.round((spent / limit) * 100) : 0;
+        const overAmount = hasLimit ? Math.max(0, spent - limit) : 0;
 
-        let status: 'HEALTHY' | 'NEAR_LIMIT' | 'OVER_BUDGET' = 'HEALTHY';
-        if (spent > limit) {
+        let status: 'HEALTHY' | 'NEAR_LIMIT' | 'OVER_BUDGET' | 'UNSET' = 'UNSET';
+        if (!hasLimit) {
+          status = 'UNSET';
+        } else if (spent > limit) {
           status = 'OVER_BUDGET';
         } else if (percent >= 75) {
           status = 'NEAR_LIMIT';
+        } else {
+          status = 'HEALTHY';
         }
 
         return {
@@ -88,7 +81,11 @@ export const BudgetEnvelopesSection: React.FC<BudgetEnvelopesSectionProps> = ({
         };
       })
       .filter((env) => env.spent > 0 || budgetMap.has(env.categoryId))
-      .sort((a, b) => b.percent - a.percent);
+      .sort((a, b) => {
+        if (a.status === 'UNSET' && b.status !== 'UNSET') return 1;
+        if (a.status !== 'UNSET' && b.status === 'UNSET') return -1;
+        return b.percent - a.percent;
+      });
 
     return items;
   }, [categorySpending, categories, budgets]);
@@ -109,20 +106,24 @@ export const BudgetEnvelopesSection: React.FC<BudgetEnvelopesSectionProps> = ({
         {envelopes.map((env) => {
           const isOver = env.status === 'OVER_BUDGET';
           const isNear = env.status === 'NEAR_LIMIT';
+          const isUnset = env.status === 'UNSET';
 
           return (
-            <div
+            <CardShell
               key={env.categoryId}
               role="button"
               tabIndex={0}
+              padding="p-0"
+              hoverable
+              activeScale
               onClick={() => setSelectedEnvelope(env)}
-              onKeyDown={(e) => {
+              onKeyDown={(e: React.KeyboardEvent) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
                   setSelectedEnvelope(env);
                 }
               }}
-              className="rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-gradient-to-b dark:from-[#13151f] dark:to-[#0c0d14] shadow-md overflow-hidden transition-all cursor-pointer hover:border-slate-300 dark:hover:border-white/20 active:scale-[0.99] focus:outline-none focus:ring-2 focus:ring-violet-500/40"
+              className="shadow-md overflow-hidden cursor-pointer focus:outline-none focus:ring-2 focus:ring-violet-500/40"
             >
               {/* Card Body (2 Compact Tiers) */}
               <div className="p-3.5 sm:p-4 space-y-2">
@@ -161,17 +162,23 @@ export const BudgetEnvelopesSection: React.FC<BudgetEnvelopesSectionProps> = ({
 
                   {/* Percentage & Chevron on Right */}
                   <div className="flex items-center gap-1.5 shrink-0">
-                    <span
-                      className={`text-sm sm:text-base font-bold font-mono ${
-                        isOver
-                          ? 'text-rose-400'
-                          : isNear
-                          ? 'text-amber-400'
-                          : 'text-emerald-400'
-                      }`}
-                    >
-                      {env.percent}%
-                    </span>
+                    {isUnset ? (
+                      <span className="text-xs font-semibold text-violet-500 dark:text-violet-400 hover:underline">
+                        Set Budget
+                      </span>
+                    ) : (
+                      <span
+                        className={`text-sm sm:text-base font-bold font-mono ${
+                          isOver
+                            ? 'text-rose-400'
+                            : isNear
+                            ? 'text-amber-400'
+                            : 'text-emerald-400'
+                        }`}
+                      >
+                        {env.percent}%
+                      </span>
+                    )}
                     <ChevronRight className="size-4 text-slate-400 dark:text-slate-500 transition-transform group-hover:translate-x-0.5" />
                   </div>
                 </div>
@@ -182,11 +189,17 @@ export const BudgetEnvelopesSection: React.FC<BudgetEnvelopesSectionProps> = ({
                     <span className="font-mono text-slate-900 dark:text-slate-200 font-medium">
                       {hideBalances ? '••••••' : formatCurrency(env.spent, undefined, false)}
                     </span>{' '}
-                    <span>of </span>
-                    <span className="font-mono">
-                      {formatCurrency(env.limit, undefined, false)}
-                    </span>{' '}
-                    <span>limit</span>
+                    {isUnset ? (
+                      <span className="text-slate-400 dark:text-slate-500">spent</span>
+                    ) : (
+                      <>
+                        <span>of </span>
+                        <span className="font-mono">
+                          {formatCurrency(env.limit, undefined, false)}
+                        </span>{' '}
+                        <span>limit</span>
+                      </>
+                    )}
                   </div>
 
                   {/* Compressed Status Badge */}
@@ -202,6 +215,10 @@ export const BudgetEnvelopesSection: React.FC<BudgetEnvelopesSectionProps> = ({
                       <TrendingUp className="size-2.5 shrink-0" />
                       <span>Near limit</span>
                     </span>
+                  ) : isUnset ? (
+                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-medium bg-slate-500/10 text-slate-400 border border-slate-500/20 shrink-0">
+                      <span>Uncapped</span>
+                    </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] sm:text-[11px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 shrink-0">
                       <Check className="size-2.5 shrink-0" />
@@ -211,20 +228,22 @@ export const BudgetEnvelopesSection: React.FC<BudgetEnvelopesSectionProps> = ({
                 </div>
               </div>
 
-              {/* Full-Width Flush Bottom Rail (Option A) */}
-              <div className="h-1 w-full bg-slate-100 dark:bg-slate-800/80">
-                <div
-                  className={`h-full transition-all duration-500 ease-out ${
-                    isOver
-                      ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'
-                      : isNear
-                      ? 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.4)]'
-                      : 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]'
-                  }`}
-                  style={{ width: `${Math.min(100, Math.max(3, env.percent))}%` }}
-                />
-              </div>
-            </div>
+              {/* Full-Width Flush Bottom Rail */}
+              {!isUnset && (
+                <div className="h-1 w-full bg-slate-100 dark:bg-slate-800/80">
+                  <div
+                    className={`h-full transition-all duration-500 ease-out ${
+                      isOver
+                        ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'
+                        : isNear
+                        ? 'bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.4)]'
+                        : 'bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.4)]'
+                    }`}
+                    style={{ width: `${Math.min(100, Math.max(3, env.percent))}%` }}
+                  />
+                </div>
+              )}
+            </CardShell>
           );
         })}
       </div>

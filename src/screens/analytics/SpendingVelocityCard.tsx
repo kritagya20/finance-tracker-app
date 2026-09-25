@@ -4,6 +4,8 @@ import { formatAdaptiveCardCurrency } from '../../domain/engine/moneyUtils';
 import { formatDateDDMMYYYY } from '../../domain/engine/dateUtils';
 import { Transaction } from '../../domain/models/types';
 import { VelocitySpendDrawer } from './VelocitySpendDrawer';
+import { CardShell } from '../../components/ui/CardShell';
+import { CardHeader } from '../../components/ui/CardHeader';
 
 interface SpendingVelocityCardProps {
   transactions: Transaction[];
@@ -335,30 +337,33 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
   };
 
   return (
-    <div
+    <CardShell
       ref={cardRef}
-      className="relative rounded-3xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-gradient-to-b dark:from-[#13151f] dark:to-[#0c0d14] p-5 sm:p-6 shadow-xl transition-all select-none overflow-hidden"
+      padding="p-5 sm:p-6"
+      className="shadow-xl transition-all select-none overflow-hidden"
     >
       {/* Top Hairline Specular Reflection */}
       <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/20 dark:via-white/10 to-transparent" />
 
       {/* 1. Card Header: Clean title with view all chevron button */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-base font-semibold tracking-tight text-slate-900 dark:text-white">
-          Spending Velocity
-        </h2>
-        <button
-          type="button"
-          onClick={() => {
-            setSelectedDayPoint(null);
-            setIsDrawerOpen(true);
-          }}
-          aria-label="View all spending velocity details"
-          className="flex size-8 items-center justify-center rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-all active:scale-90"
-        >
-          <ChevronRight className="size-5" />
-        </button>
-      </div>
+      <CardHeader
+        title="Spending Velocity"
+        titleSize="text-base font-semibold tracking-tight text-slate-900 dark:text-white"
+        className="mb-0"
+        action={
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedDayPoint(null);
+              setIsDrawerOpen(true);
+            }}
+            aria-label="View all spending velocity details"
+            className="flex size-12 items-center justify-center rounded-full text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/[0.06] transition-all active:scale-90 min-w-[48px] min-h-[48px]"
+          >
+            <ChevronRight className="size-5" />
+          </button>
+        }
+      />
 
       {/* 2. Hero Spend vs Budget Metric */}
       <div className="mt-3 flex items-baseline">
@@ -578,6 +583,6 @@ export const SpendingVelocityCard: React.FC<SpendingVelocityCardProps> = ({
         hideBalances={hideBalances}
         onSelectTransaction={onSelectTransaction}
       />
-    </div>
+    </CardShell>
   );
 };

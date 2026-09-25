@@ -135,13 +135,6 @@ export const VelocitySpendDrawer: React.FC<VelocitySpendDrawerProps> = ({
           title={dayPoint ? `Expenses on ${dayPoint.dateStr}` : 'Spending Velocity'}
           titleId="velocity-drawer-title"
           onBack={onClose}
-          rightElement={
-            dayPoint ? (
-              <span className="text-[11px] font-mono font-medium px-2.5 py-1 rounded-full bg-theme-card-subtle text-theme-secondary border border-theme-border/60">
-                {dayPoint.dateStr}
-              </span>
-            ) : undefined
-          }
         />
       }
     >

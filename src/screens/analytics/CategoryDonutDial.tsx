@@ -4,6 +4,8 @@ import { Transaction } from '../../domain/models/types';
 import { formatAdaptiveCardCurrency } from '../../domain/engine/moneyUtils';
 import { cn } from '../../lib/utils';
 import { CategorySpendDrawer } from './CategorySpendDrawer';
+import { CardShell } from '../../components/ui/CardShell';
+import { CardHeader } from '../../components/ui/CardHeader';
 
 export interface CategorySpendItem {
   id: string;
@@ -257,17 +259,20 @@ export const CategoryDonutDial: React.FC<CategoryDonutDialProps> = ({
   const activeItem = arcPaths.find((a) => a.id === activeId);
 
   return (
-    <div
-      className="relative rounded-[28px] border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-gradient-to-b dark:from-[#13151f] dark:to-[#0c0d14] p-6 shadow-xl select-none transition-colors overflow-hidden"
+    <CardShell
+      padding="p-6"
+      className="select-none transition-colors overflow-hidden"
       onClick={() => setSelectedId(null)}
     >
       {/* Top Hairline Specular Reflection */}
       <div className="pointer-events-none absolute inset-x-8 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/20 dark:via-white/10 to-transparent" />
 
       {/* 1. Card Header matching reference */}
-      <h2 className="text-base font-semibold tracking-tight text-slate-900 dark:text-white">
-        Category Breakdown
-      </h2>
+      <CardHeader
+        title="Category Breakdown"
+        titleSize="text-base font-semibold tracking-tight text-slate-900 dark:text-white"
+        className="mb-0"
+      />
 
       {/* 2. Donut Graphic with Center Total and Slice Pop-Out */}
       <div className="mt-4 flex flex-col items-center justify-center">
@@ -458,8 +463,7 @@ export const CategoryDonutDial: React.FC<CategoryDonutDialProps> = ({
                           : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
                       )}
                     >
-                      {delta.isIncrease ? '↑' : '↓'}{' '}
-                      {formatAdaptiveCardCurrency(Math.abs(delta.deltaAmount), true, undefined, true)}
+                      {delta.isIncrease ? '↑' : '↓'} {Math.abs(delta.deltaPercent)}%
                     </span>
                   );
                 })()}
@@ -503,6 +507,6 @@ export const CategoryDonutDial: React.FC<CategoryDonutDialProps> = ({
           hideBalances={hideBalances}
         />
       )}
-    </div>
+    </CardShell>
   );
 };

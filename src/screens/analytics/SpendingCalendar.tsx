@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { Calendar as CalendarIcon, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar as CalendarIcon, Sparkles, X } from 'lucide-react';
 import { IntegerMoney } from '../../domain/models/types';
-import { formatAdaptiveCardCurrency } from '../../domain/engine/moneyUtils';
-import { formatDateDDMMYYYY } from '../../domain/engine/dateUtils';
+import { formatCurrency, formatAdaptiveCardCurrency } from '../../domain/engine/moneyUtils';
+import { formatDateDDMMYYYY, formatDateRangeDDMMYYYY } from '../../domain/engine/dateUtils';
+import { CardShell } from '../../components/ui/CardShell';
+import { CardHeader } from '../../components/ui/CardHeader';
 import { cn } from '../../lib/utils';
 
 interface SpendingCalendarProps {
@@ -23,10 +25,13 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
   className,
 }) => {
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
 
   // Calendar Geometry
   const firstDayOfMonth = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const lastDayOfMonth = new Date(year, month + 1, 0);
   const startDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7; // Convert to Monday = 0, Sunday = 6
 
   const today = new Date();
@@ -71,39 +76,72 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
   const q1 = pastDaySpends.length > 0 ? pastDaySpends[Math.floor(pastDaySpends.length * 0.25)] : 0;
   const q2 = pastDaySpends.length > 0 ? pastDaySpends[Math.floor(pastDaySpends.length * 0.6)] : 0;
 
-  // Averages
-  const weekdayAvg = weekdayCount > 0 ? Math.round(weekdayTotal / weekdayCount) : 0;
-  const weekendAvg = weekendCount > 0 ? Math.round(weekendTotal / weekendCount) : 0;
+  // Averages (Ceiled to whole currency units, zero decimals)
+  const weekdayRupees = weekdayCount > 0 ? Math.ceil(weekdayTotal / 100 / weekdayCount) : 0;
+  const weekendRupees = weekendCount > 0 ? Math.ceil(weekendTotal / 100 / weekendCount) : 0;
+  const totalPastDays = weekdayCount + weekendCount;
+  const dailyRupees = totalPastDays > 0 ? Math.ceil((weekdayTotal + weekendTotal) / 100 / totalPastDays) : 0;
+
+  const weekdayAvg: IntegerMoney = weekdayRupees * 100;
+  const weekendAvg: IntegerMoney = weekendRupees * 100;
+  const dailyAvg: IntegerMoney = dailyRupees * 100;
 
   // Weekday header labels
   const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-  // Handle cell click
+  // Carousel Slides Configuration
+  const slides = [
+    {
+      id: 'weekday',
+      badge: 'Weekday Avg',
+      badgeClass: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20',
+      value: hideBalances ? '••••' : formatCurrency(weekdayAvg, undefined, false),
+      valClass: 'text-theme-primary font-bold',
+    },
+    {
+      id: 'weekend',
+      badge: 'Weekend Avg',
+      badgeClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20',
+      value: hideBalances ? '••••' : formatCurrency(weekendAvg, undefined, false),
+      valClass: 'text-amber-600 dark:text-amber-400 font-bold',
+    },
+    {
+      id: 'daily',
+      badge: 'Daily Avg',
+      badgeClass: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20',
+      value: hideBalances ? '••••' : formatCurrency(dailyAvg, undefined, false),
+      valClass: 'text-theme-primary font-bold',
+    },
+  ];
+
+  // Auto-scroll vertical carousel every 4 seconds (4000ms)
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      setCarouselIndex((prev) => (prev + 1) % slides.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isPaused, slides.length]);
+
+  // Handle cell click (toggle selection)
   const handleCellClick = (dateKey: string, amount: IntegerMoney, isFuture: boolean) => {
     if (isFuture) return;
-    setSelectedDateStr(dateKey);
-    onSelectDate?.(dateKey, amount);
+    if (selectedDateStr === dateKey) {
+      setSelectedDateStr(null);
+    } else {
+      setSelectedDateStr(dateKey);
+      onSelectDate?.(dateKey, amount);
+    }
   };
 
   return (
-    <div
-      className={cn(
-        'relative rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-gradient-to-b dark:from-[#13151f] dark:to-[#0c0d14] p-4 sm:p-5 shadow-sm select-none',
-        className
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <CalendarIcon className="size-4 text-violet-500" />
-          <h3 className="text-xs font-semibold text-theme-primary">
-            Spending Calendar & Streaks
-          </h3>
-        </div>
-        <span className="text-[11px] font-mono text-theme-muted">
-          {new Date(year, month, 1).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-        </span>
-      </div>
+    <CardShell className={className}>
+      {/* Header Primitive */}
+      <CardHeader
+        title="Spending Calendar & Streaks"
+        icon={CalendarIcon}
+        badge={formatDateRangeDDMMYYYY(firstDayOfMonth, lastDayOfMonth)}
+      />
 
       {/* Weekday Abbreviations Bar */}
       <div className="mt-3.5 grid grid-cols-7 gap-1 text-center">
@@ -112,7 +150,7 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
             key={wd + i}
             className={cn(
               'text-[10px] font-mono font-medium',
-              i >= 5 ? 'text-amber-500/80 font-bold' : 'text-theme-muted'
+              i >= 5 ? 'text-amber-500/90 font-bold' : 'text-theme-muted'
             )}
           >
             {wd}
@@ -175,42 +213,73 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
         })}
       </div>
 
-      {/* Selected Day Toast or Legend */}
+      {/* Selected Day Toast or Vertical Carousel Metrics Footer */}
       <div className="mt-3.5 pt-3 border-t border-theme-border/50 flex items-center justify-between text-xs">
         {selectedDateStr ? (
           <div className="flex items-center justify-between w-full">
             <span className="font-mono text-theme-secondary font-medium">
               {formatDateDDMMYYYY(selectedDateStr)}:
             </span>
-            <span className="font-mono font-bold text-theme-primary">
-              {(dailySpending.get(selectedDateStr) || 0) === 0 ? (
-                <span className="text-emerald-500">Zero Spend Day ✨</span>
-              ) : (
-                hideBalances
-                  ? '••••••'
-                  : formatAdaptiveCardCurrency(dailySpending.get(selectedDateStr) || 0, true, undefined, true)
-              )}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="font-mono font-bold text-theme-primary">
+                {(dailySpending.get(selectedDateStr) || 0) === 0 ? (
+                  <span className="text-emerald-500 font-semibold">Zero Spend Day ✨</span>
+                ) : (
+                  hideBalances
+                    ? '••••••'
+                    : formatAdaptiveCardCurrency(dailySpending.get(selectedDateStr) || 0, true, undefined, true)
+                )}
+              </span>
+              <button
+                type="button"
+                onClick={() => setSelectedDateStr(null)}
+                className="p-1 rounded-lg hover:bg-theme-card-hover text-theme-muted hover:text-theme-primary transition-colors"
+                title="Clear date selection"
+              >
+                <X className="size-3.5" />
+              </button>
+            </div>
           </div>
         ) : (
           <>
-            {/* Zero-spend days celebration */}
-            <div className="flex items-center gap-1.5 text-emerald-500 dark:text-emerald-400 font-semibold text-[11px]">
+            {/* Left side: Zero-spend days celebration */}
+            <div className="flex items-center gap-1.5 text-emerald-500 dark:text-emerald-400 font-semibold text-[11px] shrink-0">
               <Sparkles className="size-3.5 shrink-0" />
               <span>
                 <strong className="font-mono font-bold">{zeroSpendCount}</strong> zero-spend days
               </span>
             </div>
 
-            {/* Weekend vs Weekday Delta */}
-            <div className="font-mono text-[10px] text-theme-muted flex items-center gap-2">
-              <span>Wkday: {hideBalances ? '••••' : formatAdaptiveCardCurrency(weekdayAvg, true, undefined, true)}</span>
-              <span>·</span>
-              <span className="text-amber-500/90">Wkend: {hideBalances ? '••••' : formatAdaptiveCardCurrency(weekendAvg, true, undefined, true)}</span>
+            {/* Right side: Vertical Auto-Rotating Stats Carousel */}
+            <div
+              className="flex items-center gap-1.5 relative cursor-pointer select-none"
+              onMouseEnter={() => setIsPaused(true)}
+              onTouchStart={() => setIsPaused(true)}
+              onClick={() => setCarouselIndex((prev) => (prev + 1) % slides.length)}
+              title="Click or hover to pause carousel"
+            >
+              <div className="relative h-6 overflow-hidden min-w-[165px] sm:min-w-[185px] flex items-center justify-end">
+                <div
+                  className="transition-transform duration-500 ease-out flex flex-col absolute w-full right-0"
+                  style={{ transform: `translateY(-${carouselIndex * 24}px)` }}
+                >
+                  {slides.map((slide) => (
+                    <div
+                      key={slide.id}
+                      className="h-6 flex items-center justify-end gap-1.5 text-[11px] font-mono whitespace-nowrap"
+                    >
+                      <span className={cn('px-1.5 py-0.5 rounded-md text-[10px] font-semibold', slide.badgeClass)}>
+                        {slide.badge}
+                      </span>
+                      <span className={slide.valClass}>{slide.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </>
         )}
       </div>
-    </div>
+    </CardShell>
   );
 };

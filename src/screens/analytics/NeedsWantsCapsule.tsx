@@ -1,6 +1,8 @@
 import React from 'react';
 import { IntegerMoney } from '../../domain/models/types';
 import { formatAdaptiveCardCurrency } from '../../domain/engine/moneyUtils';
+import { CardShell } from '../../components/ui/CardShell';
+import { CardHeader } from '../../components/ui/CardHeader';
 import { cn } from '../../lib/utils';
 
 interface NeedsWantsCapsuleProps {
@@ -37,32 +39,48 @@ export const NeedsWantsCapsule: React.FC<NeedsWantsCapsuleProps> = ({
   const formatAmt = (amt: IntegerMoney) =>
     hideBalances ? '••••' : formatAdaptiveCardCurrency(amt, true, undefined, true);
 
-  // Behavioral verdict generator based on 50/30/20 standard
-  let verdict = 'Balanced cash allocation across essentials and lifestyle.';
+  // Behavioral verdict generator based on flexible allocation benchmarks
+  interface VerdictInfo {
+    title: string;
+    benchmark: string;
+    bgClass: string;
+    titleClass: string;
+  }
+
+  let verdict: VerdictInfo = {
+    title: 'Balanced cash allocation across essentials & lifestyle',
+    benchmark: 'Recommended benchmark: ~50% Needs · ~30% Wants · ~20% Savings',
+    bgClass: 'bg-slate-100/80 dark:bg-white/[0.04] border-slate-200/80 dark:border-white/[0.08]',
+    titleClass: 'text-theme-primary',
+  };
+
   if (needsPct > 60) {
-    verdict = `Essentials take up ${needsPct}% — ${needsPct - 50}% above the standard 50% benchmark.`;
+    verdict = {
+      title: `Essentials take up ${needsPct}% of your cash allocation`,
+      benchmark: `Recommended benchmark: ~50% for essential needs`,
+      bgClass: 'bg-amber-500/[0.08] dark:bg-amber-500/10 border-amber-500/20',
+      titleClass: 'text-amber-700 dark:text-amber-300',
+    };
   } else if (wantsPct > 40) {
-    verdict = `Lifestyle spending is high at ${wantsPct}% (recommended benchmark is 30%).`;
+    verdict = {
+      title: `Lifestyle spending accounts for ${wantsPct}% of cash flow`,
+      benchmark: `Recommended benchmark: ~30% for lifestyle & wants`,
+      bgClass: 'bg-rose-500/[0.08] dark:bg-rose-500/10 border-rose-500/20',
+      titleClass: 'text-rose-700 dark:text-rose-300',
+    };
   } else if (savingsPct >= 20) {
-    verdict = `Great savings discipline! Retaining ${savingsPct}% meets the 20% benchmark.`;
+    verdict = {
+      title: `Great savings discipline! Retaining ${savingsPct}%`,
+      benchmark: `Recommended benchmark: ~20% retained for savings`,
+      bgClass: 'bg-emerald-500/[0.08] dark:bg-emerald-500/10 border-emerald-500/20',
+      titleClass: 'text-emerald-700 dark:text-emerald-300',
+    };
   }
 
   return (
-    <div
-      className={cn(
-        'relative rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-gradient-to-b dark:from-[#13151f] dark:to-[#0c0d14] p-4 sm:p-5 shadow-sm select-none',
-        className
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold text-theme-primary">
-          50 / 30 / 20 Rule Allocation
-        </h3>
-        <span className="text-[11px] font-mono text-theme-muted">
-          Target: 50% · 30% · 20%
-        </span>
-      </div>
+    <CardShell className={className}>
+      {/* Header Primitive */}
+      <CardHeader title="Needs, Wants & Savings Breakdown" />
 
       {/* Segmented Horizontal Pill Bar */}
       <div className="relative mt-3 h-3 w-full rounded-full bg-slate-100 dark:bg-white/[0.06] overflow-hidden flex">
@@ -89,7 +107,7 @@ export const NeedsWantsCapsule: React.FC<NeedsWantsCapsuleProps> = ({
         )}
       </div>
 
-      {/* Legend Rows */}
+      {/* Legend Columns */}
       <div className="mt-3.5 grid grid-cols-3 gap-2 pt-2 border-t border-theme-border/50 text-xs">
         {/* Needs Column */}
         <div className="flex flex-col">
@@ -134,12 +152,16 @@ export const NeedsWantsCapsule: React.FC<NeedsWantsCapsuleProps> = ({
         </div>
       </div>
 
-      {/* Behavioral Benchmark Verdict */}
-      <div className="mt-3 rounded-xl bg-theme-card-subtle px-3 py-2 border border-theme-border/50">
-        <p className="text-[11px] text-theme-secondary leading-relaxed">
-          {verdict}
+      {/* Behavioral Benchmark Verdict Callout Banner */}
+      <div className={cn('mt-3.5 rounded-xl p-3 border flex flex-col gap-1 transition-colors', verdict.bgClass)}>
+        <p className={cn('text-xs font-semibold leading-tight', verdict.titleClass)}>
+          {verdict.title}
+        </p>
+        <p className="text-[11px] font-mono text-theme-muted flex items-center gap-1.5 mt-0.5">
+          <span className="inline-block size-1 rounded-full bg-current opacity-70 shrink-0" />
+          <span>{verdict.benchmark}</span>
         </p>
       </div>
-    </div>
+    </CardShell>
   );
 };

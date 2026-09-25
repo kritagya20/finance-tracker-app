@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { IntegerMoney } from '../../domain/models/types';
 import { formatAdaptiveCardCurrency } from '../../domain/engine/moneyUtils';
 import { cn } from '../../lib/utils';
+import { CardShell } from '../../components/ui/CardShell';
+import { CardHeader } from '../../components/ui/CardHeader';
 
 export interface MonthlyCashFlowPoint {
-  label: string; // e.g. "Apr", "May", or "01-09 – 07-09"
+  label: string; // Short tick label for X-axis (e.g. "17/08" or "Sep")
+  fullLabel?: string; // Full range label for inspection readout (e.g. "17/08–23/08")
   income: IntegerMoney;
   expense: IntegerMoney;
 }
@@ -34,42 +37,27 @@ export const CashFlowBarChart: React.FC<CashFlowBarChartProps> = ({
     100000 // minimum 1,000 INR
   );
 
-  // SVG Dimensions & Padding
-  const height = 180;
-  const paddingTop = 26;
-  const paddingBottom = 28;
-  const plotHeight = height - paddingTop - paddingBottom;
+  const plotHeight = 100;
 
   return (
-    <div
-      className={cn(
-        'relative rounded-2xl border border-slate-200/90 dark:border-white/[0.08] bg-white dark:bg-gradient-to-b dark:from-[#13151f] dark:to-[#0c0d14] p-4 sm:p-5 shadow-sm select-none',
-        className
-      )}
-    >
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-xs font-semibold text-theme-primary">
-            {timeframeLabel}
-          </h3>
-          <p className="text-[11px] text-theme-muted mt-0.5">
-            Income vs Expense side-by-side comparison
-          </p>
-        </div>
-
-        {/* Legend */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
-            <span className="text-[11px] font-medium text-theme-secondary">In</span>
+    <CardShell padding="p-4 sm:p-5" className={cn('select-none', className)}>
+      {/* Header with legend action */}
+      <CardHeader
+        title={timeframeLabel}
+        subtitle="Income vs Expense side-by-side comparison"
+        action={
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-emerald-500 shrink-0" />
+              <span className="text-[11px] font-medium text-theme-secondary">In</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-rose-400 shrink-0" />
+              <span className="text-[11px] font-medium text-theme-secondary">Out</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5">
-            <span className="size-2 rounded-full bg-rose-400 shrink-0" />
-            <span className="text-[11px] font-medium text-theme-secondary">Out</span>
-          </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Interactive Bar Chart Canvas */}
       <div className="relative mt-4 w-full">
@@ -83,7 +71,7 @@ export const CashFlowBarChart: React.FC<CashFlowBarChartProps> = ({
               return (
                 <>
                   <span className="text-theme-secondary font-semibold">
-                    {item.label}:
+                    {item.fullLabel || item.label}:
                   </span>
                   <div className="flex items-center gap-3 text-[11px]">
                     <span className="text-emerald-500 font-semibold">
@@ -114,10 +102,10 @@ export const CashFlowBarChart: React.FC<CashFlowBarChartProps> = ({
           )}
         </div>
 
-        {/* CSS Flexbox Bar Grid (Clean, responsive, no pixel cutoff) */}
-        <div className="mt-2 flex items-end justify-between gap-2 h-[140px] pt-4 pb-6 border-b border-theme-border/60 relative">
-          {/* Subtle baseline zero guideline */}
-          <div className="absolute left-0 right-0 bottom-6 h-px bg-theme-border/40 pointer-events-none" />
+        {/* CSS Flexbox Bar Grid */}
+        <div className="mt-2 flex items-end justify-between gap-2 h-[115px] pt-4 pb-1 border-b border-theme-border/60 relative">
+          {/* Baseline zero guideline */}
+          <div className="absolute left-0 right-0 bottom-0 h-px bg-theme-border/40 pointer-events-none" />
 
           {data.map((item, idx) => {
             const isHovered = activeIdx === idx;
@@ -139,7 +127,7 @@ export const CashFlowBarChart: React.FC<CashFlowBarChartProps> = ({
                 {isHovered && (
                   <div
                     className={cn(
-                      'absolute -top-3 size-1.5 rounded-full ring-2',
+                      'absolute -top-2.5 size-1.5 rounded-full ring-2',
                       net >= 0
                         ? 'bg-emerald-500 ring-emerald-500/30'
                         : 'bg-amber-500 ring-amber-500/30'
@@ -168,11 +156,24 @@ export const CashFlowBarChart: React.FC<CashFlowBarChartProps> = ({
                     title={`Expense: ${item.expense}`}
                   />
                 </div>
+              </div>
+            );
+          })}
+        </div>
 
-                {/* X-Axis Label */}
+        {/* Separate X-Axis Label Strip (No overlap with bars) */}
+        <div className="mt-2 flex items-center justify-between gap-2">
+          {data.map((item, idx) => {
+            const isHovered = activeIdx === idx;
+            return (
+              <div
+                key={item.label + idx + '-lbl'}
+                onClick={() => setActiveIdx((prev) => (prev === idx ? null : idx))}
+                className="flex-1 text-center cursor-pointer"
+              >
                 <span
                   className={cn(
-                    'absolute -bottom-5 text-[10px] font-mono transition-colors',
+                    'text-[10px] font-mono whitespace-nowrap transition-colors block truncate',
                     isHovered
                       ? 'text-theme-primary font-bold'
                       : 'text-theme-muted'
@@ -185,6 +186,6 @@ export const CashFlowBarChart: React.FC<CashFlowBarChartProps> = ({
           })}
         </div>
       </div>
-    </div>
+    </CardShell>
   );
 };

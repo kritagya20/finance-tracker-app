@@ -154,13 +154,6 @@ export const CategorySpendDrawer: React.FC<CategorySpendDrawerProps> = ({
           title={categoryName}
           titleId="category-drawer-title"
           onBack={onClose}
-          rightElement={
-            periodLabel ? (
-              <span className="text-[11px] font-mono font-medium px-2.5 py-1 rounded-full bg-theme-card-subtle text-theme-secondary border border-theme-border/60">
-                {periodLabel}
-              </span>
-            ) : undefined
-          }
         />
       }
     >
