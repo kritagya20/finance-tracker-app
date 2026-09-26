@@ -69,8 +69,16 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
   }, [activePreset]);
 
   const todayYMD = formatDateToYMD(new Date());
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-indexed
+
+  // System Date Boundaries: Min is Jan 2026 (2026-01-01), Max is Current Month/Year
+  const isMinMonth = viewYear < 2026 || (viewYear === 2026 && viewMonth <= 0);
+  const isMaxMonth = viewYear > currentYear || (viewYear === currentYear && viewMonth >= currentMonth);
 
   const handlePrevMonth = () => {
+    if (isMinMonth) return;
     if (viewMonth === 0) {
       setViewMonth(11);
       setViewYear((y) => y - 1);
@@ -80,6 +88,7 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
   };
 
   const handleNextMonth = () => {
+    if (isMaxMonth) return;
     if (viewMonth === 11) {
       setViewMonth(0);
       setViewYear((y) => y + 1);
@@ -99,6 +108,8 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
 
   // Day click handler
   const handleDayClick = (dayStr: string) => {
+    if (dayStr < '2026-01-01' || dayStr > todayYMD) return;
+
     setSelectedPresetKey(null); // Clear preset selection when custom date is clicked
 
     if (mode === 'single') {
@@ -151,9 +162,9 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
     const deltaX = e.changedTouches[0].clientX - touchStartXRef.current;
     touchStartXRef.current = null;
 
-    if (deltaX < -40) {
+    if (deltaX < -40 && !isMaxMonth) {
       handleNextMonth();
-    } else if (deltaX > 40) {
+    } else if (deltaX > 40 && !isMinMonth) {
       handlePrevMonth();
     }
   };
@@ -183,16 +194,24 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
         <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
+            disabled={isMinMonth}
             onClick={handlePrevMonth}
-            className="flex size-7 items-center justify-center rounded-lg border border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover active:scale-95 transition-all"
+            className={cn(
+              'flex size-7 items-center justify-center rounded-lg border border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover active:scale-95 transition-all',
+              isMinMonth && 'opacity-30 pointer-events-none cursor-not-allowed'
+            )}
             aria-label="Previous month"
           >
             <ChevronLeft className="size-4" />
           </button>
           <button
             type="button"
+            disabled={isMaxMonth}
             onClick={handleNextMonth}
-            className="flex size-7 items-center justify-center rounded-lg border border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover active:scale-95 transition-all"
+            className={cn(
+              'flex size-7 items-center justify-center rounded-lg border border-theme-border bg-theme-card-subtle text-theme-secondary hover:bg-theme-card-hover active:scale-95 transition-all',
+              isMaxMonth && 'opacity-30 pointer-events-none cursor-not-allowed'
+            )}
             aria-label="Next month"
           >
             <ChevronRight className="size-4" />
@@ -230,6 +249,9 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
           const dayStr = `${viewYear}-${String(viewMonth + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
 
           const isToday = dayStr === todayYMD;
+          const isBeforeMin = dayStr < '2026-01-01';
+          const isAfterToday = dayStr > todayYMD;
+          const isDisabled = isBeforeMin || isAfterToday;
 
           // Selection states
           const isSingleSelected = mode === 'single' && selectedDate?.slice(0, 10) === dayStr;
@@ -247,11 +269,14 @@ export const CalendarPicker: React.FC<CalendarPickerProps> = ({
             <button
               key={dayNum}
               type="button"
+              disabled={isDisabled}
               onClick={() => handleDayClick(dayStr)}
               className={cn(
                 'relative flex size-8 mx-auto items-center justify-center rounded-full text-xs font-medium font-mono transition-all active:scale-95',
                 // Default Day
                 'text-theme-primary hover:bg-theme-card-hover',
+                // Disabled State
+                isDisabled && 'opacity-30 pointer-events-none cursor-not-allowed text-theme-muted hover:bg-transparent',
                 // Today indicator
                 isToday && !isSingleSelected && !isRangeStart && !isRangeEnd && 'border border-violet-500 text-violet-600 dark:text-violet-400 font-bold',
                 // Single mode selected

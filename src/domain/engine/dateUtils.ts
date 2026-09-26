@@ -1,7 +1,30 @@
 /**
- * Standardized Date Formatting Utilities for Finance Tracker.
- * Absolute Rule: All dates displayed in the UI MUST be in strictly DD-MM-YYYY format (e.g. 23-09-2026).
+ * Standardized Date Formatting Utilities & App-wide Date Boundaries for Finance Tracker.
+ * Absolute Rules:
+ * 1. All dates displayed in the UI MUST be in strictly DD-MM-YYYY format (e.g. 23-09-2026).
+ * 2. System Start Date is strictly 01-Jan-2026. No transactions or calendar views prior to 2026-01-01.
  */
+
+export const APP_START_YEAR = 2026;
+export const APP_MIN_DATE_STR = '2026-01-01';
+
+/**
+ * Check if a date string 'YYYY-MM-DD' or ISO timestamp is prior to system start date (2026-01-01)
+ */
+export function isDateBeforeSystemMin(value: string | Date): boolean {
+  const ymd = value instanceof Date ? value.toISOString().slice(0, 10) : value.slice(0, 10);
+  return ymd < APP_MIN_DATE_STR;
+}
+
+/**
+ * Check if a date string 'YYYY-MM-DD' or ISO timestamp is in the future (after today)
+ */
+export function isDateInFuture(value: string | Date): boolean {
+  const ymd = value instanceof Date ? value.toISOString().slice(0, 10) : value.slice(0, 10);
+  const todayYMD = new Date().toISOString().slice(0, 10);
+  return ymd > todayYMD;
+}
+
 
 /**
  * Format any Date object, ISO timestamp, or date string to strict DD-MM-YYYY format.

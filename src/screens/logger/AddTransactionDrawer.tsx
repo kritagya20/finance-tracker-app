@@ -159,6 +159,16 @@ export const AddTransactionDrawer: React.FC<AddTransactionDrawerProps> = ({
     if (!selectedDate) {
       newErrors.date = true;
       missing.push('date');
+    } else if (selectedDate < '2026-01-01') {
+      newErrors.date = true;
+      setErrors(newErrors);
+      setErrorMessage('Date cannot be prior to 01-01-2026');
+      return;
+    } else if (selectedDate > todayStr) {
+      newErrors.date = true;
+      setErrors(newErrors);
+      setErrorMessage('Date cannot be in the future');
+      return;
     }
 
     if (isSplit) {
