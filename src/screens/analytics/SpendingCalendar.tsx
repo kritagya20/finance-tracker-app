@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, Sparkles, X } from 'lucide-react';
+import { Calendar as CalendarIcon, Sparkles, X, ChevronLeft, ChevronRight, Target, Flame, Eye } from 'lucide-react';
 import { IntegerMoney } from '../../domain/models/types';
 import { formatCurrency, formatAdaptiveCardCurrency } from '../../domain/engine/moneyUtils';
 import { formatDateDDMMYYYY, formatDateRangeDDMMYYYY } from '../../domain/engine/dateUtils';
 import { CardShell } from '../../components/ui/CardShell';
 import { cn } from '../../lib/utils';
+
+export type CalendarViewMode = 'heatmap' | 'streaks' | 'figures';
 
 interface SpendingCalendarProps {
   year: number;
@@ -12,6 +14,9 @@ interface SpendingCalendarProps {
   dailySpending: Map<string, IntegerMoney>; // Date string 'YYYY-MM-DD' -> amount in paise
   hideBalances: boolean;
   onSelectDate?: (dateStr: string, amount: IntegerMoney) => void;
+  onPrevMonth?: () => void;
+  onNextMonth?: () => void;
+  zeroSpendGoalTarget?: number; // Target number of zero-spend days per month (default 15)
   className?: string;
 }
 
@@ -21,9 +26,13 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
   dailySpending,
   hideBalances,
   onSelectDate,
+  onPrevMonth,
+  onNextMonth,
+  zeroSpendGoalTarget = 15,
   className,
 }) => {
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<CalendarViewMode>('heatmap');
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(true);
@@ -85,6 +94,9 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
   const weekdayAvg: IntegerMoney = weekdayRupees * 100;
   const weekendAvg: IntegerMoney = weekendRupees * 100;
   const dailyAvg: IntegerMoney = dailyRupees * 100;
+
+  // Zero-Spend Goal Completion %
+  const goalProgressPercent = Math.min(100, Math.round((zeroSpendCount / zeroSpendGoalTarget) * 100));
 
   // Weekday header labels
   const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -157,21 +169,110 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
 
   return (
     <CardShell className={className}>
-      {/* Header Bar: Guarantees title is ALWAYS 100% fully displayed without truncation */}
-      <div className="flex items-center justify-between gap-2 mb-3 min-w-0">
+      {/* Header Bar with Title + Inline Month Navigator + Range Badge */}
+      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 min-w-0">
         <div className="flex items-center gap-2 shrink-0">
           <CalendarIcon className="size-4 text-violet-500 shrink-0" />
           <h3 className="text-xs sm:text-sm font-semibold text-theme-primary whitespace-nowrap">
             Spending Calendar
           </h3>
+          {/* Inline Month Chevron Navigator */}
+          {(onPrevMonth || onNextMonth) && (
+            <div className="flex items-center gap-0.5 bg-theme-card-subtle border border-theme-border rounded-lg p-0.5 ml-1">
+              {onPrevMonth && (
+                <button
+                  type="button"
+                  onClick={onPrevMonth}
+                  className="p-1 rounded hover:bg-theme-card-hover text-theme-muted hover:text-theme-primary transition-colors"
+                  title="Previous month"
+                >
+                  <ChevronLeft className="size-3.5" />
+                </button>
+              )}
+              {onNextMonth && (
+                <button
+                  type="button"
+                  onClick={onNextMonth}
+                  className="p-1 rounded hover:bg-theme-card-hover text-theme-muted hover:text-theme-primary transition-colors"
+                  title="Next month"
+                >
+                  <ChevronRight className="size-3.5" />
+                </button>
+              )}
+            </div>
+          )}
         </div>
+
         <span className="text-[10px] sm:text-[11px] font-mono font-medium text-theme-muted bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.08] whitespace-nowrap shrink-0 ml-auto">
           {formatDateRangeDDMMYYYY(firstDayOfMonth, lastDayOfMonth)}
         </span>
       </div>
 
+      {/* Customizable View Mode Switcher + Monthly Target Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2 border-y border-theme-border/40 my-3 text-xs">
+        {/* View Mode Segmented Control Pill */}
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/[0.06] p-1 rounded-xl shrink-0 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => setViewMode('heatmap')}
+            className={cn(
+              'px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all flex items-center gap-1',
+              viewMode === 'heatmap'
+                ? 'bg-white dark:bg-slate-800 text-violet-600 dark:text-violet-400 shadow-xs'
+                : 'text-theme-muted hover:text-theme-primary'
+            )}
+          >
+            <CalendarIcon className="size-3" />
+            <span>Heatmap</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('streaks')}
+            className={cn(
+              'px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all flex items-center gap-1',
+              viewMode === 'streaks'
+                ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-xs'
+                : 'text-theme-muted hover:text-theme-primary'
+            )}
+          >
+            <Flame className="size-3" />
+            <span>Streaks</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode('figures')}
+            className={cn(
+              'px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all flex items-center gap-1',
+              viewMode === 'figures'
+                ? 'bg-white dark:bg-slate-800 text-theme-primary shadow-xs'
+                : 'text-theme-muted hover:text-theme-primary'
+            )}
+          >
+            <Eye className="size-3" />
+            <span>Figures</span>
+          </button>
+        </div>
+
+        {/* Zero-Spend Target Progress Capsule */}
+        <div className="flex items-center gap-2 min-w-0">
+          <Target className="size-3.5 text-emerald-500 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between text-[10px] font-mono text-theme-muted mb-0.5">
+              <span>Goal: {zeroSpendGoalTarget}d</span>
+              <span className="font-bold text-emerald-500">{zeroSpendCount}/{zeroSpendGoalTarget} ({goalProgressPercent}%)</span>
+            </div>
+            <div className="h-1.5 w-full bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
+              <div
+                className="h-full bg-emerald-500 transition-all duration-500 rounded-full"
+                style={{ width: `${goalProgressPercent}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Weekday Abbreviations Bar */}
-      <div className="mt-3.5 grid grid-cols-7 gap-1 text-center">
+      <div className="grid grid-cols-7 gap-1 text-center">
         {WEEKDAYS.map((wd, i) => (
           <span
             key={wd + i}
@@ -216,6 +317,10 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
             cellStyle = 'bg-violet-600 text-white font-bold shadow-xs';
           }
 
+          const formattedCellFigure = hideBalances
+            ? '••'
+            : formatAdaptiveCardCurrency(amount, true, undefined, true);
+
           return (
             <button
               key={day}
@@ -223,7 +328,7 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
               disabled={isFuture}
               onClick={() => handleCellClick(dateKey, amount, isFuture)}
               className={cn(
-                'aspect-square rounded-xl flex flex-col items-center justify-center text-xs font-mono transition-all duration-150 relative outline-none',
+                'aspect-square rounded-xl flex flex-col items-center justify-center text-xs font-mono transition-all duration-150 relative outline-none overflow-hidden p-0.5',
                 cellStyle,
                 isToday && 'ring-2 ring-violet-500 ring-offset-1 dark:ring-offset-slate-900',
                 isSelected && 'ring-2 ring-white shadow-md scale-105 z-10',
@@ -231,9 +336,23 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
               )}
               title={`${dateKey}: ${amount > 0 ? formatAdaptiveCardCurrency(amount, true, undefined, true) : 'Zero Spend'}`}
             >
-              <span>{day}</span>
-              {isZeroSpend && (
-                <span className="size-1 rounded-full bg-emerald-500 mt-0.5" />
+              {viewMode === 'figures' && !isFuture && amount > 0 ? (
+                <div className="flex flex-col items-center justify-center leading-tight">
+                  <span className="text-[10px] opacity-75">{day}</span>
+                  <span className="text-[9px] font-bold truncate max-w-full">{formattedCellFigure}</span>
+                </div>
+              ) : viewMode === 'streaks' && isZeroSpend ? (
+                <div className="flex flex-col items-center justify-center">
+                  <span className="text-[10px]">{day}</span>
+                  <Sparkles className="size-2.5 text-emerald-500" />
+                </div>
+              ) : (
+                <>
+                  <span>{day}</span>
+                  {isZeroSpend && (
+                    <span className="size-1 rounded-full bg-emerald-500 mt-0.5" />
+                  )}
+                </>
               )}
             </button>
           );

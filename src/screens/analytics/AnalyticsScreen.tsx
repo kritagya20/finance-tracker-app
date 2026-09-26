@@ -749,6 +749,8 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                 month={period.start.getMonth()}
                 dailySpending={dailySpendingMap}
                 hideBalances={hideBalances}
+                onPrevMonth={() => setReferenceDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
+                onNextMonth={() => setReferenceDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
               />
 
               {/* Behavioral Insights Banner */}
