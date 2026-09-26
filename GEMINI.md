@@ -86,8 +86,9 @@ BEFORE implementing, modifying, or refactoring ANY screen, component, UI element
   - Omit cluttered subtitles (`(1 tx)` or `79% of top 5`) and mid-text background box clipping. Use a soft, subtle background fill (`bg-violet-500/[0.05]`) scaling with spend volume.
 - **Spending Calendar & Streaks Invariants**:
   - Header date range labels (e.g. `01-09-2026 – 30-09-2026`) MUST use `whitespace-nowrap shrink-0` to prevent multi-line date wrapping.
-  - Footer metrics cycle every 4s through `Weekday Avg`, `Weekend Avg`, and `Daily Avg` with smooth vertical CSS translation (`translateY`), pausing on hover/touch.
-  - Averages MUST be ceiled (`Math.ceil`) to whole currency units without decimal points (e.g., `₹6,660` instead of `₹6,659.37`), with full word labels (`Weekday Avg`, `Weekend Avg`).
+  - Card title MUST be clean **`Spending Calendar`** to prevent header wrapping/truncation alongside the date badge.
+  - Footer metrics cycle every 4s starting with 3 slides: `Daily Avg`, `Weekday Avg`, and `Weekend Avg` with smooth vertical CSS translation (`translateY`), pausing on hover/touch.
+  - Averages MUST be ceiled (`Math.ceil`) to whole currency units without decimal points (e.g., `₹6,660` instead of `₹6,659.37`), with full word labels (`Daily Avg`, `Weekday Avg`, `Weekend Avg`).
 - **Needs, Wants & Savings Breakdown Invariants**:
   - Card title MUST be flexible **`Needs, Wants & Savings Breakdown`** (never hardcode `50 / 30 / 20 Rule Allocation` as the fixed title, as user targets vary).
   - Recommended benchmark guidance MUST ALWAYS be placed on a dedicated, separate line 2 (`font-mono text-[11px] text-theme-muted`) with prefix **`Recommended benchmark:`**.

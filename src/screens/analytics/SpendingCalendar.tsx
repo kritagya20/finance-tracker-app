@@ -92,6 +92,13 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
   // Carousel Slides Configuration
   const slides = [
     {
+      id: 'daily',
+      badge: 'Daily Avg',
+      badgeClass: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20',
+      value: hideBalances ? '••••' : formatCurrency(dailyAvg, undefined, false),
+      valClass: 'text-theme-primary font-bold',
+    },
+    {
       id: 'weekday',
       badge: 'Weekday Avg',
       badgeClass: 'bg-violet-500/10 text-violet-600 dark:text-violet-400 border border-violet-500/20',
@@ -104,13 +111,6 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
       badgeClass: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20',
       value: hideBalances ? '••••' : formatCurrency(weekendAvg, undefined, false),
       valClass: 'text-amber-600 dark:text-amber-400 font-bold',
-    },
-    {
-      id: 'daily',
-      badge: 'Daily Avg',
-      badgeClass: 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border border-slate-500/20',
-      value: hideBalances ? '••••' : formatCurrency(dailyAvg, undefined, false),
-      valClass: 'text-theme-primary font-bold',
     },
   ];
 
@@ -138,7 +138,7 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
     <CardShell className={className}>
       {/* Header Primitive */}
       <CardHeader
-        title="Spending Calendar & Streaks"
+        title="Spending Calendar"
         icon={CalendarIcon}
         badge={formatDateRangeDDMMYYYY(firstDayOfMonth, lastDayOfMonth)}
       />
