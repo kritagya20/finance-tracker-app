@@ -26,6 +26,7 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(true);
 
   // Calendar Geometry
   const firstDayOfMonth = new Date(year, month, 1);
@@ -88,8 +89,8 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
   // Weekday header labels
   const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-  // Carousel Slides Configuration (3 Slides strictly ordered: 1. Daily Avg, 2. Weekday Avg, 3. Weekend Avg)
-  const slides = [
+  // Base Carousel Slides Configuration (3 Slides strictly ordered: 1. Daily Avg, 2. Weekday Avg, 3. Weekend Avg)
+  const baseSlides = [
     {
       id: 'daily',
       badge: 'Daily Avg',
@@ -113,14 +114,35 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
     },
   ];
 
-  // Auto-scroll vertical carousel every 4 seconds (4000ms)
+  // Extended slides array with a clone of the first slide at the end for continuous circular forward looping (1 -> 2 -> 3 -> 1)
+  const displaySlides = [...baseSlides, { ...baseSlides[0], id: 'daily-clone' }];
+
+  // Advance slide forward every 4 seconds (4000ms)
   useEffect(() => {
     if (isPaused) return;
     const interval = setInterval(() => {
-      setCarouselIndex((prev) => (prev + 1) % slides.length);
+      setIsTransitioning(true);
+      setCarouselIndex((prev) => prev + 1);
     }, 4000);
     return () => clearInterval(interval);
-  }, [isPaused, slides.length]);
+  }, [isPaused]);
+
+  // When transition to the clone slide (index === 3) completes, silently reset index to 0 without animation
+  useEffect(() => {
+    if (carouselIndex === baseSlides.length) {
+      const timer = setTimeout(() => {
+        setIsTransitioning(false);
+        setCarouselIndex(0);
+      }, 500); // 500ms matches transition duration-500
+      return () => clearTimeout(timer);
+    }
+  }, [carouselIndex, baseSlides.length]);
+
+  // Handle manual user tap on carousel
+  const handleCarouselClick = () => {
+    setIsTransitioning(true);
+    setCarouselIndex((prev) => (prev >= baseSlides.length ? 1 : prev + 1));
+  };
 
   // Handle cell click (toggle selection)
   const handleCellClick = (dateKey: string, amount: IntegerMoney, isFuture: boolean) => {
@@ -255,22 +277,27 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
               </span>
             </div>
 
-            {/* Right side: Fail-safe Vertical Auto-Rotating Stats Carousel */}
+            {/* Right side: Continuous Infinite Circular Forward Carousel (1 -> 2 -> 3 -> 1) */}
             <div
               className="flex items-center gap-1.5 relative cursor-pointer select-none shrink-0"
               onMouseEnter={() => setIsPaused(true)}
+              onMouseLeave={() => setIsPaused(false)}
               onTouchStart={() => setIsPaused(true)}
-              onClick={() => setCarouselIndex((prev) => (prev + 1) % slides.length)}
+              onTouchEnd={() => setIsPaused(false)}
+              onClick={handleCarouselClick}
               title="Click or hover to pause carousel"
             >
               <div className="relative h-6 overflow-hidden min-w-[160px] sm:min-w-[180px] flex items-center justify-end">
                 <div
-                  className="absolute top-0 right-0 w-full flex flex-col transition-transform duration-500 ease-out"
+                  className={cn(
+                    'absolute top-0 right-0 w-full flex flex-col',
+                    isTransitioning ? 'transition-transform duration-500 ease-out' : 'transition-none'
+                  )}
                   style={{ transform: `translateY(-${carouselIndex * 24}px)` }}
                 >
-                  {slides.map((slide) => (
+                  {displaySlides.map((slide, idx) => (
                     <div
-                      key={slide.id}
+                      key={slide.id + idx}
                       className="h-6 flex items-center justify-end gap-1.5 text-[11px] font-mono whitespace-nowrap shrink-0"
                     >
                       <span className={cn('px-1.5 py-0.5 rounded-md text-[10px] font-semibold shrink-0', slide.badgeClass)}>
