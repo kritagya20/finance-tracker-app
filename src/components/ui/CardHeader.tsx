@@ -11,6 +11,7 @@ export interface CardHeaderProps {
   badge?: string | React.ReactNode;
   action?: React.ReactNode;
   className?: string;
+  noTruncate?: boolean;
 }
 
 export const CardHeader: React.FC<CardHeaderProps> = ({
@@ -22,14 +23,17 @@ export const CardHeader: React.FC<CardHeaderProps> = ({
   badge,
   action,
   className,
+  noTruncate = false,
 }) => {
   return (
-    <div className={cn('flex items-center justify-between gap-2 min-w-0', className)}>
-      <div className="flex items-center gap-2 min-w-0 shrink">
+    <div className={cn('flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-2 gap-y-1 min-w-0', className)}>
+      <div className="flex items-center gap-2 min-w-0 shrink-0">
         {Icon && <Icon className={cn('size-4 shrink-0', iconColor)} />}
         <div className="min-w-0">
           {typeof title === 'string' ? (
-            <h3 className={cn('truncate', titleSize)}>{title}</h3>
+            <h3 className={cn(noTruncate ? 'whitespace-nowrap' : 'truncate', titleSize)}>
+              {title}
+            </h3>
           ) : (
             title
           )}

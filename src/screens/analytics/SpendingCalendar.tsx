@@ -139,6 +139,7 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
       {/* Header Primitive */}
       <CardHeader
         title="Spending Calendar"
+        noTruncate
         icon={CalendarIcon}
         badge={formatDateRangeDDMMYYYY(firstDayOfMonth, lastDayOfMonth)}
       />
