@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { ChevronDown, BarChart3, TrendingUp, Calendar, Wallet } from 'lucide-react';
-import { FinanceSummary, Transaction, Category, Budget, IntegerMoney } from '../../domain/models/types';
+import { FinanceSummary, Transaction, Category, Budget, IntegerMoney, Account } from '../../domain/models/types';
 import { DEFAULT_CATEGORIES } from '../../domain/engine/categories';
 import { CalendarPicker, DateRange } from '../../components/common/CalendarPicker';
 import { EmptyState } from '../../components/common/EmptyState';
@@ -14,6 +14,9 @@ import { SavingsRateRing } from './SavingsRateRing';
 import { CashFlowBarChart, MonthlyCashFlowPoint } from './CashFlowBarChart';
 import { TopMerchantsCard, MerchantSpendItem } from './TopMerchantsCard';
 import { SpendingCalendar } from './SpendingCalendar';
+import { DateSpendDrawer } from './DateSpendDrawer';
+import { TransactionDetailDrawer } from '../activity/TransactionDetailDrawer';
+import { EditTransactionDrawer } from '../activity/EditTransactionDrawer';
 import { formatDateRangeDDMMYYYY } from '../../domain/engine/dateUtils';
 import { CardShell } from '../../components/ui/CardShell';
 import { cn } from '../../lib/utils';
@@ -22,11 +25,14 @@ interface AnalyticsScreenProps {
   summary: FinanceSummary | null;
   transactions: Transaction[];
   categories?: Category[];
+  accounts?: Account[];
   budgets?: Budget[];
   hideBalances: boolean;
   onOpenAddModal?: () => void;
   onNavigate?: (tab: 'home' | 'activity' | 'analytics' | 'profile') => void;
   onSelectTransaction?: (tx: Transaction) => void;
+  onDeleteTransaction?: (id: string) => void;
+  onUpdateTransaction?: (id: string, updates: Partial<Transaction>) => Promise<unknown>;
 }
 
 export type AnalyticsTimeframe = 'WEEK' | 'MONTH' | 'YEAR';
@@ -115,17 +121,26 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
   summary: _summary,
   transactions,
   categories = DEFAULT_CATEGORIES,
+  accounts = [],
   budgets = [],
   hideBalances,
   onOpenAddModal,
   onNavigate,
   onSelectTransaction,
+  onDeleteTransaction,
+  onUpdateTransaction,
 }) => {
   const [activeTab, setActiveTab] = useState<DomainTab>('spending');
   const [timeframe, setTimeframe] = useState<AnalyticsTimeframe>('MONTH');
   const [customRange, setCustomRange] = useState<DateRange | null>(null);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [referenceDate, setReferenceDate] = useState<Date>(() => new Date());
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
+  const [isDateDrawerOpen, setIsDateDrawerOpen] = useState(false);
+
+  // Nested Drawer Stack States: Inspecting and Editing a transaction directly within Analytics drawers
+  const [inspectingTx, setInspectingTx] = useState<Transaction | null>(null);
+  const [editingTx, setEditingTx] = useState<Transaction | null>(null);
 
   // Period details (start, end, label, and previous period bounds)
   const period = useMemo(
@@ -560,10 +575,13 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
                         });
                       } else if (preset === 'ALL') {
                         setTimeframe('MONTH');
-                        let earliestDate = '2020-01-01';
+                        let earliestDate = '2026-01-01';
                         if (transactions && transactions.length > 0) {
                           const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
-                          earliestDate = sorted[0].date.slice(0, 10);
+                          const firstTxDate = sorted[0].date.slice(0, 10);
+                          if (firstTxDate > earliestDate) {
+                            earliestDate = firstTxDate;
+                          }
                         }
                         setCustomRange({
                           startDate: earliestDate,
@@ -731,46 +749,98 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
       {/* 6. Tab 3: HABITS & PATTERNS DOMAIN */}
       {activeTab === 'habits' && (
         <div className="flex flex-col gap-4 animate-in fade-in duration-200">
-          {periodTransactions.length === 0 ? (
-            <EmptyState
-              icon={Calendar}
-              badge={period.label}
-              title="No Activity Logged"
-              description={`Start logging your daily purchases to build your spending heatmap and discover weekly rhythm patterns.`}
-              actionLabel={onOpenAddModal ? "+ Log an Expense" : undefined}
-              onAction={onOpenAddModal}
-              className="mt-2"
-            />
-          ) : (
-            <>
-              {/* Monthly Spending Heatmap Calendar */}
-              <SpendingCalendar
-                year={period.start.getFullYear()}
-                month={period.start.getMonth()}
-                dailySpending={dailySpendingMap}
-                hideBalances={hideBalances}
-                onPrevMonth={() => setReferenceDate((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1))}
-                onNextMonth={() => setReferenceDate((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1))}
-              />
+          {/* Monthly Spending Heatmap Calendar */}
+          <SpendingCalendar
+            year={period.start.getFullYear()}
+            month={period.start.getMonth()}
+            dailySpending={dailySpendingMap}
+            hideBalances={hideBalances}
+            onLongPressDate={(dateStr) => {
+              setSelectedCalendarDate(dateStr);
+              setIsDateDrawerOpen(true);
+            }}
+            onPrevMonth={() =>
+              setReferenceDate((prev) => {
+                const target = new Date(prev.getFullYear(), prev.getMonth() - 1, 1);
+                return target.getFullYear() < 2026 ? prev : target;
+              })
+            }
+            onNextMonth={() =>
+              setReferenceDate((prev) => {
+                const now = new Date();
+                const target = new Date(prev.getFullYear(), prev.getMonth() + 1, 1);
+                if (
+                  target.getFullYear() > now.getFullYear() ||
+                  (target.getFullYear() === now.getFullYear() && target.getMonth() > now.getMonth())
+                ) {
+                  return prev;
+                }
+                return target;
+              })
+            }
+          />
 
-              {/* Behavioral Insights Banner */}
-              <CardShell padding="p-4" className="select-none">
-                <div className="flex items-center gap-2.5">
-                  <div className="size-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
-                    <TrendingUp className="size-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-semibold text-theme-primary">Financial Habit Rhythm</h4>
-                    <p className="text-[11px] text-theme-muted mt-0.5 leading-relaxed">
-                      Maintaining zero-spend days allows your daily spending pace to adjust higher on weekends.
-                    </p>
-                  </div>
-                </div>
-              </CardShell>
-            </>
-          )}
+          {/* Behavioral Insights Banner */}
+          <CardShell padding="p-4" className="select-none">
+            <div className="flex items-center gap-2.5">
+              <div className="size-8 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                <TrendingUp className="size-4" />
+              </div>
+              <div>
+                <h4 className="text-xs font-semibold text-theme-primary">Financial Habit Rhythm</h4>
+                <p className="text-[11px] text-theme-muted mt-0.5 leading-relaxed">
+                  Maintaining zero-spend days allows your daily spending pace to adjust higher on weekends.
+                </p>
+              </div>
+            </div>
+          </CardShell>
         </div>
       )}
+
+      {/* 7. Level 1 Sub-Drawer: Date Spend Detail Drawer (Triggered by Long-Pressing any Calendar Date) */}
+      <DateSpendDrawer
+        isOpen={isDateDrawerOpen}
+        onClose={() => setIsDateDrawerOpen(false)}
+        dateStr={selectedCalendarDate}
+        transactions={transactions}
+        hideBalances={hideBalances}
+        onSelectTransaction={(tx) => {
+          setInspectingTx(tx);
+        }}
+      />
+
+      {/* 8. Level 2 Stacked Drawer: Transaction Detail Drawer (Opens on top of active drawer) */}
+      <TransactionDetailDrawer
+        isOpen={!!inspectingTx}
+        transaction={inspectingTx}
+        categories={categories}
+        accounts={accounts}
+        hideBalances={hideBalances}
+        onEdit={(tx) => setEditingTx(tx)}
+        onDelete={async (tx) => {
+          if (onDeleteTransaction) {
+            await onDeleteTransaction(tx.id);
+          }
+          setInspectingTx(null);
+        }}
+        onClose={() => setInspectingTx(null)}
+      />
+
+      {/* 9. Level 3 Stacked Drawer: Edit Transaction Drawer (Opens on top of Transaction Detail) */}
+      <EditTransactionDrawer
+        isOpen={!!editingTx}
+        transaction={editingTx}
+        categories={categories}
+        accounts={accounts}
+        onSave={async (updates) => {
+          if (editingTx && onUpdateTransaction) {
+            await onUpdateTransaction(editingTx.id, updates);
+            setEditingTx(null);
+            setInspectingTx((prev) => (prev ? { ...prev, ...updates } : null));
+          }
+        }}
+        onClose={() => setEditingTx(null)}
+      />
     </div>
   );
 };

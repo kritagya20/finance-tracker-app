@@ -297,11 +297,14 @@ export function App() {
                 summary={summary}
                 transactions={transactions}
                 categories={categories}
+                accounts={accounts}
                 budgets={budgets}
                 hideBalances={hideBalances}
                 onOpenAddModal={() => setIsAddDrawerOpen(true)}
                 onNavigate={(tab) => setActiveTab(tab)}
                 onSelectTransaction={handleSelectTransactionFromHome}
+                onDeleteTransaction={deleteTransaction}
+                onUpdateTransaction={updateTransaction}
               />
             )}
 
