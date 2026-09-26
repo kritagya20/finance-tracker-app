@@ -499,85 +499,92 @@ export const AnalyticsScreen: React.FC<AnalyticsScreenProps> = ({
           Analytics
         </h1>
 
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setIsDatePickerOpen((prev) => !prev)}
-            aria-label="Select date range"
-            className="flex h-10 items-center gap-1.5 rounded-2xl border border-theme-border bg-theme-card px-3.5 text-xs font-medium text-theme-secondary hover:bg-theme-card-hover transition-colors shadow-sm"
-          >
-            <span>{period.label}</span>
-            <ChevronDown
-              className={cn(
-                'size-3.5 transition-transform duration-200 text-theme-muted',
-                isDatePickerOpen && 'rotate-180'
-              )}
-            />
-          </button>
-
-          {/* Date Picker Popover */}
-          {isDatePickerOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-40"
-                onClick={() => setIsDatePickerOpen(false)}
+        {activeTab !== 'habits' ? (
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsDatePickerOpen((prev) => !prev)}
+              aria-label="Select date range"
+              className="flex h-10 items-center gap-1.5 rounded-2xl border border-theme-border bg-theme-card px-3.5 text-xs font-medium text-theme-secondary hover:bg-theme-card-hover transition-colors shadow-sm"
+            >
+              <span>{period.label}</span>
+              <ChevronDown
+                className={cn(
+                  'size-3.5 transition-transform duration-200 text-theme-muted',
+                  isDatePickerOpen && 'rotate-180'
+                )}
               />
-              <div className="absolute right-0 top-full z-50 mt-1.5 w-[328px] max-w-[calc(100vw-32px)]">
-                <CalendarPicker
-                  mode="range"
-                  selectedRange={customRange || undefined}
-                  activePreset={activePresetKey || undefined}
-                  onSelectRange={(range) => {
-                    setCustomRange(range);
-                    setIsDatePickerOpen(false);
-                  }}
-                  onPresetSelect={(preset) => {
-                    const now = new Date();
-                    if (preset === 'THIS_WEEK') {
-                      setTimeframe('WEEK');
-                      setCustomRange(null);
-                      setReferenceDate(now);
-                    } else if (preset === 'THIS_MONTH') {
-                      setTimeframe('MONTH');
-                      setCustomRange(null);
-                      setReferenceDate(now);
-                    } else if (preset === 'LAST_MONTH') {
-                      setTimeframe('MONTH');
-                      const lastM = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-                      setReferenceDate(lastM);
-                      setCustomRange(null);
-                    } else if (preset === 'THIS_YEAR') {
-                      setTimeframe('YEAR');
-                      setCustomRange(null);
-                      setReferenceDate(now);
-                    } else if (preset === 'LAST_90_DAYS') {
-                      setTimeframe('MONTH');
-                      const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-                      setCustomRange({
-                        startDate: ninetyDaysAgo.toISOString().slice(0, 10),
-                        endDate: now.toISOString().slice(0, 10),
-                      });
-                    } else if (preset === 'ALL') {
-                      setTimeframe('MONTH');
-                      let earliestDate = '2020-01-01';
-                      if (transactions && transactions.length > 0) {
-                        const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
-                        earliestDate = sorted[0].date.slice(0, 10);
-                      }
-                      setCustomRange({
-                        startDate: earliestDate,
-                        endDate: now.toISOString().slice(0, 10),
-                      });
-                    }
-                    setIsDatePickerOpen(false);
-                  }}
-                  showPresets={true}
-                  onClose={() => setIsDatePickerOpen(false)}
+            </button>
+
+            {/* Date Picker Popover */}
+            {isDatePickerOpen && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setIsDatePickerOpen(false)}
                 />
-              </div>
-            </>
-          )}
-        </div>
+                <div className="absolute right-0 top-full z-50 mt-1.5 w-[328px] max-w-[calc(100vw-32px)]">
+                  <CalendarPicker
+                    mode="range"
+                    selectedRange={customRange || undefined}
+                    activePreset={activePresetKey || undefined}
+                    onSelectRange={(range) => {
+                      setCustomRange(range);
+                      setIsDatePickerOpen(false);
+                    }}
+                    onPresetSelect={(preset) => {
+                      const now = new Date();
+                      if (preset === 'THIS_WEEK') {
+                        setTimeframe('WEEK');
+                        setCustomRange(null);
+                        setReferenceDate(now);
+                      } else if (preset === 'THIS_MONTH') {
+                        setTimeframe('MONTH');
+                        setCustomRange(null);
+                        setReferenceDate(now);
+                      } else if (preset === 'LAST_MONTH') {
+                        setTimeframe('MONTH');
+                        const lastM = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                        setReferenceDate(lastM);
+                        setCustomRange(null);
+                      } else if (preset === 'THIS_YEAR') {
+                        setTimeframe('YEAR');
+                        setCustomRange(null);
+                        setReferenceDate(now);
+                      } else if (preset === 'LAST_90_DAYS') {
+                        setTimeframe('MONTH');
+                        const ninetyDaysAgo = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
+                        setCustomRange({
+                          startDate: ninetyDaysAgo.toISOString().slice(0, 10),
+                          endDate: now.toISOString().slice(0, 10),
+                        });
+                      } else if (preset === 'ALL') {
+                        setTimeframe('MONTH');
+                        let earliestDate = '2020-01-01';
+                        if (transactions && transactions.length > 0) {
+                          const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
+                          earliestDate = sorted[0].date.slice(0, 10);
+                        }
+                        setCustomRange({
+                          startDate: earliestDate,
+                          endDate: now.toISOString().slice(0, 10),
+                        });
+                      }
+                      setIsDatePickerOpen(false);
+                    }}
+                    showPresets={true}
+                    onClose={() => setIsDatePickerOpen(false)}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <div className="flex h-10 items-center gap-1.5 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-3.5 text-xs font-semibold text-emerald-500 dark:text-emerald-400 shadow-sm">
+            <Calendar className="size-3.5" />
+            <span>Habit Heatmap</span>
+          </div>
+        )}
       </header>
 
       {/* 2. In-Page Domain Segmented Tabs (Spending | Income | Habits) */}
