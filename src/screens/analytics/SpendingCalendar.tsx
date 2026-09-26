@@ -4,7 +4,6 @@ import { IntegerMoney } from '../../domain/models/types';
 import { formatCurrency, formatAdaptiveCardCurrency } from '../../domain/engine/moneyUtils';
 import { formatDateDDMMYYYY, formatDateRangeDDMMYYYY } from '../../domain/engine/dateUtils';
 import { CardShell } from '../../components/ui/CardShell';
-import { CardHeader } from '../../components/ui/CardHeader';
 import { cn } from '../../lib/utils';
 
 interface SpendingCalendarProps {
@@ -89,7 +88,7 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
   // Weekday header labels
   const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
-  // Carousel Slides Configuration
+  // Carousel Slides Configuration (3 Slides strictly ordered: 1. Daily Avg, 2. Weekday Avg, 3. Weekend Avg)
   const slides = [
     {
       id: 'daily',
@@ -136,13 +135,18 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
 
   return (
     <CardShell className={className}>
-      {/* Header Primitive */}
-      <CardHeader
-        title="Spending Calendar"
-        noTruncate
-        icon={CalendarIcon}
-        badge={formatDateRangeDDMMYYYY(firstDayOfMonth, lastDayOfMonth)}
-      />
+      {/* Header Bar: Guarantees title is ALWAYS 100% fully displayed without truncation */}
+      <div className="flex items-center justify-between gap-2 mb-3 min-w-0">
+        <div className="flex items-center gap-2 shrink-0">
+          <CalendarIcon className="size-4 text-violet-500 shrink-0" />
+          <h3 className="text-xs sm:text-sm font-semibold text-theme-primary whitespace-nowrap">
+            Spending Calendar
+          </h3>
+        </div>
+        <span className="text-[10px] sm:text-[11px] font-mono font-medium text-theme-muted bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.08] whitespace-nowrap shrink-0 ml-auto">
+          {formatDateRangeDDMMYYYY(firstDayOfMonth, lastDayOfMonth)}
+        </span>
+      </div>
 
       {/* Weekday Abbreviations Bar */}
       <div className="mt-3.5 grid grid-cols-7 gap-1 text-center">
@@ -251,28 +255,28 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
               </span>
             </div>
 
-            {/* Right side: Vertical Auto-Rotating Stats Carousel */}
+            {/* Right side: Fail-safe Vertical Auto-Rotating Stats Carousel */}
             <div
-              className="flex items-center gap-1.5 relative cursor-pointer select-none"
+              className="flex items-center gap-1.5 relative cursor-pointer select-none shrink-0"
               onMouseEnter={() => setIsPaused(true)}
               onTouchStart={() => setIsPaused(true)}
               onClick={() => setCarouselIndex((prev) => (prev + 1) % slides.length)}
               title="Click or hover to pause carousel"
             >
-              <div className="relative h-6 overflow-hidden min-w-[165px] sm:min-w-[185px] flex items-center justify-end">
+              <div className="relative h-6 overflow-hidden min-w-[160px] sm:min-w-[180px] flex items-center justify-end">
                 <div
-                  className="transition-transform duration-500 ease-out flex flex-col absolute w-full right-0"
+                  className="absolute top-0 right-0 w-full flex flex-col transition-transform duration-500 ease-out"
                   style={{ transform: `translateY(-${carouselIndex * 24}px)` }}
                 >
                   {slides.map((slide) => (
                     <div
                       key={slide.id}
-                      className="h-6 flex items-center justify-end gap-1.5 text-[11px] font-mono whitespace-nowrap"
+                      className="h-6 flex items-center justify-end gap-1.5 text-[11px] font-mono whitespace-nowrap shrink-0"
                     >
-                      <span className={cn('px-1.5 py-0.5 rounded-md text-[10px] font-semibold', slide.badgeClass)}>
+                      <span className={cn('px-1.5 py-0.5 rounded-md text-[10px] font-semibold shrink-0', slide.badgeClass)}>
                         {slide.badge}
                       </span>
-                      <span className={slide.valClass}>{slide.value}</span>
+                      <span className={cn('shrink-0', slide.valClass)}>{slide.value}</span>
                     </div>
                   ))}
                 </div>
