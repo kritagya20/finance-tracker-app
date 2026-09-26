@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, Sparkles, X, ChevronLeft, ChevronRight, Target, Flame, Eye } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Calendar as CalendarIcon, Sparkles, ChevronLeft, ChevronRight, Info } from 'lucide-react';
 import { IntegerMoney } from '../../domain/models/types';
 import { formatCurrency, formatAdaptiveCardCurrency } from '../../domain/engine/moneyUtils';
-import { formatDateDDMMYYYY, formatDateRangeDDMMYYYY } from '../../domain/engine/dateUtils';
+import { formatDateDDMMYYYY } from '../../domain/engine/dateUtils';
 import { CardShell } from '../../components/ui/CardShell';
 import { cn } from '../../lib/utils';
-
-export type CalendarViewMode = 'heatmap' | 'streaks' | 'figures';
 
 interface SpendingCalendarProps {
   year: number;
@@ -14,9 +12,9 @@ interface SpendingCalendarProps {
   dailySpending: Map<string, IntegerMoney>; // Date string 'YYYY-MM-DD' -> amount in paise
   hideBalances: boolean;
   onSelectDate?: (dateStr: string, amount: IntegerMoney) => void;
+  onLongPressDate?: (dateStr: string) => void;
   onPrevMonth?: () => void;
   onNextMonth?: () => void;
-  zeroSpendGoalTarget?: number; // Target number of zero-spend days per month (default 15)
   className?: string;
 }
 
@@ -26,21 +24,24 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
   dailySpending,
   hideBalances,
   onSelectDate,
+  onLongPressDate,
   onPrevMonth,
   onNextMonth,
-  zeroSpendGoalTarget = 15,
   className,
 }) => {
   const [selectedDateStr, setSelectedDateStr] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<CalendarViewMode>('heatmap');
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(true);
+  const touchStartX = useRef<number | null>(null);
+
+  // Long press timer ref for date cell interaction
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isLongPressRef = useRef(false);
 
   // Calendar Geometry
   const firstDayOfMonth = new Date(year, month, 1);
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const lastDayOfMonth = new Date(year, month + 1, 0);
   const startDayOfWeek = (firstDayOfMonth.getDay() + 6) % 7; // Convert to Monday = 0, Sunday = 6
 
   const today = new Date();
@@ -80,6 +81,9 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
     }
   }
 
+  // Check if month has active transaction records (Argument 2: Distinguish unrecorded periods from verified zero-spend days)
+  const hasLoggedActivity = pastDaySpends.length > 0;
+
   // Quartile thresholds for non-zero spends
   pastDaySpends.sort((a, b) => a - b);
   const q1 = pastDaySpends.length > 0 ? pastDaySpends[Math.floor(pastDaySpends.length * 0.25)] : 0;
@@ -94,9 +98,6 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
   const weekdayAvg: IntegerMoney = weekdayRupees * 100;
   const weekendAvg: IntegerMoney = weekendRupees * 100;
   const dailyAvg: IntegerMoney = dailyRupees * 100;
-
-  // Zero-Spend Goal Completion %
-  const goalProgressPercent = Math.min(100, Math.round((zeroSpendCount / zeroSpendGoalTarget) * 100));
 
   // Weekday header labels
   const WEEKDAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -131,13 +132,13 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
 
   // Advance slide forward every 4 seconds (4000ms)
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || !hasLoggedActivity) return;
     const interval = setInterval(() => {
       setIsTransitioning(true);
       setCarouselIndex((prev) => prev + 1);
     }, 4000);
     return () => clearInterval(interval);
-  }, [isPaused]);
+  }, [isPaused, hasLoggedActivity]);
 
   // When transition to the clone slide (index === 3) completes, silently reset index to 0 without animation
   useEffect(() => {
@@ -167,112 +168,114 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
     }
   };
 
+  // Cell Long Press Handlers
+  const handleCellPressStart = (dateKey: string, isFuture: boolean) => {
+    if (isFuture) return;
+    isLongPressRef.current = false;
+    if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressRef.current = true;
+      onLongPressDate?.(dateKey);
+    }, 450);
+  };
+
+  const handleCellPressEnd = (dateKey: string, amount: IntegerMoney, isFuture: boolean) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    if (isLongPressRef.current) {
+      isLongPressRef.current = false;
+      return;
+    }
+    handleCellClick(dateKey, amount, isFuture);
+  };
+
+  const handleCellPressCancel = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    isLongPressRef.current = false;
+  };
+
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth();
+  const isMinMonth = year < 2026 || (year === 2026 && month <= 0);
+  const isMaxMonth = year > currentYear || (year === currentYear && month >= currentMonth);
+
+  // Touch swipe month navigation
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchEndX - touchStartX.current;
+    if (diff > 50 && onPrevMonth && !isMinMonth) {
+      onPrevMonth(); // Swipe right -> Previous month
+    } else if (diff < -50 && onNextMonth && !isMaxMonth) {
+      onNextMonth(); // Swipe left -> Next month
+    }
+    touchStartX.current = null;
+  };
+
+  const monthNameYear = firstDayOfMonth.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+
   return (
-    <CardShell className={className}>
-      {/* Header Bar with Title + Inline Month Navigator + Range Badge */}
-      <div className="flex flex-wrap items-center justify-between gap-2 mb-3 min-w-0">
+    <CardShell
+      className={className}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
+      {/* Header Bar: Ultra-sleek title + Integrated Month Navigator Pill */}
+      <div className="flex items-center justify-between gap-2 mb-3 min-w-0">
         <div className="flex items-center gap-2 shrink-0">
           <CalendarIcon className="size-4 text-violet-500 shrink-0" />
           <h3 className="text-xs sm:text-sm font-semibold text-theme-primary whitespace-nowrap">
             Spending Calendar
           </h3>
-          {/* Inline Month Chevron Navigator */}
-          {(onPrevMonth || onNextMonth) && (
-            <div className="flex items-center gap-0.5 bg-theme-card-subtle border border-theme-border rounded-lg p-0.5 ml-1">
-              {onPrevMonth && (
-                <button
-                  type="button"
-                  onClick={onPrevMonth}
-                  className="p-1 rounded hover:bg-theme-card-hover text-theme-muted hover:text-theme-primary transition-colors"
-                  title="Previous month"
-                >
-                  <ChevronLeft className="size-3.5" />
-                </button>
+        </div>
+
+        {/* Integrated Month Navigator Pill (Guarantees zero right-edge overflow) */}
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/[0.06] border border-slate-200/50 dark:border-white/[0.08] rounded-full px-1.5 py-0.5 text-[11px] font-mono font-medium text-theme-secondary shrink-0 ml-auto">
+          {onPrevMonth && (
+            <button
+              type="button"
+              disabled={isMinMonth}
+              onClick={onPrevMonth}
+              aria-label="Previous month"
+              className={cn(
+                'p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 text-theme-muted hover:text-theme-primary transition-colors',
+                isMinMonth && 'opacity-30 pointer-events-none cursor-not-allowed'
               )}
-              {onNextMonth && (
-                <button
-                  type="button"
-                  onClick={onNextMonth}
-                  className="p-1 rounded hover:bg-theme-card-hover text-theme-muted hover:text-theme-primary transition-colors"
-                  title="Next month"
-                >
-                  <ChevronRight className="size-3.5" />
-                </button>
-              )}
-            </div>
+            >
+              <ChevronLeft className="size-3.5" />
+            </button>
           )}
-        </div>
-
-        <span className="text-[10px] sm:text-[11px] font-mono font-medium text-theme-muted bg-slate-100 dark:bg-white/[0.06] px-2 py-0.5 rounded-full border border-slate-200/50 dark:border-white/[0.08] whitespace-nowrap shrink-0 ml-auto">
-          {formatDateRangeDDMMYYYY(firstDayOfMonth, lastDayOfMonth)}
-        </span>
-      </div>
-
-      {/* Customizable View Mode Switcher + Monthly Target Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2 border-y border-theme-border/40 my-3 text-xs">
-        {/* View Mode Segmented Control Pill */}
-        <div className="flex items-center gap-1 bg-slate-100 dark:bg-white/[0.06] p-1 rounded-xl shrink-0 self-start sm:self-auto">
-          <button
-            type="button"
-            onClick={() => setViewMode('heatmap')}
-            className={cn(
-              'px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all flex items-center gap-1',
-              viewMode === 'heatmap'
-                ? 'bg-white dark:bg-slate-800 text-violet-600 dark:text-violet-400 shadow-xs'
-                : 'text-theme-muted hover:text-theme-primary'
-            )}
-          >
-            <CalendarIcon className="size-3" />
-            <span>Heatmap</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('streaks')}
-            className={cn(
-              'px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all flex items-center gap-1',
-              viewMode === 'streaks'
-                ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-xs'
-                : 'text-theme-muted hover:text-theme-primary'
-            )}
-          >
-            <Flame className="size-3" />
-            <span>Streaks</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode('figures')}
-            className={cn(
-              'px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all flex items-center gap-1',
-              viewMode === 'figures'
-                ? 'bg-white dark:bg-slate-800 text-theme-primary shadow-xs'
-                : 'text-theme-muted hover:text-theme-primary'
-            )}
-          >
-            <Eye className="size-3" />
-            <span>Figures</span>
-          </button>
-        </div>
-
-        {/* Zero-Spend Target Progress Capsule */}
-        <div className="flex items-center gap-2 min-w-0">
-          <Target className="size-3.5 text-emerald-500 shrink-0" />
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between text-[10px] font-mono text-theme-muted mb-0.5">
-              <span>Goal: {zeroSpendGoalTarget}d</span>
-              <span className="font-bold text-emerald-500">{zeroSpendCount}/{zeroSpendGoalTarget} ({goalProgressPercent}%)</span>
-            </div>
-            <div className="h-1.5 w-full bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-emerald-500 transition-all duration-500 rounded-full"
-                style={{ width: `${goalProgressPercent}%` }}
-              />
-            </div>
-          </div>
+          <span className="px-1.5 font-semibold text-theme-primary whitespace-nowrap">
+            {monthNameYear}
+          </span>
+          {onNextMonth && (
+            <button
+              type="button"
+              disabled={isMaxMonth}
+              onClick={onNextMonth}
+              aria-label="Next month"
+              className={cn(
+                'p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-white/10 text-theme-muted hover:text-theme-primary transition-colors',
+                isMaxMonth && 'opacity-30 pointer-events-none cursor-not-allowed'
+              )}
+            >
+              <ChevronRight className="size-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
       {/* Weekday Abbreviations Bar */}
-      <div className="grid grid-cols-7 gap-1 text-center">
+      <div className="mt-3.5 grid grid-cols-7 gap-1 text-center">
         {WEEKDAYS.map((wd, i) => (
           <span
             key={wd + i}
@@ -300,13 +303,14 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
           const isToday = isCurrentMonth && day === currentDay;
           const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const amount = dailySpending.get(dateKey) || 0;
-          const isZeroSpend = !isFuture && amount === 0;
+          // Render zero-spend green dot only if month has active transaction records (Argument 2 Integrity)
+          const isZeroSpend = !isFuture && hasLoggedActivity && amount === 0;
           const isSelected = selectedDateStr === dateKey;
 
           // Intensity mapping
           let cellStyle = 'bg-slate-100 dark:bg-white/[0.04] text-theme-secondary';
-          if (isFuture) {
-            cellStyle = 'bg-transparent text-slate-300 dark:text-slate-700 opacity-40 cursor-default';
+          if (isFuture || !hasLoggedActivity) {
+            cellStyle = 'bg-transparent text-slate-400 dark:text-slate-600 opacity-50 cursor-default';
           } else if (isZeroSpend) {
             cellStyle = 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30';
           } else if (amount <= q1) {
@@ -317,42 +321,32 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
             cellStyle = 'bg-violet-600 text-white font-bold shadow-xs';
           }
 
-          const formattedCellFigure = hideBalances
-            ? '••'
-            : formatAdaptiveCardCurrency(amount, true, undefined, true);
-
           return (
             <button
               key={day}
               type="button"
               disabled={isFuture}
-              onClick={() => handleCellClick(dateKey, amount, isFuture)}
+              onMouseDown={() => handleCellPressStart(dateKey, isFuture)}
+              onMouseUp={() => handleCellPressEnd(dateKey, amount, isFuture)}
+              onMouseLeave={handleCellPressCancel}
+              onTouchStart={() => handleCellPressStart(dateKey, isFuture)}
+              onTouchEnd={(e) => {
+                e.stopPropagation();
+                handleCellPressEnd(dateKey, amount, isFuture);
+              }}
+              onTouchMove={handleCellPressCancel}
               className={cn(
-                'aspect-square rounded-xl flex flex-col items-center justify-center text-xs font-mono transition-all duration-150 relative outline-none overflow-hidden p-0.5',
+                'aspect-square rounded-xl flex flex-col items-center justify-center text-xs font-mono transition-all duration-150 relative outline-none select-none',
                 cellStyle,
                 isToday && 'ring-2 ring-violet-500 ring-offset-1 dark:ring-offset-slate-900',
                 isSelected && 'ring-2 ring-white shadow-md scale-105 z-10',
-                !isFuture && 'hover:scale-105 active:scale-95 cursor-pointer'
+                !isFuture && hasLoggedActivity && 'hover:scale-105 active:scale-95 cursor-pointer'
               )}
-              title={`${dateKey}: ${amount > 0 ? formatAdaptiveCardCurrency(amount, true, undefined, true) : 'Zero Spend'}`}
+              title={`${dateKey}: ${!hasLoggedActivity ? 'No Data Logged' : amount > 0 ? formatAdaptiveCardCurrency(amount, true, undefined, true) : 'Zero Spend'}. Press & hold for transaction details.`}
             >
-              {viewMode === 'figures' && !isFuture && amount > 0 ? (
-                <div className="flex flex-col items-center justify-center leading-tight">
-                  <span className="text-[10px] opacity-75">{day}</span>
-                  <span className="text-[9px] font-bold truncate max-w-full">{formattedCellFigure}</span>
-                </div>
-              ) : viewMode === 'streaks' && isZeroSpend ? (
-                <div className="flex flex-col items-center justify-center">
-                  <span className="text-[10px]">{day}</span>
-                  <Sparkles className="size-2.5 text-emerald-500" />
-                </div>
-              ) : (
-                <>
-                  <span>{day}</span>
-                  {isZeroSpend && (
-                    <span className="size-1 rounded-full bg-emerald-500 mt-0.5" />
-                  )}
-                </>
+              <span>{day}</span>
+              {isZeroSpend && (
+                <span className="size-1 rounded-full bg-emerald-500 mt-0.5" />
               )}
             </button>
           );
@@ -362,13 +356,19 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
       {/* Selected Day Toast or Vertical Carousel Metrics Footer */}
       <div className="mt-3.5 pt-3 border-t border-theme-border/50 flex items-center justify-between text-xs">
         {selectedDateStr ? (
-          <div className="flex items-center justify-between w-full">
+          <div
+            onClick={() => onLongPressDate?.(selectedDateStr)}
+            className="flex items-center justify-between w-full cursor-pointer hover:opacity-90 transition-opacity"
+            title="Tap or long press date for full transaction details"
+          >
             <span className="font-mono text-theme-secondary font-medium">
               {formatDateDDMMYYYY(selectedDateStr)}:
             </span>
             <div className="flex items-center gap-2">
               <span className="font-mono font-bold text-theme-primary">
-                {(dailySpending.get(selectedDateStr) || 0) === 0 ? (
+                {!hasLoggedActivity ? (
+                  <span className="text-theme-muted font-normal">No Data Logged</span>
+                ) : (dailySpending.get(selectedDateStr) || 0) === 0 ? (
                   <span className="text-emerald-500 font-semibold">Zero Spend Day ✨</span>
                 ) : (
                   hideBalances
@@ -376,58 +376,59 @@ export const SpendingCalendar: React.FC<SpendingCalendarProps> = ({
                     : formatAdaptiveCardCurrency(dailySpending.get(selectedDateStr) || 0, true, undefined, true)
                 )}
               </span>
-              <button
-                type="button"
-                onClick={() => setSelectedDateStr(null)}
-                className="p-1 rounded-lg hover:bg-theme-card-hover text-theme-muted hover:text-theme-primary transition-colors"
-                title="Clear date selection"
-              >
-                <X className="size-3.5" />
-              </button>
             </div>
           </div>
         ) : (
           <>
-            {/* Left side: Zero-spend days celebration */}
-            <div className="flex items-center gap-1.5 text-emerald-500 dark:text-emerald-400 font-semibold text-[11px] shrink-0">
-              <Sparkles className="size-3.5 shrink-0" />
-              <span>
-                <strong className="font-mono font-bold">{zeroSpendCount}</strong> zero-spend days
-              </span>
-            </div>
+            {/* Left side: Zero-spend days celebration OR Unrecorded Month Signal */}
+            {hasLoggedActivity ? (
+              <div className="flex items-center gap-1.5 text-emerald-500 dark:text-emerald-400 font-semibold text-[11px] shrink-0">
+                <Sparkles className="size-3.5 shrink-0" />
+                <span>
+                  <strong className="font-mono font-bold">{zeroSpendCount}</strong> zero-spend days
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1.5 text-theme-muted text-[11px] shrink-0 font-medium">
+                <Info className="size-3.5 text-theme-muted shrink-0" />
+                <span>No transactions logged for this month</span>
+              </div>
+            )}
 
             {/* Right side: Continuous Infinite Circular Forward Carousel (1 -> 2 -> 3 -> 1) */}
-            <div
-              className="flex items-center gap-1.5 relative cursor-pointer select-none shrink-0"
-              onMouseEnter={() => setIsPaused(true)}
-              onMouseLeave={() => setIsPaused(false)}
-              onTouchStart={() => setIsPaused(true)}
-              onTouchEnd={() => setIsPaused(false)}
-              onClick={handleCarouselClick}
-              title="Click or hover to pause carousel"
-            >
-              <div className="relative h-6 overflow-hidden min-w-[160px] sm:min-w-[180px] flex items-center justify-end">
-                <div
-                  className={cn(
-                    'absolute top-0 right-0 w-full flex flex-col',
-                    isTransitioning ? 'transition-transform duration-500 ease-out' : 'transition-none'
-                  )}
-                  style={{ transform: `translateY(-${carouselIndex * 24}px)` }}
-                >
-                  {displaySlides.map((slide, idx) => (
-                    <div
-                      key={slide.id + idx}
-                      className="h-6 flex items-center justify-end gap-1.5 text-[11px] font-mono whitespace-nowrap shrink-0"
-                    >
-                      <span className={cn('px-1.5 py-0.5 rounded-md text-[10px] font-semibold shrink-0', slide.badgeClass)}>
-                        {slide.badge}
-                      </span>
-                      <span className={cn('shrink-0', slide.valClass)}>{slide.value}</span>
-                    </div>
-                  ))}
+            {hasLoggedActivity && (
+              <div
+                className="flex items-center gap-1.5 relative cursor-pointer select-none shrink-0"
+                onMouseEnter={() => setIsPaused(true)}
+                onMouseLeave={() => setIsPaused(false)}
+                onTouchStart={() => setIsPaused(true)}
+                onTouchEnd={() => setIsPaused(false)}
+                onClick={handleCarouselClick}
+                title="Click or hover to pause carousel"
+              >
+                <div className="relative h-6 overflow-hidden min-w-[160px] sm:min-w-[180px] flex items-center justify-end">
+                  <div
+                    className={cn(
+                      'absolute top-0 right-0 w-full flex flex-col',
+                      isTransitioning ? 'transition-transform duration-500 ease-out' : 'transition-none'
+                    )}
+                    style={{ transform: `translateY(-${carouselIndex * 24}px)` }}
+                  >
+                    {displaySlides.map((slide, idx) => (
+                      <div
+                        key={slide.id + idx}
+                        className="h-6 flex items-center justify-end gap-1.5 text-[11px] font-mono whitespace-nowrap shrink-0"
+                      >
+                        <span className={cn('px-1.5 py-0.5 rounded-md text-[10px] font-semibold shrink-0', slide.badgeClass)}>
+                          {slide.badge}
+                        </span>
+                        <span className={cn('shrink-0', slide.valClass)}>{slide.value}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </>
         )}
       </div>
